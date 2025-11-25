@@ -10,14 +10,15 @@ import {
     FiBarChart2,
     FiSettings,
     FiChevronDown,
-    FiUser,
     FiLogOut,
     FiPlus
 } from 'react-icons/fi'
 import { MdAutoAwesome } from 'react-icons/md'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import toast, { Toaster } from 'react-hot-toast'
+import { AIFloatingButton } from '@/components/ai/AIFloatingButton'
 
 export default function DashboardLayout({
     children,
@@ -25,11 +26,14 @@ export default function DashboardLayout({
     children: React.ReactNode
 }) {
     const pathname = usePathname()
-    const router = useRouter()
     const { getUser, logout, requireAuth } = useAuth()
     const [workspaceName] = useState('My Workspace')
     const [expandedSections, setExpandedSections] = useState<string[]>(['workflows'])
-    const [user, setUser] = useState<any>(null)
+    const [user, setUser] = useState<{
+        displayName?: string;
+        name?: string;
+        email?: string;
+    } | null>(null)
 
     // Check authentication on mount
     useEffect(() => {
@@ -38,6 +42,7 @@ export default function DashboardLayout({
         }
         const currentUser = getUser()
         setUser(currentUser)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const navigation = [
@@ -51,17 +56,18 @@ export default function DashboardLayout({
             ]
         },
         { name: 'OmniInbox', href: '/inbox', icon: FiInbox },
-        { name: 'Channels', href: '/channels', icon: FiRadio },
+        { name: 'Channels & Integrations', href: '/channels', icon: FiRadio },
         {
             name: 'Management',
             icon: FiSettings,
             children: [
                 { name: 'Bots', href: '/bots' },
-                { name: 'Team', href: '/team' },
-                { name: 'Integrations', href: '/integrations' }
+                { name: 'Team', href: '/team' }
             ]
         },
         { name: 'Analytics', href: '/analytics', icon: FiBarChart2 },
+        { name: 'AI Assistant', href: '/ai-assistant', icon: MdAutoAwesome },
+        { name: 'Archives', href: '/archives', icon: FiSettings },
         { name: 'Settings', href: '/settings', icon: FiSettings },
     ]
 
@@ -79,9 +85,39 @@ export default function DashboardLayout({
     }
 
     const handleLogout = () => {
-        if (confirm('Are you sure you want to sign out?')) {
-            logout()
-        }
+        toast(
+            (t) => (
+                <div className="flex flex-col gap-4">
+                    <p className="font-medium">Are you sure you want to sign out?</p>
+                    <div className="flex gap-3 justify-end">
+                        <button
+                            onClick={() => toast.dismiss(t.id)}
+                            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent/80 rounded-md transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => {
+                                toast.dismiss(t.id)
+                                toast.loading('Signing out...', { duration: 2000 })
+                                logout() // Thực hiện logout
+                            }}
+                            className="px-4 py-2 text-sm font-medium bg-wata-purple text-white rounded-md hover:bg-wata-purple/90 transition"
+                        >
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            ),
+            {
+                duration: 10000, // Tự đóng sau 10s nếu không chọn gì
+                style: {
+                    maxWidth: '400px',
+                    padding: '16px',
+                    borderRadius: '12px',
+                },
+            }
+        )
     }
 
     // Get user display info
@@ -221,12 +257,6 @@ export default function DashboardLayout({
                             {navigation.find(item => item.href === pathname)?.name || 'Dashboard'}
                         </h1>
                     </div>
-                    <div className="flex items-center space-x-3">
-                        <Button size="sm">
-                            <FiPlus className="w-4 h-4 mr-2" />
-                            New Bot
-                        </Button>
-                    </div>
                 </div>
 
                 {/* Page Content */}
@@ -234,6 +264,35 @@ export default function DashboardLayout({
                     {children}
                 </div>
             </div>
+
+            {/* AI Floating Button */}
+            <AIFloatingButton />
+
+            {/* Toast Notifications */}
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    duration: 3000,
+                    style: {
+                        background: 'hsl(var(--background))',
+                        color: 'hsl(var(--foreground))',
+                        border: '1px solid hsl(var(--border))',
+                        backdropFilter: 'blur(10px)',
+                    },
+                    success: {
+                        iconTheme: {
+                            primary: '#10b981',
+                            secondary: '#fff',
+                        },
+                    },
+                    error: {
+                        iconTheme: {
+                            primary: '#ef4444',
+                            secondary: '#fff',
+                        },
+                    },
+                }}
+            />
         </div>
     )
 }

@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@wataomi/ui'
+import { fetchAPI } from '@/lib/api'
+import toast from 'react-hot-toast'
 import {
     FiEdit,
     FiPlay,
@@ -16,54 +19,402 @@ import {
     FiActivity
 } from 'react-icons/fi'
 
-export default function WorkflowDetailPage({ params }: { params: { id: string } }) {
-    const [activeTab, setActiveTab] = useState<'overview' | 'executions' | 'versions' | 'settings'>('overview')
+function VersionsTab({ flowId, onUpdate }: { flowId: number, onUpdate: () => void }) {
+    const [versions, setVersions] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
 
-    // Mock data
-    const workflow = {
-        id: parseInt(params.id),
-        name: 'Customer Support Flow',
-        description: 'Automated customer support workflow with AI responses and human handover capabilities',
-        tags: ['support', 'ai', 'automation'],
-        version: 3,
-        is_published: true,
-        created_at: '2024-01-15T10:30:00Z',
-        updated_at: '2024-01-20T14:22:00Z',
-        execution_count: 245,
-        success_rate: 94,
-        avg_duration: 2340,
-        last_execution: '2024-01-20T16:45:00Z'
+    useEffect(() => {
+        loadVersions()
+    }, [flowId])
+
+    const loadVersions = async () => {
+        try {
+            setLoading(true)
+            const data = await fetchAPI(`/flows/${flowId}/versions`)
+            setVersions(data)
+        } catch (e: any) {
+            console.error('Failed to load versions:', e)
+            toast.error('Failed to load versions')
+        } finally {
+            setLoading(false)
+        }
     }
 
-    const recentExecutions = [
-        {
-            id: 1,
-            status: 'completed' as const,
-            started_at: '2024-01-20T16:45:00Z',
-            duration: 2100,
-            trigger: 'WhatsApp Message'
-        },
-        {
-            id: 2,
-            status: 'completed' as const,
-            started_at: '2024-01-20T15:30:00Z',
-            duration: 2450,
-            trigger: 'Messenger'
-        },
-        {
-            id: 3,
-            status: 'failed' as const,
-            started_at: '2024-01-20T14:15:00Z',
-            duration: 1200,
-            trigger: 'Instagram DM'
-        }
-    ]
+    const handleCreateVersion = async () => {
+        const createPromise = fetchAPI(`/flows/${flowId}/versions`, {
+            method: 'POST',
+            body: JSON.stringify({
+                name: `Version ${versions.length + 1}`,
+                description: 'Manual version snapshot'
+            })
+        }).then(() => {
+            loadVersions()
+            onUpdate()
+        })
 
-    const versions = [
-        { version: 3, date: '2024-01-20T14:22:00Z', changes: 'Added AI response node', is_current: true },
-        { version: 2, date: '2024-01-18T10:15:00Z', changes: 'Updated message templates', is_current: false },
-        { version: 1, date: '2024-01-15T10:30:00Z', changes: 'Initial version', is_current: false }
-    ]
+        toast.promise(createPromise, {
+            loading: 'Creating version...',
+            success: 'Version created successfully!',
+            error: (err) => `Failed to create version: ${err.message}`
+        })
+    }
+
+    const handleRestore = async (version: number) => {
+        toast.error('Version restore coming soon!')
+    }
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+    }
+
+    return (
+        <div className="glass rounded-xl p-6">
+            <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold">Version History</h3>
+                <Button size="sm" onClick={handleCreateVersion}>
+                    <FiClock className="w-4 h-4 mr-2" />
+                    Create Version
+                </Button>
+            </div>
+            
+            {loading ? (
+                <div className="text-center py-12 text-muted-foreground">
+                    Loading versions...
+                </div>
+            ) : versions.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                    <FiClock className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                    <p className="text-lg font-medium mb-2">No versions yet</p>
+                    <p className="text-sm mb-4">
+                        Create version snapshots to track changes over time
+                    </p>
+                    <Button onClick={handleCreateVersion}>
+                        Create First Version
+                    </Button>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {versions.map((v) => (
+                        <div
+                            key={v.version}
+                            className={`p-4 rounded-lg border ${
+                                v.is_current
+                                    ? 'border-primary/40 bg-primary/5'
+                                    : 'border-border/40 bg-muted/20'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <h4 className="font-semibold">Version {v.version}</h4>
+                                        {v.is_current && (
+                                            <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-white">
+                                                Current
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mb-1">
+                                        {v.description || v.name}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {formatDate(v.created_at)}
+                                    </p>
+                                </div>
+                                {!v.is_current && (
+                                    <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        onClick={() => handleRestore(v.version)}
+                                    >
+                                        Restore
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
+function SettingsTab({ 
+    flow, 
+    onUpdate, 
+    onArchive, 
+    onDelete 
+}: { 
+    flow: any
+    onUpdate: () => void
+    onArchive: () => void
+    onDelete: () => void
+}) {
+    const [name, setName] = useState(flow.name)
+    const [description, setDescription] = useState(flow.description || '')
+    const [status, setStatus] = useState(flow.status)
+    const [saving, setSaving] = useState(false)
+
+    const handleSave = async () => {
+        const savePromise = (async () => {
+            setSaving(true)
+            await fetchAPI(`/flows/${flow.id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    name,
+                    description,
+                    status
+                })
+            })
+            onUpdate()
+        })()
+
+        toast.promise(savePromise, {
+            loading: 'Saving settings...',
+            success: 'Settings saved successfully!',
+            error: (err) => `Failed to save: ${err.message}`
+        }).finally(() => setSaving(false))
+    }
+
+    const hasChanges = name !== flow.name || 
+                      description !== (flow.description || '') ||
+                      status !== flow.status
+
+    return (
+        <div className="glass rounded-xl p-6">
+            <h3 className="text-lg font-semibold mb-6">Workflow Settings</h3>
+            <div className="space-y-6">
+                <div>
+                    <label className="block text-sm font-medium mb-2">Workflow Name</label>
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full glass rounded-lg px-4 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        placeholder="Enter workflow name"
+                    />
+                </div>
+                
+                <div>
+                    <label className="block text-sm font-medium mb-2">Description</label>
+                    <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        rows={3}
+                        className="w-full glass rounded-lg px-4 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        placeholder="Describe what this workflow does"
+                    />
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium mb-2">Status</label>
+                    <select
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value)}
+                        className="w-full glass rounded-lg px-4 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                </div>
+
+                {hasChanges && (
+                    <div className="flex items-center gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                        <span className="text-sm text-amber-500">You have unsaved changes</span>
+                        <Button size="sm" onClick={handleSave} disabled={saving}>
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </Button>
+                    </div>
+                )}
+
+                <div className="pt-6 border-t border-border/40 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-medium mb-1">Archive Workflow</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Archive this workflow (can be restored later)
+                            </p>
+                        </div>
+                        <Button variant="outline" onClick={onArchive}>
+                            Archive
+                        </Button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between pt-4 border-t border-border/40">
+                        <div>
+                            <h4 className="font-medium mb-1 text-red-500">Delete Workflow</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Permanently delete this workflow and all its data
+                            </p>
+                        </div>
+                        <Button 
+                            variant="ghost" 
+                            className="text-red-500 hover:bg-red-500/10" 
+                            onClick={onDelete}
+                        >
+                            <FiTrash2 className="w-4 h-4 mr-2" />
+                            Delete
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+export default function WorkflowDetailPage({ params }: { params: { id: string } }) {
+    const router = useRouter()
+    const [activeTab, setActiveTab] = useState<'overview' | 'executions' | 'versions' | 'settings'>('overview')
+    const [flow, setFlow] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        loadFlow()
+    }, [params.id])
+
+    const loadFlow = async () => {
+        try {
+            setLoading(true)
+            const data = await fetchAPI(`/flows/${params.id}`)
+            setFlow(data)
+        } catch (e: any) {
+            setError(e.message)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleDuplicate = async () => {
+        const duplicatePromise = fetchAPI(`/flows/${params.id}/duplicate`, {
+            method: 'POST',
+        }).then((dup) => {
+            router.push(`/flows/${dup.id}/edit`)
+            return dup
+        })
+
+        toast.promise(duplicatePromise, {
+            loading: 'Duplicating workflow...',
+            success: 'Workflow duplicated successfully!',
+            error: (err) => `Failed to duplicate: ${err.message}`,
+        })
+    }
+
+    const handleDelete = async () => {
+        toast((t) => (
+            <div className="flex flex-col gap-3">
+                <div>
+                    <p className="font-semibold">Delete this workflow?</p>
+                    <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => toast.dismiss(t.id)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        size="sm"
+                        className="bg-red-500 hover:bg-red-600"
+                        onClick={async () => {
+                            toast.dismiss(t.id)
+                            const deletePromise = fetchAPI(`/flows/${params.id}`, { method: 'DELETE' })
+                                .then(() => {
+                                    router.push('/flows')
+                                })
+
+                            toast.promise(deletePromise, {
+                                loading: 'Deleting workflow...',
+                                success: 'Workflow deleted successfully!',
+                                error: (err) => `Failed to delete: ${err.message}`,
+                            })
+                        }}
+                    >
+                        Delete
+                    </Button>
+                </div>
+            </div>
+        ), {
+            duration: Infinity,
+        })
+    }
+
+    const handleArchive = async () => {
+        const archivePromise = fetchAPI(`/flows/${params.id}/archive`, { method: 'POST' })
+            .then(() => {
+                router.push('/flows')
+            })
+
+        toast.promise(archivePromise, {
+            loading: 'Archiving workflow...',
+            success: 'Workflow archived successfully!',
+            error: (err) => `Failed to archive: ${err.message}`,
+        })
+    }
+
+    const [recentExecutions, setRecentExecutions] = useState<any[]>([])
+    const [executionsLoading, setExecutionsLoading] = useState(false)
+    const [stats, setStats] = useState({
+        totalExecutions: 0,
+        successRate: 0,
+        avgDuration: 0
+    })
+
+    useEffect(() => {
+        if (flow) {
+            loadRecentExecutions()
+            loadStats()
+        }
+    }, [flow])
+
+    const loadRecentExecutions = async () => {
+        try {
+            setExecutionsLoading(true)
+            const data = await fetchAPI(`/executions/?flow_id=${params.id}&limit=5`)
+            setRecentExecutions(data)
+        } catch (e: any) {
+            console.error('Failed to load executions:', e)
+        } finally {
+            setExecutionsLoading(false)
+        }
+    }
+
+    const loadStats = async () => {
+        try {
+            const allExecutions = await fetchAPI(`/executions/?flow_id=${params.id}&limit=100`)
+            
+            const totalExecutions = allExecutions.length
+            const completedExecutions = allExecutions.filter((e: any) => e.status === 'completed')
+            const successRate = totalExecutions > 0 
+                ? (completedExecutions.length / totalExecutions) * 100 
+                : 0
+            
+            const durations = allExecutions
+                .filter((e: any) => e.duration_ms)
+                .map((e: any) => e.duration_ms)
+            const avgDuration = durations.length > 0
+                ? durations.reduce((a: number, b: number) => a + b, 0) / durations.length
+                : 0
+            
+            setStats({
+                totalExecutions,
+                successRate,
+                avgDuration
+            })
+        } catch (e: any) {
+            console.error('Failed to load stats:', e)
+        }
+    }
+
+
 
     const formatDuration = (ms: number) => {
         if (ms < 1000) return `${ms}ms`
@@ -81,22 +432,47 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
         })
     }
 
+    if (loading) {
+        return (
+            <div className="p-8 flex items-center justify-center">
+                <div className="text-muted-foreground">Loading workflow...</div>
+            </div>
+        )
+    }
+
+    if (error || !flow) {
+        return (
+            <div className="p-8">
+                <div className="glass rounded-xl p-6 text-center">
+                    <p className="text-red-500 mb-4">{error || 'Flow not found'}</p>
+                    <Link href="/flows">
+                        <Button>Back to Flows</Button>
+                    </Link>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="p-8">
             {/* Header */}
             <div className="mb-8">
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                        <h1 className="text-3xl font-bold mb-2">{workflow.name}</h1>
-                        <p className="text-muted-foreground">{workflow.description}</p>
+                        <h1 className="text-3xl font-bold mb-2">{flow.name}</h1>
+                        <p className="text-muted-foreground">{flow.description || 'No description'}</p>
                     </div>
 
                     {/* Status Badge */}
                     <div>
-                        {workflow.is_published ? (
+                        {flow.status === 'published' ? (
                             <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500/10 text-green-500 border border-green-500/20">
                                 <FiCheckCircle className="w-4 h-4 mr-2" />
                                 Published
+                            </span>
+                        ) : flow.status === 'archived' ? (
+                            <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-orange-500/10 text-orange-500 border border-orange-500/20">
+                                Archived
                             </span>
                         ) : (
                             <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-muted text-muted-foreground border border-border">
@@ -106,21 +482,9 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                     </div>
                 </div>
 
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                    {workflow.tags.map((tag, index) => (
-                        <span
-                            key={index}
-                            className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-primary/10 text-primary border border-primary/20"
-                        >
-                            {tag}
-                        </span>
-                    ))}
-                </div>
-
                 {/* Action Buttons */}
                 <div className="flex items-center gap-3">
-                    <Link href={`/flows/${workflow.id}/edit`}>
+                    <Link href={`/flows/${flow.id}/edit`}>
                         <Button>
                             <FiEdit className="w-4 h-4 mr-2" />
                             Edit Workflow
@@ -130,7 +494,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                         <FiPlay className="w-4 h-4 mr-2" />
                         Test Run
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={handleDuplicate}>
                         <FiCopy className="w-4 h-4 mr-2" />
                         Duplicate
                     </Button>
@@ -142,7 +506,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                         <FiShare2 className="w-4 h-4 mr-2" />
                         Share
                     </Button>
-                    <Button variant="ghost">
+                    <Button variant="ghost" onClick={handleDelete}>
                         <FiTrash2 className="w-4 h-4" />
                     </Button>
                 </div>
@@ -153,27 +517,31 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                 <div className="glass rounded-xl p-6">
                     <div className="flex items-center justify-between mb-2">
                         <FiActivity className="w-8 h-8 text-wata-purple" />
-                        <FiTrendingUp className="w-4 h-4 text-green-500" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-1">{workflow.execution_count}</h3>
+                    <h3 className="text-2xl font-bold mb-1">{stats.totalExecutions}</h3>
                     <p className="text-sm text-muted-foreground">Total Executions</p>
                 </div>
 
                 <div className="glass rounded-xl p-6">
                     <div className="flex items-center justify-between mb-2">
                         <FiCheckCircle className="w-8 h-8 text-wata-blue" />
-                        <span className="text-sm font-medium text-green-500">+3%</span>
+                        {stats.successRate > 0 && (
+                            <span className={`text-sm font-medium ${stats.successRate >= 80 ? 'text-green-500' : 'text-yellow-500'}`}>
+                                {stats.successRate.toFixed(0)}%
+                            </span>
+                        )}
                     </div>
-                    <h3 className="text-2xl font-bold mb-1">{workflow.success_rate}%</h3>
+                    <h3 className="text-2xl font-bold mb-1">{stats.successRate.toFixed(0)}%</h3>
                     <p className="text-sm text-muted-foreground">Success Rate</p>
                 </div>
 
                 <div className="glass rounded-xl p-6">
                     <div className="flex items-center justify-between mb-2">
                         <FiClock className="w-8 h-8 text-wata-cyan" />
-                        <span className="text-sm font-medium text-green-500">-5%</span>
                     </div>
-                    <h3 className="text-2xl font-bold mb-1">{formatDuration(workflow.avg_duration)}</h3>
+                    <h3 className="text-2xl font-bold mb-1">
+                        {stats.avgDuration > 0 ? formatDuration(stats.avgDuration) : '0s'}
+                    </h3>
                     <p className="text-sm text-muted-foreground">Avg Duration</p>
                 </div>
 
@@ -181,7 +549,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                     <div className="flex items-center justify-between mb-2">
                         <FiActivity className="w-8 h-8 text-wata-pink" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-1">v{workflow.version}</h3>
+                    <h3 className="text-2xl font-bold mb-1">v{flow.version || 1}</h3>
                     <p className="text-sm text-muted-foreground">Current Version</p>
                 </div>
             </div>
@@ -219,139 +587,177 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                     <div className="glass rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold">Recent Executions</h3>
-                            <Link href={`/flows/${workflow.id}/executions`}>
+                            <Link href={`/flows/${flow.id}/executions`}>
                                 <Button size="sm" variant="ghost">
                                     View All
                                 </Button>
                             </Link>
                         </div>
-                        <div className="space-y-3">
-                            {recentExecutions.map((execution) => (
-                                <Link
-                                    key={execution.id}
-                                    href={`/flows/${workflow.id}/executions/${execution.id}`}
-                                    className="block p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            {execution.status === 'completed' ? (
-                                                <FiCheckCircle className="w-5 h-5 text-green-500" />
-                                            ) : (
-                                                <FiActivity className="w-5 h-5 text-red-500" />
-                                            )}
-                                            <div>
-                                                <p className="font-medium">Execution #{execution.id}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    Triggered by {execution.trigger}
+                        {executionsLoading ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                Loading executions...
+                            </div>
+                        ) : recentExecutions.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                <FiActivity className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                                <p>No executions yet</p>
+                                <p className="text-sm mt-1">Run this workflow to see execution history</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {recentExecutions.map((execution) => (
+                                    <Link
+                                        key={execution.id}
+                                        href={`/flows/${flow.id}/executions/${execution.id}`}
+                                        className="block p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                {execution.status === 'completed' ? (
+                                                    <FiCheckCircle className="w-5 h-5 text-green-500" />
+                                                ) : execution.status === 'failed' ? (
+                                                    <FiActivity className="w-5 h-5 text-red-500" />
+                                                ) : (
+                                                    <FiClock className="w-5 h-5 text-yellow-500" />
+                                                )}
+                                                <div>
+                                                    <p className="font-medium">Execution #{execution.id}</p>
+                                                    <p className="text-sm text-muted-foreground capitalize">
+                                                        {execution.status} • {execution.completed_nodes}/{execution.total_nodes} nodes
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                {execution.duration_ms && (
+                                                    <p className="text-sm font-medium">{formatDuration(execution.duration_ms)}</p>
+                                                )}
+                                                <p className="text-xs text-muted-foreground">
+                                                    {formatDate(execution.started_at)}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-sm font-medium">{formatDuration(execution.duration)}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {formatDate(execution.started_at)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))}
-                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
 
             {activeTab === 'executions' && (
                 <div className="glass rounded-xl p-6">
-                    <p className="text-muted-foreground text-center py-8">
-                        Redirecting to executions page...
-                    </p>
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-semibold">All Executions</h3>
+                        <Link href={`/flows/${flow.id}/edit`}>
+                            <Button size="sm">
+                                <FiPlay className="w-4 h-4 mr-2" />
+                                Run Workflow
+                            </Button>
+                        </Link>
+                    </div>
+                    
+                    {executionsLoading ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                            Loading executions...
+                        </div>
+                    ) : recentExecutions.length === 0 ? (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <FiActivity className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                            <p className="text-lg font-medium mb-2">No executions yet</p>
+                            <p className="text-sm mb-4">Run this workflow to see execution history</p>
+                            <Link href={`/flows/${flow.id}/edit`}>
+                                <Button>
+                                    <FiPlay className="w-4 h-4 mr-2" />
+                                    Run Workflow
+                                </Button>
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {recentExecutions.map((execution) => (
+                                <div
+                                    key={execution.id}
+                                    className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
+                                    onClick={() => {
+                                        // Show execution details in modal or navigate
+                                        toast.success(`Viewing execution #${execution.id}`)
+                                    }}
+                                >
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-3">
+                                            {execution.status === 'completed' ? (
+                                                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
+                                                    <FiCheckCircle className="w-5 h-5 text-green-500" />
+                                                </div>
+                                            ) : execution.status === 'failed' ? (
+                                                <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                                                    <FiActivity className="w-5 h-5 text-red-500" />
+                                                </div>
+                                            ) : (
+                                                <div className="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center">
+                                                    <FiClock className="w-5 h-5 text-yellow-500" />
+                                                </div>
+                                            )}
+                                            <div>
+                                                <p className="font-medium">Execution #{execution.id}</p>
+                                                <p className="text-sm text-muted-foreground capitalize">
+                                                    {execution.status}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            {execution.duration_ms && (
+                                                <p className="text-sm font-medium">{formatDuration(execution.duration_ms)}</p>
+                                            )}
+                                            <p className="text-xs text-muted-foreground">
+                                                {formatDate(execution.started_at)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Progress bar */}
+                                    <div className="mb-2">
+                                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                                            <span>Progress</span>
+                                            <span>{execution.completed_nodes}/{execution.total_nodes} nodes</span>
+                                        </div>
+                                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full transition-all ${
+                                                    execution.status === 'completed' ? 'bg-green-500' :
+                                                    execution.status === 'failed' ? 'bg-red-500' :
+                                                    'bg-yellow-500'
+                                                }`}
+                                                style={{ 
+                                                    width: `${(execution.completed_nodes / execution.total_nodes) * 100}%` 
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    
+                                    {execution.error_message && (
+                                        <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-500">
+                                            {execution.error_message}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
             {activeTab === 'versions' && (
-                <div className="glass rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4">Version History</h3>
-                    <div className="space-y-4">
-                        {versions.map((v) => (
-                            <div
-                                key={v.version}
-                                className={`p-4 rounded-lg border ${v.is_current
-                                    ? 'border-primary/40 bg-primary/5'
-                                    : 'border-border/40 bg-muted/20'
-                                    }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <h4 className="font-semibold">Version {v.version}</h4>
-                                            {v.is_current && (
-                                                <span className="px-2 py-0.5 rounded-md text-xs font-medium bg-primary text-white">
-                                                    Current
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">{v.changes}</p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {formatDate(v.date)}
-                                        </p>
-                                    </div>
-                                    {!v.is_current && (
-                                        <Button size="sm" variant="outline">
-                                            Restore
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <VersionsTab flowId={flow.id} onUpdate={loadFlow} />
             )}
 
             {activeTab === 'settings' && (
-                <div className="glass rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4">Workflow Settings</h3>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Workflow Name</label>
-                            <input
-                                type="text"
-                                defaultValue={workflow.name}
-                                className="w-full glass rounded-lg px-4 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-2">Description</label>
-                            <textarea
-                                defaultValue={workflow.description}
-                                rows={3}
-                                className="w-full glass rounded-lg px-4 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                            />
-                        </div>
-                        <div className="flex items-center justify-between pt-4 border-t border-border/40">
-                            <div>
-                                <h4 className="font-medium mb-1">Publish Workflow</h4>
-                                <p className="text-sm text-muted-foreground">
-                                    Make this workflow active and available for execution
-                                </p>
-                            </div>
-                            <Button>
-                                {workflow.is_published ? 'Unpublish' : 'Publish'}
-                            </Button>
-                        </div>
-                        <div className="flex items-center justify-between pt-4 border-t border-border/40">
-                            <div>
-                                <h4 className="font-medium mb-1 text-red-500">Delete Workflow</h4>
-                                <p className="text-sm text-muted-foreground">
-                                    Permanently delete this workflow and all its data
-                                </p>
-                            </div>
-                            <Button variant="ghost" className="text-red-500 hover:bg-red-500/10">
-                                <FiTrash2 className="w-4 h-4 mr-2" />
-                                Delete
-                            </Button>
-                        </div>
-                    </div>
-                </div>
+                <SettingsTab 
+                    flow={flow} 
+                    onUpdate={loadFlow}
+                    onArchive={handleArchive}
+                    onDelete={handleDelete}
+                />
             )}
         </div>
     )

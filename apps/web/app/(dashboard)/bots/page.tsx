@@ -1,241 +1,299 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { Button } from '@wataomi/ui'
+import { fetchAPI } from '@/lib/api'
+import toast from 'react-hot-toast'
 import {
     FiPlus,
-    FiSearch,
-    FiGitMerge,
-    FiRadio,
+    FiEdit2,
+    FiTrash2,
+    FiRefreshCw,
     FiMessageSquare,
-    FiSettings,
-    FiMoreVertical,
-    FiTrendingUp,
-    FiActivity
+    FiActivity,
+    FiX
 } from 'react-icons/fi'
-import { FaRobot } from 'react-icons/fa'
+
+interface Bot {
+    id: number
+    name: string
+    description?: string
+    is_active: boolean
+    workspace_id: number
+    created_at: string
+    updated_at: string
+}
 
 export default function BotsPage() {
-    const [searchQuery, setSearchQuery] = useState('')
+    const [bots, setBots] = useState<Bot[]>([])
+    const [loading, setLoading] = useState(true)
+    const [showModal, setShowModal] = useState(false)
+    const [editingBot, setEditingBot] = useState<Bot | null>(null)
+    const [formData, setFormData] = useState({
+        name: '',
+        description: '',
+        flow_id: null as number | null
+    })
+    const [flows, setFlows] = useState<any[]>([])
 
-    const bots = [
-        {
-            id: 1,
-            name: 'Customer Support Bot',
-            description: 'Handles customer inquiries and support tickets',
-            status: 'active',
-            workflows: 3,
-            channels: 4,
-            conversations: 1245,
-            success_rate: 94,
-            created_at: '2024-01-15T10:30:00Z'
-        },
-        {
-            id: 2,
-            name: 'Sales Assistant',
-            description: 'Qualifies leads and schedules demos',
-            status: 'active',
-            workflows: 2,
-            channels: 2,
-            conversations: 856,
-            success_rate: 89,
-            created_at: '2024-01-18T09:15:00Z'
-        },
-        {
-            id: 3,
-            name: 'Order Tracker',
-            description: 'Provides order status and tracking information',
-            status: 'inactive',
-            workflows: 1,
-            channels: 3,
-            conversations: 432,
-            success_rate: 98,
-            created_at: '2024-01-20T14:22:00Z'
+    useEffect(() => {
+        loadBots()
+        loadFlows()
+    }, [])
+
+    const loadFlows = async () => {
+        try {
+            const data = await fetchAPI('/flows/')
+            setFlows(data)
+        } catch (e: any) {
+            console.error('Failed to load flows:', e)
         }
-    ]
+    }
 
-    const filteredBots = bots.filter(bot =>
-        bot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        bot.description.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const loadBots = async () => {
+        try {
+            setLoading(true)
+            const data = await fetchAPI('/bots/')
+            setBots(data.bots || [])
+        } catch (e: any) {
+            toast.error('Failed to load bots')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const openModal = (bot?: Bot) => {
+        if (bot) {
+            setEditingBot(bot)
+            setFormData({
+                name: bot.name,
+                description: bot.description || '',
+                flow_id: (bot as any).flow_id || null
+            })
+        } else {
+            setEditingBot(null)
+            setFormData({ name: '', description: '', flow_id: null })
+        }
+        setShowModal(true)
+    }
+
+    const closeModal = () => {
+        setShowModal(false)
+        setEditingBot(null)
+        setFormData({ name: '', description: '', flow_id: null })
+    }
+
+    const saveBot = async () => {
+        if (!formData.name.trim()) {
+            toast.error('Bot name is required')
+            return
+        }
+
+        try {
+            if (editingBot) {
+                await fetchAPI(`/bots/${editingBot.id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(formData)
+                })
+                toast.success('Bot updated')
+            } else {
+                await fetchAPI('/bots/', {
+                    method: 'POST',
+                    body: JSON.stringify(formData)
+                })
+                toast.success('Bot created')
+            }
+            closeModal()
+            loadBots()
+        } catch (e: any) {
+            toast.error('Failed to save bot')
+        }
+    }
+
+    const deleteBot = async (id: number) => {
+        if (!confirm('Are you sure you want to delete this bot?')) return
+
+        try {
+            await fetchAPI(`/bots/${id}`, { method: 'DELETE' })
+            toast.success('Bot deleted')
+            loadBots()
+        } catch (e: any) {
+            toast.error('Failed to delete bot')
+        }
+    }
+
+    const toggleStatus = async (bot: Bot) => {
+        try {
+            await fetchAPI(`/bots/${bot.id}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    is_active: !bot.is_active
+                })
+            })
+            toast.success('Bot status updated')
+            loadBots()
+        } catch (e: any) {
+            toast.error('Failed to update status')
+        }
+    }
 
     return (
-        <div className="p-8">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+        <div className="p-8 max-w-7xl mx-auto">
+            <div className="mb-8 flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold mb-2">Bots</h1>
                     <p className="text-muted-foreground">
-                        Manage your AI bots and their configurations
+                        Manage your AI bots and automation
                     </p>
                 </div>
-                <Button>
-                    <FiPlus className="w-4 h-4 mr-2" />
-                    Create Bot
-                </Button>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                        <FaRobot className="w-5 h-5 text-wata-purple" />
-                        <h3 className="text-sm font-medium text-muted-foreground">Total Bots</h3>
-                    </div>
-                    <p className="text-2xl font-bold">{bots.length}</p>
-                </div>
-                <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                        <FiActivity className="w-5 h-5 text-wata-blue" />
-                        <h3 className="text-sm font-medium text-muted-foreground">Active</h3>
-                    </div>
-                    <p className="text-2xl font-bold">
-                        {bots.filter(b => b.status === 'active').length}
-                    </p>
-                </div>
-                <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                        <FiMessageSquare className="w-5 h-5 text-wata-cyan" />
-                        <h3 className="text-sm font-medium text-muted-foreground">Conversations</h3>
-                    </div>
-                    <p className="text-2xl font-bold">
-                        {bots.reduce((sum, bot) => sum + bot.conversations, 0).toLocaleString()}
-                    </p>
-                </div>
-                <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                        <FiTrendingUp className="w-5 h-5 text-wata-pink" />
-                        <h3 className="text-sm font-medium text-muted-foreground">Avg Success Rate</h3>
-                    </div>
-                    <p className="text-2xl font-bold">
-                        {Math.round(bots.reduce((sum, bot) => sum + bot.success_rate, 0) / bots.length)}%
-                    </p>
-                </div>
-            </div>
-
-            {/* Search */}
-            <div className="mb-6">
-                <div className="relative">
-                    <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search bots..."
-                        className="w-full glass rounded-lg pl-12 pr-4 py-3 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    />
-                </div>
-            </div>
-
-            {/* Bots Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredBots.map((bot) => (
-                    <div
-                        key={bot.id}
-                        className="glass rounded-xl p-6 hover:border-primary/40 transition-all duration-300 group relative overflow-hidden"
-                    >
-                        {/* Gradient overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-wata-purple/5 via-transparent to-wata-cyan/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                        <div className="relative z-10">
-                            {/* Header */}
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-wata-purple to-wata-blue flex items-center justify-center">
-                                        <FaRobot className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold">{bot.name}</h3>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${bot.status === 'active'
-                                            ? 'bg-green-500/10 text-green-500 border border-green-500/20'
-                                            : 'bg-muted text-muted-foreground border border-border'
-                                            }`}>
-                                            {bot.status}
-                                        </span>
-                                    </div>
-                                </div>
-                                <Button variant="ghost" size="sm">
-                                    <FiMoreVertical className="w-4 h-4" />
-                                </Button>
-                            </div>
-
-                            {/* Description */}
-                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                                {bot.description}
-                            </p>
-
-                            {/* Stats */}
-                            <div className="grid grid-cols-3 gap-4 mb-4 pt-4 border-t border-border/40">
-                                <div>
-                                    <div className="flex items-center gap-1 mb-1">
-                                        <FiGitMerge className="w-3 h-3 text-muted-foreground" />
-                                        <p className="text-xs text-muted-foreground">Workflows</p>
-                                    </div>
-                                    <p className="text-lg font-semibold">{bot.workflows}</p>
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-1 mb-1">
-                                        <FiRadio className="w-3 h-3 text-muted-foreground" />
-                                        <p className="text-xs text-muted-foreground">Channels</p>
-                                    </div>
-                                    <p className="text-lg font-semibold">{bot.channels}</p>
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-1 mb-1">
-                                        <FiMessageSquare className="w-3 h-3 text-muted-foreground" />
-                                        <p className="text-xs text-muted-foreground">Chats</p>
-                                    </div>
-                                    <p className="text-lg font-semibold">{bot.conversations}</p>
-                                </div>
-                            </div>
-
-                            {/* Success Rate */}
-                            <div className="mb-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-xs text-muted-foreground">Success Rate</span>
-                                    <span className="text-xs font-semibold">{bot.success_rate}%</span>
-                                </div>
-                                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-wata-purple to-wata-cyan transition-all duration-300"
-                                        style={{ width: `${bot.success_rate}%` }}
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex items-center gap-2">
-                                <Button size="sm" variant="outline" className="flex-1">
-                                    <FiSettings className="w-4 h-4 mr-2" />
-                                    Configure
-                                </Button>
-                                <Link href={`/flows?bot_id=${bot.id}`} className="flex-1">
-                                    <Button size="sm" variant="ghost" className="w-full">
-                                        <FiGitMerge className="w-4 h-4 mr-2" />
-                                        Workflows
-                                    </Button>
-                                </Link>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Empty State */}
-            {filteredBots.length === 0 && (
-                <div className="text-center py-16 glass rounded-xl">
-                    <FaRobot className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No bots found</h3>
-                    <p className="text-muted-foreground mb-6">
-                        {searchQuery
-                            ? 'Try adjusting your search'
-                            : 'Create your first bot to get started'}
-                    </p>
-                    <Button>
+                <div className="flex gap-3">
+                    <Button variant="outline" onClick={loadBots}>
+                        <FiRefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </Button>
+                    <Button onClick={() => openModal()}>
                         <FiPlus className="w-4 h-4 mr-2" />
                         Create Bot
                     </Button>
+                </div>
+            </div>
+
+            {loading && bots.length === 0 ? (
+                <div className="text-center py-12">
+                    <FiRefreshCw className="w-8 h-8 mx-auto mb-4 animate-spin text-muted-foreground" />
+                    <p className="text-muted-foreground">Loading bots...</p>
+                </div>
+            ) : bots.length === 0 ? (
+                <div className="text-center py-12 glass rounded-xl border border-border/40">
+                    <FiMessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No bots yet</h3>
+                    <p className="text-muted-foreground mb-4">Create your first bot to get started</p>
+                    <Button onClick={() => openModal()}>
+                        <FiPlus className="w-4 h-4 mr-2" />
+                        Create Bot
+                    </Button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {bots.map((bot) => (
+                        <div key={bot.id} className="glass rounded-xl p-6 border border-border/40 hover:border-primary/20 transition-all">
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 rounded-xl bg-gradient-wata flex items-center justify-center">
+                                        <FiMessageSquare className="w-6 h-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-lg">{bot.name}</h3>
+                                        <span className={`text-xs px-2 py-1 rounded-full ${bot.is_active
+                                                ? 'bg-green-500/10 text-green-500'
+                                                : 'bg-gray-500/10 text-gray-500'
+                                            }`}>
+                                            {bot.is_active ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <p className="text-sm text-muted-foreground mb-4 min-h-[40px]">
+                                {bot.description || 'No description'}
+                            </p>
+
+                            <div className="flex items-center gap-2 pt-4 border-t border-border/40">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="flex-1"
+                                    onClick={() => toggleStatus(bot)}
+                                >
+                                    <FiActivity className="w-4 h-4 mr-2" />
+                                    {bot.is_active ? 'Deactivate' : 'Activate'}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openModal(bot)}
+                                >
+                                    <FiEdit2 className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => deleteBot(bot.id)}
+                                    className="text-red-500 hover:bg-red-500/10"
+                                >
+                                    <FiTrash2 className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Modal */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-background border border-border rounded-xl p-6 w-full max-w-md shadow-2xl">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-semibold">
+                                {editingBot ? 'Edit Bot' : 'Create Bot'}
+                            </h3>
+                            <button onClick={closeModal} className="text-muted-foreground hover:text-foreground">
+                                <FiX className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Bot Name *</label>
+                                <input
+                                    type="text"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full glass rounded-lg px-3 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    placeholder="My Awesome Bot"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Description</label>
+                                <textarea
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    className="w-full glass rounded-lg px-3 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                    rows={3}
+                                    placeholder="Describe what this bot does..."
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-2">Flow</label>
+                                <select
+                                    value={formData.flow_id || ''}
+                                    onChange={(e) => setFormData({ ...formData, flow_id: e.target.value ? Number(e.target.value) : null })}
+                                    className="w-full glass rounded-lg px-3 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                >
+                                    <option value="">No flow (manual responses only)</option>
+                                    {flows.map((flow) => (
+                                        <option key={flow.id} value={flow.id}>
+                                            {flow.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Select which flow this bot should execute when it receives messages
+                                </p>
+                            </div>
+
+                            <div className="pt-4 flex gap-3">
+                                <Button variant="outline" className="flex-1" onClick={closeModal}>
+                                    Cancel
+                                </Button>
+                                <Button className="flex-1" onClick={saveBot}>
+                                    {editingBot ? 'Update' : 'Create'}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

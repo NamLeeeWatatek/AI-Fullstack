@@ -1,13 +1,16 @@
 from sqlmodel import SQLModel, Field, Relationship, Column, JSON
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
 from datetime import datetime
+
+if TYPE_CHECKING:
+    from app.models.flow import Flow
 
 class WorkflowExecution(SQLModel, table=True):
     """Tracks each workflow execution instance"""
     __tablename__ = "workflow_executions"
     
     id: Optional[int] = Field(default=None, primary_key=True)
-    flow_version_id: int = Field(foreign_key="flow_versions.id")
+    flow_id: int = Field(foreign_key="flows.id")  # Changed from flow_version_id
     conversation_id: Optional[int] = Field(default=None, foreign_key="conversations.id")
     
     # Execution status
@@ -25,7 +28,7 @@ class WorkflowExecution(SQLModel, table=True):
     completed_nodes: int = 0
     
     # Relationships
-    flow_version: "FlowVersion" = Relationship(back_populates="executions")
+    flow: "Flow" = Relationship(back_populates="executions")
     node_executions: List["NodeExecution"] = Relationship(back_populates="workflow_execution")
 
 

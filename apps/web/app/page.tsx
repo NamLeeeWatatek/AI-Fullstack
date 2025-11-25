@@ -51,7 +51,7 @@ export default function LandingPage() {
                         transition={{ duration: 0.6 }}
                         className="text-center"
                     >
-                        <motion.div
+                        {/* <motion.div
                             initial={{ scale: 0.9 }}
                             animate={{ scale: 1 }}
                             transition={{ duration: 0.5 }}
@@ -59,7 +59,7 @@ export default function LandingPage() {
                         >
                             <MdAutoAwesome className="w-4 h-4 text-wata-purple" />
                             <span className="text-sm text-wata-purple font-medium">Powered by AI & n8n</span>
-                        </motion.div>
+                        </motion.div> */}
 
                         <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
                             <span className="gradient-text">One AI.</span>

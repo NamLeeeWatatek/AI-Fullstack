@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wataomi-frontend
+    ports:
+      - "${FRONTEND_PORT:-3003}:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8002/api/v1}
+    env_file:
+      - .env
+    # networks:
+    #   - wataomi-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+networks:
+  wataomi-network:
+    external: true

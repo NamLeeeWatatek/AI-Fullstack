@@ -1,67 +1,127 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@wataomi/ui'
+import toast from 'react-hot-toast'
 import {
-    FiFilter,
-    FiDownload,
-    FiRefreshCw,
     FiClock,
     FiCheckCircle,
     FiXCircle,
-    FiPlay
+    FiLoader,
+    FiEye,
+    FiTrash2,
+    FiRefreshCw
 } from 'react-icons/fi'
-import { ExecutionStatusBadge } from '@/components/workflows/execution-status-badge'
+import { fetchAPI } from '@/lib/api'
 
-export default function ExecutionHistoryPage({ params }: { params: { id: string } }) {
-    const [statusFilter, setStatusFilter] = useState<string>('all')
+interface Execution {
+    id: number
+    flow_version_id: number
+    status: string
+    started_at: string
+    completed_at?: string
+    total_nodes: number
+    completed_nodes: number
+    duration_ms?: number
+    success_rate?: number
+    error_message?: string
+}
 
-    // Mock data
-    const executions = [
-        {
-            id: 1,
-            status: 'completed' as const,
-            started_at: '2024-01-20T16:45:00Z',
-            completed_at: '2024-01-20T16:45:02Z',
-            duration: 2100,
-            trigger: 'WhatsApp Message',
-            total_nodes: 7,
-            completed_nodes: 7
-        },
-        {
-            id: 2,
-            status: 'completed' as const,
-            started_at: '2024-01-20T15:30:00Z',
-            completed_at: '2024-01-20T15:30:02Z',
-            duration: 2450,
-            trigger: 'Messenger',
-            total_nodes: 7,
-            completed_nodes: 7
-        },
-        {
-            id: 3,
-            status: 'failed' as const,
-            started_at: '2024-01-20T14:15:00Z',
-            completed_at: '2024-01-20T14:15:01Z',
-            duration: 1200,
-            trigger: 'Instagram DM',
-            total_nodes: 7,
-            completed_nodes: 3
-        },
-        {
-            id: 4,
-            status: 'running' as const,
-            started_at: '2024-01-20T17:00:00Z',
-            completed_at: null,
-            duration: null,
-            trigger: 'Manual Test',
-            total_nodes: 7,
-            completed_nodes: 4
+export default function ExecutionsPage({ params }: { params: { id: string } }) {
+    const router = useRouter()
+    const [executions, setExecutions] = useState<Execution[]>([])
+    const [loading, setLoading] = useState(true)
+    const [flowName, setFlowName] = useState('')
+
+    useEffect(() => {
+        loadExecutions()
+        loadFlow()
+    }, [params.id])
+
+    const loadFlow = async () => {
+        try {
+            const data = await fetchAPI(`/flows/${params.id}`)
+            setFlowName(data.name)
+        } catch (e: any) {
+            toast.error('Failed to load flow')
         }
-    ]
+    }
 
-    const formatDuration = (ms: number | null) => {
+    const loadExecutions = async () => {
+        try {
+            setLoading(true)
+            const data = await fetchAPI(`/executions/?flow_id=${params.id}`)
+            setExecutions(data)
+        } catch (e: any) {
+            toast.error('Failed to load executions')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleDelete = async (executionId: number) => {
+        toast((t) => (
+            <div className="flex flex-col gap-3">
+                <div>
+                    <p className="font-semibold">Delete this execution?</p>
+                    <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" onClick={() => toast.dismiss(t.id)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        size="sm"
+                        className="bg-red-500 hover:bg-red-600"
+                        onClick={async () => {
+                            toast.dismiss(t.id)
+                            const deletePromise = fetchAPI(`/executions/${executionId}`, {
+                                method: 'DELETE'
+                            }).then(() => loadExecutions())
+
+                            toast.promise(deletePromise, {
+                                loading: 'Deleting execution...',
+                                success: 'Execution deleted!',
+                                error: (err) => `Failed: ${err.message}`
+                            })
+                        }}
+                    >
+                        Delete
+                    </Button>
+                </div>
+            </div>
+        ), { duration: Infinity })
+    }
+
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return <FiCheckCircle className="w-5 h-5 text-green-500" />
+            case 'failed':
+                return <FiXCircle className="w-5 h-5 text-red-500" />
+            case 'running':
+                return <FiLoader className="w-5 h-5 text-blue-500 animate-spin" />
+            default:
+                return <FiClock className="w-5 h-5 text-gray-500" />
+        }
+    }
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return 'bg-green-500/10 text-green-500 border-green-500/20'
+            case 'failed':
+                return 'bg-red-500/10 text-red-500 border-red-500/20'
+            case 'running':
+                return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+            default:
+                return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
+        }
+    }
+
+    const formatDuration = (ms?: number) => {
         if (!ms) return '-'
         if (ms < 1000) return `${ms}ms`
         if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
@@ -73,198 +133,177 @@ export default function ExecutionHistoryPage({ params }: { params: { id: string 
             month: 'short',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
+            minute: '2-digit'
         })
-    }
-
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'completed':
-                return <FiCheckCircle className="w-5 h-5 text-status-success" />
-            case 'failed':
-                return <FiXCircle className="w-5 h-5 text-status-error" />
-            case 'running':
-                return <FiPlay className="w-5 h-5 text-status-running animate-pulse" />
-            default:
-                return <FiClock className="w-5 h-5 text-muted-foreground" />
-        }
-    }
-
-    const filteredExecutions = statusFilter === 'all'
-        ? executions
-        : executions.filter(e => e.status === statusFilter)
-
-    const stats = {
-        total: executions.length,
-        completed: executions.filter(e => e.status === 'completed').length,
-        failed: executions.filter(e => e.status === 'failed').length,
-        running: executions.filter(e => e.status === 'running').length
     }
 
     return (
         <div className="p-8">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <Link
-                        href={`/flows/${params.id}`}
-                        className="text-sm text-primary hover:underline mb-2 inline-block"
-                    >
-                        ← Back to Workflow
-                    </Link>
-                    <h1 className="text-3xl font-bold mb-2">Execution History</h1>
-                    <p className="text-muted-foreground">
-                        View and analyze all workflow executions
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Button variant="outline">
-                        <FiRefreshCw className="w-4 h-4 mr-2" />
-                        Refresh
-                    </Button>
-                    <Button variant="outline">
-                        <FiDownload className="w-4 h-4 mr-2" />
-                        Export
-                    </Button>
+            <div className="mb-8">
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 className="text-3xl font-bold mb-2">Executions</h1>
+                        <p className="text-muted-foreground">
+                            {flowName || 'Loading...'} • {executions.length} total runs
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={loadExecutions}>
+                            <FiRefreshCw className="w-4 h-4 mr-2" />
+                            Refresh
+                        </Button>
+                        <Link href={`/flows/${params.id}`}>
+                            <Button variant="outline">Back to Flow</Button>
+                        </Link>
+                    </div>
                 </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <div className="glass rounded-xl p-6">
-                    <h3 className="text-2xl font-bold mb-1">{stats.total}</h3>
-                    <p className="text-sm text-muted-foreground">Total Executions</p>
-                </div>
-                <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-1">
-                        <FiCheckCircle className="w-5 h-5 text-status-success" />
-                        <h3 className="text-2xl font-bold">{stats.completed}</h3>
+                    <div className="flex items-center justify-between mb-2">
+                        <FiCheckCircle className="w-8 h-8 text-green-500" />
                     </div>
+                    <h3 className="text-2xl font-bold mb-1">
+                        {executions.filter(e => e.status === 'completed').length}
+                    </h3>
                     <p className="text-sm text-muted-foreground">Completed</p>
                 </div>
+
                 <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-1">
-                        <FiXCircle className="w-5 h-5 text-status-error" />
-                        <h3 className="text-2xl font-bold">{stats.failed}</h3>
+                    <div className="flex items-center justify-between mb-2">
+                        <FiXCircle className="w-8 h-8 text-red-500" />
                     </div>
+                    <h3 className="text-2xl font-bold mb-1">
+                        {executions.filter(e => e.status === 'failed').length}
+                    </h3>
                     <p className="text-sm text-muted-foreground">Failed</p>
                 </div>
+
                 <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-1">
-                        <FiPlay className="w-5 h-5 text-status-running" />
-                        <h3 className="text-2xl font-bold">{stats.running}</h3>
+                    <div className="flex items-center justify-between mb-2">
+                        <FiLoader className="w-8 h-8 text-blue-500" />
                     </div>
+                    <h3 className="text-2xl font-bold mb-1">
+                        {executions.filter(e => e.status === 'running').length}
+                    </h3>
                     <p className="text-sm text-muted-foreground">Running</p>
                 </div>
-            </div>
 
-            {/* Filters */}
-            <div className="mb-6">
-                <div className="flex items-center gap-2">
-                    <FiFilter className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Filter by status:</span>
-                    <div className="flex items-center gap-2">
-                        {['all', 'completed', 'failed', 'running'].map((status) => (
-                            <button
-                                key={status}
-                                onClick={() => setStatusFilter(status)}
-                                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all capitalize ${statusFilter === status
-                                    ? 'bg-primary text-white'
-                                    : 'bg-muted text-muted-foreground hover:bg-accent'
-                                    }`}
-                            >
-                                {status}
-                            </button>
-                        ))}
+                <div className="glass rounded-xl p-6">
+                    <div className="flex items-center justify-between mb-2">
+                        <FiClock className="w-8 h-8 text-wata-purple" />
                     </div>
+                    <h3 className="text-2xl font-bold mb-1">
+                        {executions.length > 0
+                            ? formatDuration(
+                                executions.reduce((sum, e) => sum + (e.duration_ms || 0), 0) /
+                                executions.filter(e => e.duration_ms).length
+                            )
+                            : '-'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">Avg Duration</p>
                 </div>
             </div>
 
             {/* Executions List */}
-            <div className="space-y-4">
-                {filteredExecutions.map((execution) => (
-                    <Link
-                        key={execution.id}
-                        href={`/flows/${params.id}/executions/${execution.id}`}
-                        className="block glass rounded-xl p-6 hover:border-primary/40 transition-all duration-200"
-                    >
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-4 flex-1">
-                                {/* Status Icon */}
-                                <div className="mt-1">
-                                    {getStatusIcon(execution.status)}
-                                </div>
-
-                                {/* Content */}
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-lg font-semibold">
-                                            Execution #{execution.id}
-                                        </h3>
-                                        <ExecutionStatusBadge status={execution.status} />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                        <div>
-                                            <p className="text-muted-foreground mb-1">Trigger</p>
-                                            <p className="font-medium">{execution.trigger}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-muted-foreground mb-1">Duration</p>
-                                            <p className="font-medium">{formatDuration(execution.duration)}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-muted-foreground mb-1">Progress</p>
-                                            <p className="font-medium">
-                                                {execution.completed_nodes}/{execution.total_nodes} nodes
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-muted-foreground mb-1">Started</p>
-                                            <p className="font-medium">{formatDate(execution.started_at)}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Progress Bar */}
-                                    <div className="mt-4">
-                                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                                            <div
-                                                className={`h-full transition-all duration-300 ${execution.status === 'completed'
-                                                    ? 'bg-status-success'
-                                                    : execution.status === 'failed'
-                                                        ? 'bg-status-error'
-                                                        : 'bg-status-running'
-                                                    }`}
-                                                style={{
-                                                    width: `${(execution.completed_nodes / execution.total_nodes) * 100}%`
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Link>
-                ))}
-            </div>
-
-            {/* Empty State */}
-            {filteredExecutions.length === 0 && (
-                <div className="text-center py-16 glass rounded-xl">
-                    <FiClock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">No executions found</h3>
-                    <p className="text-muted-foreground mb-6">
-                        {statusFilter === 'all'
-                            ? 'This workflow has not been executed yet'
-                            : `No ${statusFilter} executions found`}
+            {loading ? (
+                <div className="flex justify-center items-center py-20">
+                    <FiLoader className="w-8 h-8 animate-spin text-primary" />
+                </div>
+            ) : executions.length === 0 ? (
+                <div className="text-center py-20 glass rounded-xl">
+                    <h3 className="text-lg font-semibold mb-2">No executions yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                        Run this workflow to see execution history
                     </p>
                     <Link href={`/flows/${params.id}/edit`}>
-                        <Button>
-                            <FiPlay className="w-4 h-4 mr-2" />
-                            Test Workflow
-                        </Button>
+                        <Button>Open Editor</Button>
                     </Link>
+                </div>
+            ) : (
+                <div className="glass rounded-xl overflow-hidden">
+                    <table className="w-full">
+                        <thead className="bg-muted/50">
+                            <tr>
+                                <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
+                                <th className="text-left p-4 font-medium text-muted-foreground">Started</th>
+                                <th className="text-left p-4 font-medium text-muted-foreground">Duration</th>
+                                <th className="text-left p-4 font-medium text-muted-foreground">Progress</th>
+                                <th className="text-left p-4 font-medium text-muted-foreground">Success Rate</th>
+                                <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {executions.map((execution) => (
+                                <tr
+                                    key={execution.id}
+                                    className="border-t border-border/40 hover:bg-muted/20"
+                                >
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2">
+                                            {getStatusIcon(execution.status)}
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                                                    execution.status
+                                                )}`}
+                                            >
+                                                {execution.status}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-sm">
+                                        {formatDate(execution.started_at)}
+                                    </td>
+                                    <td className="p-4 text-sm font-medium">
+                                        {formatDuration(execution.duration_ms)}
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
+                                                <div
+                                                    className="h-full bg-primary transition-all"
+                                                    style={{
+                                                        width: `${(execution.completed_nodes /
+                                                                execution.total_nodes) *
+                                                            100
+                                                            }%`
+                                                    }}
+                                                />
+                                            </div>
+                                            <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                                {execution.completed_nodes}/{execution.total_nodes}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td className="p-4">
+                                        <span className="text-sm font-medium">
+                                            {execution.success_rate?.toFixed(0) || 0}%
+                                        </span>
+                                    </td>
+                                    <td className="p-4 text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Link href={`/flows/${params.id}/executions/${execution.id}`}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <FiEye className="w-4 h-4" />
+                                                </Button>
+                                            </Link>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-red-500 hover:bg-red-500/10"
+                                                onClick={() => handleDelete(execution.id)}
+                                            >
+                                                <FiTrash2 className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             )}
         </div>

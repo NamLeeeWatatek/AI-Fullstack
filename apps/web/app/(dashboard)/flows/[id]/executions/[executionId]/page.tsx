@@ -1,148 +1,116 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@wataomi/ui'
+import toast from 'react-hot-toast'
 import {
-    FiRefreshCw,
-    FiDownload,
+    FiArrowLeft,
     FiClock,
-    FiCheckCircle
+    FiCheckCircle,
+    FiXCircle,
+    FiLoader,
+    FiAlertCircle,
+    FiRefreshCw,
+    FiDownload
 } from 'react-icons/fi'
-import { ExecutionStatusBadge } from '@/components/workflows/execution-status-badge'
-import { ExecutionTimeline } from '@/components/workflows/execution-timeline'
-import { NodeExecutionCard } from '@/components/workflows/node-execution-card'
+import { fetchAPI } from '@/lib/api'
+import { getNodeType } from '@/lib/nodeTypes'
+
+interface NodeExecution {
+    id: number
+    node_id: string
+    node_type: string
+    node_label: string
+    status: string
+    started_at?: string
+    completed_at?: string
+    execution_time_ms?: number
+    input_data: any
+    output_data?: any
+    error_message?: string
+}
+
+interface Execution {
+    id: number
+    flow_version_id: number
+    status: string
+    started_at: string
+    completed_at?: string
+    total_nodes: number
+    completed_nodes: number
+    duration_ms?: number
+    success_rate?: number
+    input_data: any
+    output_data?: any
+    error_message?: string
+    node_executions: NodeExecution[]
+}
 
 export default function ExecutionDetailPage({
     params
 }: {
     params: { id: string; executionId: string }
 }) {
-    const [activeTab, setActiveTab] = useState<'timeline' | 'nodes' | 'logs'>('timeline')
+    const [execution, setExecution] = useState<Execution | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [selectedNode, setSelectedNode] = useState<NodeExecution | null>(null)
 
-    // Mock data
-    const execution = {
-        id: parseInt(params.executionId),
-        flow_version_id: parseInt(params.id),
-        status: 'completed' as const,
-        started_at: '2024-01-20T16:45:00Z',
-        completed_at: '2024-01-20T16:45:02Z',
-        duration: 2100,
-        trigger: 'WhatsApp Message',
-        total_nodes: 7,
-        completed_nodes: 7,
-        input_data: {
-            message: 'Hello, I need help',
-            from: '+1234567890',
-            channel: 'whatsapp'
-        },
-        output_data: {
-            response: 'Support ticket created',
-            ticket_id: 'TKT-12345'
+    useEffect(() => {
+        loadExecution()
+    }, [params.executionId])
+
+    const loadExecution = async () => {
+        try {
+            setLoading(true)
+            const data = await fetchAPI(`/executions/${params.executionId}`)
+            setExecution(data)
+        } catch (e: any) {
+            toast.error('Failed to load execution details')
+        } finally {
+            setLoading(false)
         }
     }
 
-    const nodeExecutions = [
-        {
-            id: 1,
-            node_id: '1',
-            node_label: 'Start',
-            node_type: 'start',
-            status: 'completed' as const,
-            started_at: '2024-01-20T16:45:00Z',
-            completed_at: '2024-01-20T16:45:00Z',
-            execution_time_ms: 10,
-            input_data: execution.input_data,
-            output_data: execution.input_data,
-            error_message: null
-        },
-        {
-            id: 2,
-            node_id: '2',
-            node_label: 'Receive Message',
-            node_type: 'message',
-            status: 'completed' as const,
-            started_at: '2024-01-20T16:45:00Z',
-            completed_at: '2024-01-20T16:45:00Z',
-            execution_time_ms: 150,
-            input_data: execution.input_data,
-            output_data: { message_received: true },
-            error_message: null
-        },
-        {
-            id: 3,
-            node_id: '3',
-            node_label: 'AI Analysis',
-            node_type: 'ai-reply',
-            status: 'completed' as const,
-            started_at: '2024-01-20T16:45:00Z',
-            completed_at: '2024-01-20T16:45:01Z',
-            execution_time_ms: 850,
-            input_data: { message: 'Hello, I need help' },
-            output_data: {
-                intent: 'support_request',
-                confidence: 0.95,
-                suggested_response: 'I can help you with that'
-            },
-            error_message: null
-        },
-        {
-            id: 4,
-            node_id: '4',
-            node_label: 'Create Ticket',
-            node_type: 'n8n-trigger',
-            status: 'completed' as const,
-            started_at: '2024-01-20T16:45:01Z',
-            completed_at: '2024-01-20T16:45:02Z',
-            execution_time_ms: 920,
-            input_data: { intent: 'support_request' },
-            output_data: { ticket_id: 'TKT-12345' },
-            error_message: null
-        },
-        {
-            id: 5,
-            node_id: '5',
-            node_label: 'Send Response',
-            node_type: 'message',
-            status: 'completed' as const,
-            started_at: '2024-01-20T16:45:02Z',
-            completed_at: '2024-01-20T16:45:02Z',
-            execution_time_ms: 120,
-            input_data: { ticket_id: 'TKT-12345' },
-            output_data: { message_sent: true },
-            error_message: null
-        },
-        {
-            id: 6,
-            node_id: '6',
-            node_label: 'End',
-            node_type: 'end',
-            status: 'completed' as const,
-            started_at: '2024-01-20T16:45:02Z',
-            completed_at: '2024-01-20T16:45:02Z',
-            execution_time_ms: 5,
-            input_data: execution.output_data,
-            output_data: execution.output_data,
-            error_message: null
+    const getStatusIcon = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return <FiCheckCircle className="w-5 h-5 text-green-500" />
+            case 'failed':
+                return <FiXCircle className="w-5 h-5 text-red-500" />
+            case 'running':
+                return <FiLoader className="w-5 h-5 text-blue-500 animate-spin" />
+            case 'skipped':
+                return <FiAlertCircle className="w-5 h-5 text-yellow-500" />
+            default:
+                return <FiClock className="w-5 h-5 text-gray-500" />
         }
-    ]
+    }
 
-    const logs = [
-        { timestamp: '2024-01-20T16:45:00.010Z', level: 'info', message: 'Workflow execution started' },
-        { timestamp: '2024-01-20T16:45:00.150Z', level: 'info', message: 'Message received from WhatsApp' },
-        { timestamp: '2024-01-20T16:45:01.000Z', level: 'info', message: 'AI analysis completed with 95% confidence' },
-        { timestamp: '2024-01-20T16:45:01.920Z', level: 'info', message: 'Support ticket TKT-12345 created' },
-        { timestamp: '2024-01-20T16:45:02.040Z', level: 'info', message: 'Response sent to customer' },
-        { timestamp: '2024-01-20T16:45:02.100Z', level: 'info', message: 'Workflow execution completed successfully' }
-    ]
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'completed':
+                return 'bg-green-500/10 text-green-500 border-green-500/20'
+            case 'failed':
+                return 'bg-red-500/10 text-red-500 border-red-500/20'
+            case 'running':
+                return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+            case 'skipped':
+                return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+            default:
+                return 'bg-gray-500/10 text-gray-500 border-gray-500/20'
+        }
+    }
 
-    const formatDuration = (ms: number) => {
+    const formatDuration = (ms?: number) => {
+        if (!ms) return '-'
         if (ms < 1000) return `${ms}ms`
         if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`
         return `${(ms / 60000).toFixed(1)}m`
     }
 
-    const formatDate = (dateString: string) => {
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return '-'
         return new Date(dateString).toLocaleString('en-US', {
             month: 'short',
             day: 'numeric',
@@ -152,39 +120,66 @@ export default function ExecutionDetailPage({
         })
     }
 
-    const formatLogTime = (dateString: string) => {
-        return new Date(dateString).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            fractionalSecondDigits: 3
-        })
+    const exportExecution = () => {
+        if (!execution) return
+
+        const dataStr = JSON.stringify(execution, null, 2)
+        const dataBlob = new Blob([dataStr], { type: 'application/json' })
+        const url = URL.createObjectURL(dataBlob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `execution-${execution.id}.json`
+        link.click()
+        URL.revokeObjectURL(url)
+
+        toast.success('Execution data exported')
+    }
+
+    if (loading) {
+        return (
+            <div className="p-8 flex items-center justify-center">
+                <FiLoader className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        )
+    }
+
+    if (!execution) {
+        return (
+            <div className="p-8">
+                <div className="glass rounded-xl p-6 text-center">
+                    <p className="text-red-500 mb-4">Execution not found</p>
+                    <Link href={`/flows/${params.id}/executions`}>
+                        <Button>Back to Executions</Button>
+                    </Link>
+                </div>
+            </div>
+        )
     }
 
     return (
         <div className="p-8">
             {/* Header */}
             <div className="mb-8">
-                <Link
-                    href={`/flows/${params.id}/executions`}
-                    className="text-sm text-primary hover:underline mb-2 inline-block"
-                >
-                    ← Back to Executions
-                </Link>
-                <div className="flex items-start justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold mb-2">Execution #{execution.id}</h1>
-                        <p className="text-muted-foreground">
-                            Triggered by {execution.trigger}
-                        </p>
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                        <Link href={`/flows/${params.id}/executions`}>
+                            <Button variant="ghost" size="icon">
+                                <FiArrowLeft className="w-5 h-5" />
+                            </Button>
+                        </Link>
+                        <div>
+                            <h1 className="text-3xl font-bold mb-2">Execution #{execution.id}</h1>
+                            <p className="text-muted-foreground">
+                                Started {formatDate(execution.started_at)}
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <ExecutionStatusBadge status={execution.status} />
-                        <Button variant="outline" size="sm">
+                    <div className="flex gap-2">
+                        <Button variant="outline" onClick={loadExecution}>
                             <FiRefreshCw className="w-4 h-4 mr-2" />
-                            Retry
+                            Refresh
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" onClick={exportExecution}>
                             <FiDownload className="w-4 h-4 mr-2" />
                             Export
                         </Button>
@@ -193,138 +188,197 @@ export default function ExecutionDetailPage({
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
                 <div className="glass rounded-xl p-6">
                     <div className="flex items-center gap-2 mb-2">
-                        <FiClock className="w-5 h-5 text-wata-purple" />
-                        <h3 className="text-sm font-medium text-muted-foreground">Duration</h3>
-                    </div>
-                    <p className="text-2xl font-bold">{formatDuration(execution.duration)}</p>
-                </div>
-
-                <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                        <FiCheckCircle className="w-5 h-5 text-wata-blue" />
-                        <h3 className="text-sm font-medium text-muted-foreground">Progress</h3>
-                    </div>
-                    <p className="text-2xl font-bold">
-                        {execution.completed_nodes}/{execution.total_nodes}
-                    </p>
-                </div>
-
-                <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                        <FiClock className="w-5 h-5 text-wata-cyan" />
-                        <h3 className="text-sm font-medium text-muted-foreground">Started</h3>
-                    </div>
-                    <p className="text-sm font-semibold">{formatDate(execution.started_at)}</p>
-                </div>
-
-                <div className="glass rounded-xl p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                        <FiCheckCircle className="w-5 h-5 text-wata-pink" />
-                        <h3 className="text-sm font-medium text-muted-foreground">Completed</h3>
-                    </div>
-                    <p className="text-sm font-semibold">
-                        {execution.completed_at ? formatDate(execution.completed_at) : '-'}
-                    </p>
-                </div>
-            </div>
-
-            {/* Input/Output Data */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                <div className="glass rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4">Input Data</h3>
-                    <pre className="text-xs bg-card p-4 rounded-lg border border-border overflow-x-auto">
-                        {JSON.stringify(execution.input_data, null, 2)}
-                    </pre>
-                </div>
-                <div className="glass rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4">Output Data</h3>
-                    <pre className="text-xs bg-card p-4 rounded-lg border border-border overflow-x-auto">
-                        {JSON.stringify(execution.output_data, null, 2)}
-                    </pre>
-                </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="mb-6">
-                <div className="flex items-center gap-1 glass rounded-lg p-1 w-fit">
-                    {(['timeline', 'nodes', 'logs'] as const).map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors capitalize ${activeTab === tab
-                                ? 'bg-primary text-white'
-                                : 'text-muted-foreground hover:bg-accent'
-                                }`}
+                        {getStatusIcon(execution.status)}
+                        <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                                execution.status
+                            )}`}
                         >
-                            {tab}
-                        </button>
-                    ))}
+                            {execution.status}
+                        </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                </div>
+
+                <div className="glass rounded-xl p-6">
+                    <h3 className="text-2xl font-bold mb-1">{formatDuration(execution.duration_ms)}</h3>
+                    <p className="text-sm text-muted-foreground">Duration</p>
+                </div>
+
+                <div className="glass rounded-xl p-6">
+                    <h3 className="text-2xl font-bold mb-1">
+                        {execution.completed_nodes}/{execution.total_nodes}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">Nodes Executed</p>
+                </div>
+
+                <div className="glass rounded-xl p-6">
+                    <h3 className="text-2xl font-bold mb-1">{execution.success_rate?.toFixed(0) || 0}%</h3>
+                    <p className="text-sm text-muted-foreground">Success Rate</p>
+                </div>
+
+                <div className="glass rounded-xl p-6">
+                    <h3 className="text-2xl font-bold mb-1">
+                        {execution.node_executions.filter((n) => n.status === 'failed').length}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">Failed Nodes</p>
                 </div>
             </div>
 
-            {/* Tab Content */}
-            {activeTab === 'timeline' && (
-                <div className="glass rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-6">Execution Timeline</h3>
-                    <ExecutionTimeline events={nodeExecutions.map(e => ({
-                        id: e.id.toString(),
-                        status: e.status,
-                        timestamp: e.started_at,
-                        label: e.node_label,
-                        description: e.error_message || undefined
-                    }))} />
-                </div>
-            )}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Node Executions Timeline */}
+                <div className="lg:col-span-2">
+                    <div className="glass rounded-xl p-6">
+                        <h3 className="text-lg font-semibold mb-4">Execution Timeline</h3>
+                        <div className="space-y-3">
+                            {execution.node_executions.map((nodeExec, index) => {
+                                const nodeType = getNodeType(nodeExec.node_type)
+                                const Icon = nodeType?.icon
 
-            {activeTab === 'nodes' && (
-                <div className="space-y-4">
-                    {nodeExecutions.map((node) => (
-                        <NodeExecutionCard key={node.id} execution={{
-                            id: node.id.toString(),
-                            nodeLabel: node.node_label,
-                            nodeType: node.node_type,
-                            status: node.status,
-                            duration: node.execution_time_ms,
-                            startedAt: node.started_at,
-                            input: node.input_data,
-                            output: node.output_data,
-                            error: node.error_message || undefined
-                        }} />
-                    ))}
-                </div>
-            )}
+                                return (
+                                    <div
+                                        key={nodeExec.id}
+                                        onClick={() => setSelectedNode(nodeExec)}
+                                        className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedNode?.id === nodeExec.id
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-border/40 hover:bg-muted/20'
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3 flex-1">
+                                                {/* Step Number */}
+                                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
+                                                    {index + 1}
+                                                </div>
 
-            {activeTab === 'logs' && (
-                <div className="glass rounded-xl p-6">
-                    <h3 className="text-lg font-semibold mb-4">Execution Logs</h3>
-                    <div className="space-y-2">
-                        {logs.map((log, index) => (
-                            <div
-                                key={index}
-                                className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 font-mono text-xs"
-                            >
-                                <span className="text-muted-foreground whitespace-nowrap">
-                                    {formatLogTime(log.timestamp)}
-                                </span>
-                                <span
-                                    className={`px-2 py-0.5 rounded-md font-semibold uppercase ${log.level === 'error'
-                                        ? 'bg-status-error/20 text-status-error'
-                                        : log.level === 'warn'
-                                            ? 'bg-yellow-500/20 text-yellow-500'
-                                            : 'bg-status-success/20 text-status-success'
-                                        }`}
-                                >
-                                    {log.level}
-                                </span>
-                                <span className="flex-1">{log.message}</span>
-                            </div>
-                        ))}
+                                                {/* Node Icon */}
+                                                {Icon && nodeType && (
+                                                    <div
+                                                        className="p-2 rounded-lg"
+                                                        style={{
+                                                            backgroundColor: `${nodeType.bgColor}20`,
+                                                            color: nodeType.color
+                                                        }}
+                                                    >
+                                                        <Icon className="w-4 h-4" />
+                                                    </div>
+                                                )}
+
+                                                {/* Node Info */}
+                                                <div className="flex-1">
+                                                    <div className="font-medium">{nodeExec.node_label}</div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {nodeExec.node_type}
+                                                    </div>
+                                                </div>
+
+                                                {/* Status */}
+                                                <div className="flex items-center gap-2">
+                                                    {getStatusIcon(nodeExec.status)}
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {formatDuration(nodeExec.execution_time_ms)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Error Message */}
+                                        {nodeExec.error_message && (
+                                            <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                                                <p className="text-sm text-red-500">{nodeExec.error_message}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
                     </div>
                 </div>
-            )}
+
+                {/* Node Details Panel */}
+                <div className="lg:col-span-1">
+                    <div className="glass rounded-xl p-6 sticky top-8">
+                        <h3 className="text-lg font-semibold mb-4">
+                            {selectedNode ? 'Node Details' : 'Select a Node'}
+                        </h3>
+
+                        {selectedNode ? (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Label</label>
+                                    <div className="glass rounded-lg px-3 py-2 border border-border/40 text-sm">
+                                        {selectedNode.node_label}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Type</label>
+                                    <div className="glass rounded-lg px-3 py-2 border border-border/40 text-sm">
+                                        {selectedNode.node_type}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Status</label>
+                                    <div className="flex items-center gap-2">
+                                        {getStatusIcon(selectedNode.status)}
+                                        <span
+                                            className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                                                selectedNode.status
+                                            )}`}
+                                        >
+                                            {selectedNode.status}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2">Execution Time</label>
+                                    <div className="glass rounded-lg px-3 py-2 border border-border/40 text-sm">
+                                        {formatDuration(selectedNode.execution_time_ms)}
+                                    </div>
+                                </div>
+
+                                {selectedNode.input_data && Object.keys(selectedNode.input_data).length > 0 && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Input Data</label>
+                                        <pre className="glass rounded-lg px-3 py-2 border border-border/40 text-xs overflow-auto max-h-40">
+                                            {JSON.stringify(selectedNode.input_data, null, 2)}
+                                        </pre>
+                                    </div>
+                                )}
+
+                                {selectedNode.output_data && Object.keys(selectedNode.output_data).length > 0 && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Output Data</label>
+                                        <pre className="glass rounded-lg px-3 py-2 border border-border/40 text-xs overflow-auto max-h-40">
+                                            {JSON.stringify(selectedNode.output_data, null, 2)}
+                                        </pre>
+                                    </div>
+                                )}
+
+                                {selectedNode.error_message && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-red-500">
+                                            Error
+                                        </label>
+                                        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-500">
+                                            {selectedNode.error_message}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-8">
+                                Click on a node in the timeline to view its details
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
         </div>
     )
 }

@@ -1,11 +1,21 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@wataomi/ui'
+import toast from 'react-hot-toast'
 import {
     FiMoreVertical,
     FiPlay,
     FiClock,
-    FiGitBranch
+    FiGitBranch,
+    FiEdit,
+    FiCopy,
+    FiArchive,
+    FiTrash2
 } from 'react-icons/fi'
+import { fetchAPI } from '@/lib/api'
 
 interface WorkflowCardProps {
     workflow: {
@@ -18,9 +28,13 @@ interface WorkflowCardProps {
         executions?: number
         successRate?: number
     }
+    onUpdate?: () => void
 }
 
-export function WorkflowCard({ workflow }: WorkflowCardProps) {
+export function WorkflowCard({ workflow, onUpdate }: WorkflowCardProps) {
+    const router = useRouter()
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'published': return 'text-green-500 bg-green-500/10 border-green-500/20'
@@ -30,10 +44,87 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
         }
     }
 
+    const handleEdit = () => {
+        router.push(`/flows/${workflow.id}/edit`)
+    }
+
+    const handleDuplicate = async () => {
+        const duplicatePromise = fetchAPI(`/flows/${workflow.id}/duplicate`, { method: 'POST' })
+            .then((dup) => {
+                setIsDropdownOpen(false)
+                router.push(`/flows/${dup.id}/edit`)
+                return dup
+            })
+
+        toast.promise(duplicatePromise, {
+            loading: 'Duplicating workflow...',
+            success: 'Workflow duplicated successfully!',
+            error: (err) => `Failed to duplicate: ${err.message}`,
+        })
+    }
+
+    const handleArchive = async () => {
+        const archivePromise = fetchAPI(`/flows/${workflow.id}/archive`, { method: 'POST' })
+            .then(() => {
+                setIsDropdownOpen(false)
+                onUpdate?.()
+            })
+
+        toast.promise(archivePromise, {
+            loading: 'Archiving workflow...',
+            success: 'Workflow archived successfully!',
+            error: (err) => `Failed to archive: ${err.message}`,
+        })
+    }
+
+    const handleDelete = async () => {
+        // Custom confirmation toast
+        toast((t) => (
+            <div className="flex flex-col gap-3">
+                <div>
+                    <p className="font-semibold">Delete "{workflow.name}"?</p>
+                    <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => toast.dismiss(t.id)}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        size="sm"
+                        className="bg-red-500 hover:bg-red-600"
+                        onClick={async () => {
+                            toast.dismiss(t.id)
+                            const deletePromise = fetchAPI(`/flows/${workflow.id}`, { method: 'DELETE' })
+                                .then(() => {
+                                    setIsDropdownOpen(false)
+                                    onUpdate?.()
+                                })
+
+                            toast.promise(deletePromise, {
+                                loading: 'Deleting workflow...',
+                                success: 'Workflow deleted successfully!',
+                                error: (err) => `Failed to delete: ${err.message}`,
+                            })
+                        }}
+                    >
+                        Delete
+                    </Button>
+                </div>
+            </div>
+        ), {
+            duration: Infinity,
+        })
+        setIsDropdownOpen(false)
+    }
+
     return (
         <div className="glass p-5 rounded-xl hover:border-primary/50 transition-all group relative">
             <div className="flex justify-between items-start mb-4">
-                <div className="flex items-start gap-3">
+                <Link href={`/flows/${workflow.id}`} className="flex items-start gap-3 flex-1">
                     <div className={`p-2 rounded-lg ${getStatusColor(workflow.status)}`}>
                         <FiGitBranch className="w-5 h-5" />
                     </div>
@@ -45,14 +136,69 @@ export function WorkflowCard({ workflow }: WorkflowCardProps) {
                             {workflow.description || 'No description'}
                         </p>
                     </div>
-                </div>
-                <div className="flex items-center">
+                </Link>
+                <div className="flex items-center gap-2">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(workflow.status)}`}>
                         {workflow.status}
                     </span>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 ml-2">
-                        <FiMoreVertical className="w-4 h-4" />
-                    </Button>
+
+                    {/* Dropdown Menu */}
+                    <div className="relative">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setIsDropdownOpen(!isDropdownOpen)
+                            }}
+                        >
+                            <FiMoreVertical className="w-4 h-4" />
+                        </Button>
+
+                        {isDropdownOpen && (
+                            <>
+                                {/* Backdrop */}
+                                <div
+                                    className="fixed inset-0 z-10"
+                                    onClick={() => setIsDropdownOpen(false)}
+                                />
+
+                                {/* Dropdown */}
+                                <div className="absolute right-0 mt-2 w-48 glass rounded-lg shadow-lg border border-border/40 z-20 overflow-hidden">
+                                    <button
+                                        onClick={handleEdit}
+                                        className="w-full px-4 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                                    >
+                                        <FiEdit className="w-4 h-4" />
+                                        <span>Edit</span>
+                                    </button>
+                                    <button
+                                        onClick={handleDuplicate}
+                                        className="w-full px-4 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                                    >
+                                        <FiCopy className="w-4 h-4" />
+                                        <span>Duplicate</span>
+                                    </button>
+                                    <button
+                                        onClick={handleArchive}
+                                        className="w-full px-4 py-2 text-left hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                                    >
+                                        <FiArchive className="w-4 h-4" />
+                                        <span>Archive</span>
+                                    </button>
+                                    <div className="border-t border-border/40" />
+                                    <button
+                                        onClick={handleDelete}
+                                        className="w-full px-4 py-2 text-left hover:bg-red-500/10 text-red-500 flex items-center gap-2 transition-colors"
+                                    >
+                                        <FiTrash2 className="w-4 h-4" />
+                                        <span>Delete</span>
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 

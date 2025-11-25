@@ -54,11 +54,50 @@ export default function NewWorkflowPage() {
         }
     ]
 
-    const handleCreate = () => {
-        // In real app, this would create the workflow in backend
-        // For now, redirect to editor with mock ID
-        const mockId = Math.floor(Math.random() * 1000) + 10
-        router.push(`/flows/${mockId}/edit`)
+    const [isCreating, setIsCreating] = useState(false)
+
+    const handleCreate = async () => {
+        if (!formData.name) return
+
+        setIsCreating(true)
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002/api/v1'
+            const token = localStorage.getItem('wataomi_token')
+
+            const response = await fetch(`${apiUrl}/flows/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    name: formData.name,
+                    description: formData.description || '',
+                    status: 'draft',
+                    data: {
+                        template: formData.template,
+                        tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
+                        nodes: [],
+                        edges: []
+                    }
+                })
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to create flow')
+            }
+
+            const newFlow = await response.json()
+            console.log('Created flow:', newFlow)
+
+            // Redirect to editor with REAL ID from backend
+            router.push(`/flows/${newFlow.id}/edit`)
+        } catch (error) {
+            console.error('Error creating flow:', error)
+            alert('Failed to create workflow. Please try again.')
+        } finally {
+            setIsCreating(false)
+        }
     }
 
     return (
@@ -206,11 +245,11 @@ export default function NewWorkflowPage() {
                         <div className="space-y-3">
                             <Button
                                 onClick={handleCreate}
-                                disabled={!formData.name}
+                                disabled={!formData.name || isCreating}
                                 className="w-full"
                             >
                                 <FiSave className="w-4 h-4 mr-2" />
-                                Create & Edit Workflow
+                                {isCreating ? 'Creating...' : 'Create & Edit Workflow'}
                             </Button>
 
                             <Link href="/flows" className="block">

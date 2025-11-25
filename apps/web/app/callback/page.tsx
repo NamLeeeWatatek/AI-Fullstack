@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, Suspense } from 'react'
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchAPI } from '@/lib/api'
 
@@ -34,11 +34,17 @@ function CallbackContent() {
         }
     }, [router])
 
+    const processedCode = useRef<string | null>(null)
+
     useEffect(() => {
         const code = searchParams.get('code')
         const state = searchParams.get('state')
 
         if (code) {
+            // Prevent double execution for the same code
+            if (processedCode.current === code) return
+            processedCode.current = code
+
             handleLogin(code, state)
         } else {
             setStatus('No code received. Redirecting to login...')

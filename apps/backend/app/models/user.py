@@ -7,6 +7,7 @@ class User(SQLModel, table=True):
     
     id: Optional[int] = Field(default=None, primary_key=True)
     email: str = Field(unique=True, index=True)
+    external_id: Optional[str] = Field(default=None, unique=True, index=True)  # Casdoor UUID
     hashed_password: str
     name: str
     avatar: Optional[str] = None
@@ -30,7 +31,6 @@ class Workspace(SQLModel, table=True):
     # Relationships
     members: List["WorkspaceMember"] = Relationship(back_populates="workspace")
     bots: List["Bot"] = Relationship(back_populates="workspace")
-    channels: List["Channel"] = Relationship(back_populates="workspace")
 
 class WorkspaceMember(SQLModel, table=True):
     __tablename__ = "workspace_members"

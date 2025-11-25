@@ -1,237 +1,316 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@wataomi/ui'
 import {
     FiSend,
-    FiPaperclip,
-    FiSmile,
     FiSearch,
     FiFilter,
     FiMoreVertical,
-    FiPhone,
-    FiVideo
+    FiRefreshCw
 } from 'react-icons/fi'
+import { fetchAPI } from '@/lib/api'
+import toast from 'react-hot-toast'
+
+interface Message {
+    id: number
+    conversation_id: number
+    sender_type: string
+    sender_id: string
+    content: string
+    created_at: string
+}
+
+interface Conversation {
+    id: number
+    customer_name: string
+    customer_id: string
+    channel_name: string
+    channel_icon?: string
+    last_message_content: string
+    last_message_at: string
+    unread_count: number
+    status: string
+}
 
 export default function InboxPage() {
-    const [selectedConversation, setSelectedConversation] = useState(conversations[0])
+    const [conversations, setConversations] = useState<Conversation[]>([])
+    const [selectedConv, setSelectedConv] = useState<Conversation | null>(null)
+    const [messages, setMessages] = useState<Message[]>([])
     const [message, setMessage] = useState('')
+    const [loading, setLoading] = useState(true)
+    const [sending, setSending] = useState(false)
+    const [searchQuery, setSearchQuery] = useState('')
+    const [statusFilter, setStatusFilter] = useState('active')
+
+    useEffect(() => {
+        loadConversations()
+    }, [searchQuery, statusFilter])
+
+    useEffect(() => {
+        if (selectedConv) {
+            loadMessages(selectedConv.id)
+        }
+    }, [selectedConv])
+
+    const loadConversations = async () => {
+        try {
+            setLoading(true)
+            const params = new URLSearchParams({
+                status: statusFilter,
+                limit: '50'
+            })
+            if (searchQuery) params.append('search', searchQuery)
+
+            const data = await fetchAPI(`/conversations/?${params}`)
+            setConversations(data.conversations || [])
+
+            // Auto-select first conversation
+            if (data.conversations?.length > 0 && !selectedConv) {
+                setSelectedConv(data.conversations[0])
+            }
+        } catch (e: any) {
+            toast.error('Failed to load conversations')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const loadMessages = async (convId: number) => {
+        try {
+            const data = await fetchAPI(`/conversations/${convId}/messages`)
+            setMessages(data.messages || [])
+
+            // Mark as read
+            await fetchAPI(`/conversations/${convId}/read`, { method: 'POST' })
+
+            // Update unread count locally
+            setConversations(prev => prev.map(c =>
+                c.id === convId ? { ...c, unread_count: 0 } : c
+            ))
+        } catch (e: any) {
+            console.error('Failed to load messages', e)
+        }
+    }
+
+    const sendMessage = async () => {
+        if (!message.trim() || !selectedConv) return
+
+        try {
+            setSending(true)
+            await fetchAPI(`/conversations/${selectedConv.id}/messages`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    content: message,
+                    sender_type: 'agent'
+                })
+            })
+
+            setMessage('')
+            await loadMessages(selectedConv.id)
+            toast.success('Message sent')
+        } catch (e: any) {
+            toast.error('Failed to send message')
+        } finally {
+            setSending(false)
+        }
+    }
+
+    const formatTime = (dateStr: string) => {
+        const date = new Date(dateStr)
+        const now = new Date()
+        const diff = now.getTime() - date.getTime()
+        const minutes = Math.floor(diff / 60000)
+        const hours = Math.floor(diff / 3600000)
+        const days = Math.floor(diff / 86400000)
+
+        if (minutes < 1) return 'Just now'
+        if (minutes < 60) return `${minutes}m ago`
+        if (hours < 24) return `${hours}h ago`
+        if (days < 7) return `${days}d ago`
+        return date.toLocaleDateString()
+    }
+
+    const formatMessageTime = (dateStr: string) => {
+        return new Date(dateStr).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+    }
 
     return (
-        <div className="h-full flex">
-            {/* Channels List */}
-            <div className="w-64 border-r border-border/40 flex flex-col">
-                <div className="p-4 border-b border-border/40">
+        <div className="h-[calc(100vh-4rem)] flex">
+            {/* Conversations List */}
+            <div className="w-80 border-r border-border/40 flex flex-col">
+                <div className="p-4 border-b border-border/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h2 className="font-semibold">Inbox</h2>
+                        <Button variant="ghost" size="sm" onClick={loadConversations}>
+                            <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                        </Button>
+                    </div>
+
                     <div className="relative">
                         <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"
-                            placeholder="Search channels..."
-                            className="w-full pl-9 pr-3 py-2 rounded-lg bg-muted text-sm"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search conversations..."
+                            className="w-full pl-9 pr-3 py-2 rounded-lg bg-muted text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                         />
+                    </div>
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setStatusFilter('active')}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium transition ${statusFilter === 'active' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                                }`}
+                        >
+                            Active
+                        </button>
+                        <button
+                            onClick={() => setStatusFilter('closed')}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium transition ${statusFilter === 'closed' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                                }`}
+                        >
+                            Closed
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto p-2">
-                    {channels.map((channel) => (
-                        <button
-                            key={channel.id}
-                            className="w-full p-3 rounded-lg hover:bg-accent transition-colors text-left mb-1"
-                        >
-                            <div className="flex items-center space-x-3">
-                                <div className={`w-10 h-10 rounded-lg ${channel.color} flex items-center justify-center`}>
-                                    <span className="text-white font-semibold text-sm">
-                                        {channel.name.charAt(0)}
-                                    </span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-sm truncate">{channel.name}</p>
-                                    <p className="text-xs text-muted-foreground">{channel.count} active</p>
-                                </div>
-                            </div>
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Conversations List */}
-            <div className="w-80 border-r border-border/40 flex flex-col">
-                <div className="p-4 border-b border-border/40 flex items-center justify-between">
-                    <h2 className="font-semibold">Conversations</h2>
-                    <Button variant="ghost" size="sm">
-                        <FiFilter className="w-4 h-4" />
-                    </Button>
-                </div>
-
                 <div className="flex-1 overflow-auto">
-                    {conversations.map((conv) => (
-                        <button
-                            key={conv.id}
-                            onClick={() => setSelectedConversation(conv)}
-                            className={`w-full p-4 border-b border-border/40 hover:bg-accent transition-colors text-left ${selectedConversation.id === conv.id ? 'bg-accent' : ''
-                                }`}
-                        >
-                            <div className="flex items-start space-x-3">
-                                <div className="w-10 h-10 rounded-full bg-gradient-wata flex items-center justify-center flex-shrink-0">
-                                    <span className="text-white font-semibold text-sm">
-                                        {conv.customer.charAt(0)}
-                                    </span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between mb-1">
-                                        <p className="font-medium text-sm truncate">{conv.customer}</p>
-                                        <span className="text-xs text-muted-foreground">{conv.time}</span>
+                    {loading && conversations.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground">
+                            <FiRefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin" />
+                            <p>Loading conversations...</p>
+                        </div>
+                    ) : conversations.length === 0 ? (
+                        <div className="p-8 text-center text-muted-foreground">
+                            <p>No conversations found</p>
+                        </div>
+                    ) : (
+                        conversations.map((conv) => (
+                            <button
+                                key={conv.id}
+                                onClick={() => setSelectedConv(conv)}
+                                className={`w-full p-4 border-b border-border/40 hover:bg-accent transition-colors text-left ${selectedConv?.id === conv.id ? 'bg-accent' : ''
+                                    }`}
+                            >
+                                <div className="flex items-start space-x-3">
+                                    <div className="w-10 h-10 rounded-full bg-gradient-wata flex items-center justify-center flex-shrink-0">
+                                        <span className="text-white font-semibold text-sm">
+                                            {conv.customer_name?.charAt(0) || '?'}
+                                        </span>
                                     </div>
-                                    <p className="text-sm text-muted-foreground truncate">
-                                        {conv.lastMessage}
-                                    </p>
-                                    {conv.unread > 0 && (
-                                        <div className="mt-1">
-                                            <span className="inline-block px-2 py-0.5 rounded-full bg-wata-purple text-white text-xs font-medium">
-                                                {conv.unread}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <p className="font-medium text-sm truncate">{conv.customer_name}</p>
+                                            <span className="text-xs text-muted-foreground">
+                                                {formatTime(conv.last_message_at)}
                                             </span>
                                         </div>
-                                    )}
+                                        <p className="text-sm text-muted-foreground truncate">
+                                            {conv.last_message_content}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <span className="text-xs text-muted-foreground capitalize">
+                                                {conv.channel_name}
+                                            </span>
+                                            {conv.unread_count > 0 && (
+                                                <span className="inline-block px-2 py-0.5 rounded-full bg-wata-purple text-white text-xs font-medium">
+                                                    {conv.unread_count}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </button>
-                    ))}
+                            </button>
+                        ))
+                    )}
                 </div>
             </div>
 
             {/* Chat Thread */}
-            <div className="flex-1 flex flex-col">
-                {/* Chat Header */}
-                <div className="h-16 border-b border-border/40 flex items-center justify-between px-6">
-                    <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-wata flex items-center justify-center">
-                            <span className="text-white font-semibold">
-                                {selectedConversation.customer.charAt(0)}
-                            </span>
+            {selectedConv ? (
+                <div className="flex-1 flex flex-col">
+                    {/* Chat Header */}
+                    <div className="h-16 border-b border-border/40 flex items-center justify-between px-6">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-wata flex items-center justify-center">
+                                <span className="text-white font-semibold">
+                                    {selectedConv.customer_name?.charAt(0) || '?'}
+                                </span>
+                            </div>
+                            <div>
+                                <p className="font-semibold">{selectedConv.customer_name}</p>
+                                <p className="text-xs text-muted-foreground capitalize">
+                                    {selectedConv.channel_name} • {selectedConv.status}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-semibold">{selectedConversation.customer}</p>
-                            <p className="text-xs text-muted-foreground">
-                                {selectedConversation.channel} • Active now
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm">
-                            <FiPhone className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                            <FiVideo className="w-4 h-4" />
-                        </Button>
                         <Button variant="ghost" size="sm">
                             <FiMoreVertical className="w-4 h-4" />
                         </Button>
                     </div>
-                </div>
 
-                {/* Messages */}
-                <div className="flex-1 overflow-auto p-6 space-y-4">
-                    {selectedConversation.messages.map((msg) => (
-                        <div
-                            key={msg.id}
-                            className={`flex ${msg.sender === 'customer' ? 'justify-start' : 'justify-end'}`}
-                        >
+                    {/* Messages */}
+                    <div className="flex-1 overflow-auto p-6 space-y-4">
+                        {messages.map((msg) => (
                             <div
-                                className={`max-w-md px-4 py-2 rounded-2xl ${msg.sender === 'customer'
-                                    ? 'bg-muted'
-                                    : 'bg-gradient-wata text-white'
-                                    }`}
+                                key={msg.id}
+                                className={`flex ${msg.sender_type === 'customer' ? 'justify-start' : 'justify-end'}`}
                             >
-                                <p className="text-sm">{msg.content}</p>
-                                <p className={`text-xs mt-1 ${msg.sender === 'customer' ? 'text-muted-foreground' : 'text-white/70'
-                                    }`}>
-                                    {msg.time}
-                                </p>
+                                <div
+                                    className={`max-w-md px-4 py-2 rounded-2xl ${msg.sender_type === 'customer'
+                                            ? 'bg-muted'
+                                            : 'bg-gradient-wata text-white'
+                                        }`}
+                                >
+                                    <p className="text-sm">{msg.content}</p>
+                                    <p
+                                        className={`text-xs mt-1 ${msg.sender_type === 'customer' ? 'text-muted-foreground' : 'text-white/70'
+                                            }`}
+                                    >
+                                        {formatMessageTime(msg.created_at)}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
 
-                {/* Message Input */}
-                <div className="border-t border-border/40 p-4">
-                    <div className="flex items-end space-x-2">
-                        <Button variant="ghost" size="sm">
-                            <FiPaperclip className="w-4 h-4" />
-                        </Button>
-                        <div className="flex-1 glass rounded-lg border border-border/40 p-3">
-                            <textarea
-                                value={message}
-                                onChange={(e) => setMessage(e.target.value)}
-                                placeholder="Type a message..."
-                                rows={1}
-                                className="w-full bg-transparent resize-none outline-none text-sm"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault()
-                                        // Send message logic
-                                        setMessage('')
-                                    }
-                                }}
-                            />
+                    {/* Message Input */}
+                    <div className="border-t border-border/40 p-4">
+                        <div className="flex items-end space-x-2">
+                            <div className="flex-1 glass rounded-lg border border-border/40 p-3">
+                                <textarea
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    placeholder="Type a message..."
+                                    rows={1}
+                                    className="w-full bg-transparent resize-none outline-none text-sm"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault()
+                                            sendMessage()
+                                        }
+                                    }}
+                                />
+                            </div>
+                            <Button size="sm" disabled={!message.trim() || sending} onClick={sendMessage}>
+                                <FiSend className="w-4 h-4" />
+                            </Button>
                         </div>
-                        <Button variant="ghost" size="sm">
-                            <FiSmile className="w-4 h-4" />
-                        </Button>
-                        <Button size="sm" disabled={!message.trim()}>
-                            <FiSend className="w-4 h-4" />
-                        </Button>
                     </div>
                 </div>
-            </div>
+            ) : (
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                        <p className="text-lg font-medium mb-2">No conversation selected</p>
+                        <p className="text-sm">Select a conversation to start messaging</p>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
-
-const channels = [
-    { id: '1', name: 'WhatsApp', count: 45, color: 'bg-green-500' },
-    { id: '2', name: 'Messenger', count: 32, color: 'bg-blue-500' },
-    { id: '3', name: 'Instagram', count: 28, color: 'bg-pink-500' },
-    { id: '4', name: 'Telegram', count: 15, color: 'bg-cyan-500' },
-    { id: '5', name: 'Web Chat', count: 67, color: 'bg-purple-500' },
-]
-
-const conversations = [
-    {
-        id: '1',
-        customer: 'Sarah Johnson',
-        channel: 'WhatsApp',
-        lastMessage: 'Thanks for the quick response!',
-        time: '2m ago',
-        unread: 2,
-        messages: [
-            { id: '1', sender: 'customer', content: 'Hi, I need help with my order', time: '10:30 AM' },
-            { id: '2', sender: 'bot', content: 'Hello! I\'d be happy to help. Can you provide your order number?', time: '10:31 AM' },
-            { id: '3', sender: 'customer', content: 'It\'s #12345', time: '10:32 AM' },
-            { id: '4', sender: 'bot', content: 'Let me check that for you...', time: '10:32 AM' },
-            { id: '5', sender: 'bot', content: 'Your order is currently being processed and will ship tomorrow!', time: '10:33 AM' },
-            { id: '6', sender: 'customer', content: 'Thanks for the quick response!', time: '10:34 AM' },
-        ],
-    },
-    {
-        id: '2',
-        customer: 'Mike Chen',
-        channel: 'Messenger',
-        lastMessage: 'Can I get more information about pricing?',
-        time: '15m ago',
-        unread: 0,
-        messages: [
-            { id: '1', sender: 'customer', content: 'Can I get more information about pricing?', time: '10:15 AM' },
-        ],
-    },
-    {
-        id: '3',
-        customer: 'Emma Wilson',
-        channel: 'Instagram',
-        lastMessage: 'Perfect, that solved my issue.',
-        time: '1h ago',
-        unread: 0,
-        messages: [
-            { id: '1', sender: 'customer', content: 'Perfect, that solved my issue.', time: '9:30 AM' },
-        ],
-    },
-]

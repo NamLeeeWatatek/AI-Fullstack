@@ -1,0 +1,62 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wataomi-backend
+    ports:
+      - "${BACKEND_PORT:-8002}:8002"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-wataomi}:${POSTGRES_PASSWORD:-wataomi}@postgres:5432/${POSTGRES_DB:-wataomi}
+      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
+    networks:
+      - wataomi-network
+    depends_on:
+      postgres:
+        condition: service_healthy   # waits until DB is really ready
+      redis:
+        condition: service_healthy   # waits until Redis is really ready
+    volumes:
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: wataomi-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wataomi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wataomi}
+      POSTGRES_DB: ${POSTGRES_DB:-wataomi}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - wataomi-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wataomi} -d ${POSTGRES_DB:-wataomi}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: wataomi-redis
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - wataomi-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+networks:
+  wataomi-network:
+    external: true
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -10,6 +10,7 @@ class Bot(SQLModel, table=True):
     name: str
     description: Optional[str] = None
     is_active: bool = True
+    flow_id: Optional[int] = None  # Which flow this bot executes
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -30,5 +31,4 @@ class FlowVersion(SQLModel, table=True):
     
     # Relationships
     bot: Bot = Relationship(back_populates="flow_versions")
-    executions: List["WorkflowExecution"] = Relationship(back_populates="flow_version")
 

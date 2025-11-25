@@ -1,137 +1,223 @@
-from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from app.models.execution import WorkflowExecution, NodeExecution
-from app.db.supabase import get_supabase
-from app.core.auth import get_current_user
-from app.services.gemini import gemini_service
-from supabase import Client
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
-import asyncio
+from typing import List, Optional
+from pydantic import BaseModel
+
+from app.models.execution import WorkflowExecution, NodeExecution
+from app.models.flow import Flow
+from app.db.session import get_session
+from app.core.auth import get_current_user
 
 router = APIRouter()
 
-async def process_workflow(execution_id: int, flow_data: Dict[str, Any], supabase: Client):
-    """
-    Process workflow nodes in background.
-    This is a simplified execution engine.
-    """
-    try:
-        nodes = flow_data.get("nodes", [])
-        edges = flow_data.get("edges", [])
-        
-        # Simple sequential execution for demo
-        # In reality, you'd build a graph and traverse it
-        
-        for node in nodes:
-            node_id = node.get("id")
-            node_type = node.get("type")
-            node_data = node.get("data", {})
-            
-            # Create node execution record
-            node_exec_data = {
-                "workflow_execution_id": execution_id,
-                "node_id": node_id,
-                "node_type": node_type,
-                "node_label": node_data.get("label", node_type),
-                "status": "running",
-                "started_at": datetime.utcnow().isoformat(),
-                "input_data": node_data
-            }
-            node_res = supabase.table("node_executions").insert(node_exec_data).execute()
-            node_exec_id = node_res.data[0]["id"]
-            
-            # Execute logic based on type
-            output_data = {}
-            error = None
-            
-            try:
-                if node_type == "ai-generate":
-                    prompt = node_data.get("prompt", "")
-                    result = await gemini_service.generate_content(prompt)
-                    output_data = {"result": result}
-                
-                # Add other node types here (Qdrant, Cloudinary, etc.)
-                
-                # Simulate processing time
-                await asyncio.sleep(1) 
-                
-                status = "completed"
-            except Exception as e:
-                error = str(e)
-                status = "failed"
-            
-            # Update node execution
-            supabase.table("node_executions").update({
-                "status": status,
-                "completed_at": datetime.utcnow().isoformat(),
-                "output_data": output_data,
-                "error_message": error
-            }).eq("id", node_exec_id).execute()
-            
-            if status == "failed":
-                raise Exception(f"Node {node_id} failed: {error}")
+# Response Models
+class NodeExecutionResponse(BaseModel):
+    id: int
+    node_id: str
+    node_type: str
+    node_label: str
+    status: str
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    execution_time_ms: Optional[int]
+    input_data: dict
+    output_data: Optional[dict]
+    error_message: Optional[str]
 
-        # Update workflow execution
-        supabase.table("workflow_executions").update({
-            "status": "completed",
-            "completed_at": datetime.utcnow().isoformat(),
-            "completed_nodes": len(nodes)
-        }).eq("id", execution_id).execute()
+    class Config:
+        from_attributes = True
 
-    except Exception as e:
-         supabase.table("workflow_executions").update({
-            "status": "failed",
-            "completed_at": datetime.utcnow().isoformat(),
-            "error_message": str(e)
-        }).eq("id", execution_id).execute()
+class WorkflowExecutionResponse(BaseModel):
+    id: int
+    flow_id: int  # Changed from flow_version_id
+    conversation_id: Optional[int]
+    status: str
+    started_at: datetime
+    completed_at: Optional[datetime]
+    input_data: dict
+    output_data: Optional[dict]
+    error_message: Optional[str]
+    total_nodes: int
+    completed_nodes: int
+    node_executions: List[NodeExecutionResponse] = []
+    
+    # Computed fields
+    duration_ms: Optional[int] = None
+    success_rate: Optional[float] = None
 
-@router.post("/{flow_id}/execute")
-async def execute_flow(
-    flow_id: int,
-    background_tasks: BackgroundTasks,
-    current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase)
-):
-    # Get flow definition
-    flow_res = supabase.table("flows").select("*").eq("id", flow_id).execute()
-    if not flow_res.data:
-        raise HTTPException(status_code=404, detail="Flow not found")
-    
-    flow = flow_res.data[0]
-    
-    # Create execution record
-    exec_data = {
-        "flow_version_id": flow.get("version", 1), # Should link to actual version table
-        "status": "running",
-        "started_at": datetime.utcnow().isoformat(),
-        "total_nodes": len(flow.get("data", {}).get("nodes", [])),
-        "input_data": {}
-    }
-    
-    res = supabase.table("workflow_executions").insert(exec_data).execute()
-    execution = res.data[0]
-    
-    background_tasks.add_task(process_workflow, execution["id"], flow.get("data", {}), supabase)
-    
-    return execution
+    class Config:
+        from_attributes = True
 
-@router.get("/", response_model=List[WorkflowExecution])
+class ExecutionCreateRequest(BaseModel):
+    flow_id: int
+    input_data: dict = {}
+    conversation_id: Optional[int] = None
+
+@router.get("/", response_model=List[WorkflowExecutionResponse])
 async def list_executions(
+    flow_id: Optional[int] = None,
+    status: Optional[str] = None,
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 50,
     current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase)
+    session: AsyncSession = Depends(get_session)
 ):
-    response = supabase.table("workflow_executions").select("*").range(skip, skip + limit - 1).execute()
-    return response.data
+    """List workflow executions with optional filters"""
+    query = select(WorkflowExecution)
+    
+    if flow_id:
+        query = query.where(WorkflowExecution.flow_id == flow_id)
+    
+    if status:
+        query = query.where(WorkflowExecution.status == status)
+    
+    query = query.order_by(WorkflowExecution.started_at.desc()).offset(skip).limit(limit)
+    
+    result = await session.execute(query)
+    executions = result.scalars().all()
+    
+    # Enrich with computed fields
+    response_data = []
+    for execution in executions:
+        exec_dict = execution.model_dump()
+        
+        # Calculate duration
+        if execution.completed_at and execution.started_at:
+            duration = (execution.completed_at - execution.started_at).total_seconds() * 1000
+            exec_dict['duration_ms'] = int(duration)
+        
+        # Calculate success rate
+        if execution.total_nodes > 0:
+            exec_dict['success_rate'] = (execution.completed_nodes / execution.total_nodes) * 100
+        
+        exec_dict['node_executions'] = []
+        response_data.append(WorkflowExecutionResponse(**exec_dict))
+    
+    return response_data
 
-@router.get("/{execution_id}", response_model=WorkflowExecution)
+@router.get("/{execution_id}", response_model=WorkflowExecutionResponse)
 async def get_execution(
     execution_id: int,
     current_user: dict = Depends(get_current_user),
-    supabase: Client = Depends(get_supabase)
+    session: AsyncSession = Depends(get_session)
 ):
-    response = supabase.table("workflow_executions").select("*").eq("id", execution_id).execute()
-    if not response.data:
+    """Get detailed execution information including all node executions"""
+    execution = await session.get(WorkflowExecution, execution_id)
+    if not execution:
         raise HTTPException(status_code=404, detail="Execution not found")
-    return response.data[0]
+    
+    # Get node executions
+    node_query = select(NodeExecution).where(
+        NodeExecution.workflow_execution_id == execution_id
+    ).order_by(NodeExecution.started_at)
+    
+    node_result = await session.execute(node_query)
+    node_executions = node_result.scalars().all()
+    
+    # Build response
+    exec_dict = execution.model_dump()
+    
+    # Calculate duration
+    if execution.completed_at and execution.started_at:
+        duration = (execution.completed_at - execution.started_at).total_seconds() * 1000
+        exec_dict['duration_ms'] = int(duration)
+    
+    # Calculate success rate
+    if execution.total_nodes > 0:
+        exec_dict['success_rate'] = (execution.completed_nodes / execution.total_nodes) * 100
+    
+    # Add node executions
+    exec_dict['node_executions'] = [
+        NodeExecutionResponse.model_validate(node) for node in node_executions
+    ]
+    
+    return WorkflowExecutionResponse(**exec_dict)
+
+@router.post("/", response_model=WorkflowExecutionResponse)
+async def create_execution(
+    request: ExecutionCreateRequest,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Create and start a new workflow execution"""
+    from app.services.flow_executor import FlowExecutor
+    
+    # Get flow
+    flow = await session.get(Flow, request.flow_id)
+    if not flow:
+        raise HTTPException(status_code=404, detail="Flow not found")
+    
+    # Execute workflow
+    executor = FlowExecutor(session)
+    execution = await executor.execute_flow(
+        flow_id=request.flow_id,
+        input_data=request.input_data,
+        conversation_id=request.conversation_id
+    )
+    
+    # Get node executions
+    node_query = select(NodeExecution).where(
+        NodeExecution.workflow_execution_id == execution.id
+    ).order_by(NodeExecution.started_at)
+    
+    node_result = await session.execute(node_query)
+    node_executions = node_result.scalars().all()
+    
+    # Build response
+    exec_dict = execution.model_dump()
+    
+    # Calculate duration
+    if execution.completed_at and execution.started_at:
+        duration = (execution.completed_at - execution.started_at).total_seconds() * 1000
+        exec_dict['duration_ms'] = int(duration)
+    
+    # Calculate success rate
+    if execution.total_nodes > 0:
+        exec_dict['success_rate'] = (execution.completed_nodes / execution.total_nodes) * 100
+    
+    # Add node executions
+    exec_dict['node_executions'] = [
+        NodeExecutionResponse.model_validate(node) for node in node_executions
+    ]
+    
+    return WorkflowExecutionResponse(**exec_dict)
+
+@router.post("/{execution_id}/cancel")
+async def cancel_execution(
+    execution_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Cancel a running execution"""
+    execution = await session.get(WorkflowExecution, execution_id)
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    
+    if execution.status != 'running':
+        raise HTTPException(status_code=400, detail="Execution is not running")
+    
+    execution.status = 'cancelled'
+    execution.completed_at = datetime.utcnow()
+    
+    session.add(execution)
+    await session.commit()
+    
+    return {"status": "cancelled", "message": "Execution cancelled successfully"}
+
+@router.delete("/{execution_id}")
+async def delete_execution(
+    execution_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Delete an execution record"""
+    execution = await session.get(WorkflowExecution, execution_id)
+    if not execution:
+        raise HTTPException(status_code=404, detail="Execution not found")
+    
+    await session.delete(execution)
+    await session.commit()
+    
+    return {"status": "success", "message": "Execution deleted"}
