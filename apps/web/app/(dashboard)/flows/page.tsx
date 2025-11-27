@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
     FiPlus,
     FiGrid,
     FiList,
-    FiLoader,
     FiPlay,
     FiMoreVertical,
     FiEdit,
@@ -27,40 +26,18 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { WorkflowCard } from '@/components/features/workflow/workflow-card'
+import { FlowsTable } from '@/components/features/workflow/flows-table'
 import { SearchBar } from '@/components/features/workflow/search-bar'
 import { WorkflowStats } from '@/components/features/workflow/workflow-stats'
-import { fetchAPI } from '@/lib/api'
+import { Pagination } from '@/components/ui/pagination'
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
+import { usePagination } from '@/lib/hooks/use-pagination'
+import { fetchFlows, createFlow, updateFlow, deleteFlow, duplicateFlow, archiveFlow } from '@/lib/store/slices/flowsSlice'
+import { setDraftTemplate } from '@/lib/store/slices/workflowEditorSlice'
+import axiosInstance from '@/lib/axios'
 import toast from 'react-hot-toast'
 import { TemplateSelector } from '@/components/features/templates/template-selector'
 import { WorkflowRunModal } from '@/components/features/workflow/workflow-run-modal'
-
-interface Flow {
-    id: number
-    name: string
-    description: string
-    is_active: boolean
-    created_at: string
-    updated_at: string
-    user_id: string
-    flow_data: Record<string, unknown>
-    status: string
-    executions?: number
-    successRate?: number
-    version?: number
-}
-
-interface ApiFlow {
-    id: number
-    name: string
-    description: string
-    is_active: boolean
-    created_at: string
-    updated_at: string
-    user_id: string
-    flow_data: Record<string, unknown>
-    status?: string
-    version?: number
-}
 
 interface WorkflowNode {
     type: string
@@ -79,7 +56,9 @@ interface InputField {
     required: boolean
 }
 
-interface WorkflowWithNodes extends Flow {
+interface WorkflowWithNodes {
+    id: number
+    name: string
     flow_data: {
         nodes?: WorkflowNode[]
         edges?: unknown[]
@@ -87,82 +66,57 @@ interface WorkflowWithNodes extends Flow {
 }
 
 // Dropdown Menu Component
-function FlowDropdownMenu({ flow, onAction }: { flow: Flow; onAction: () => void }) {
+function FlowDropdownMenu({ flowId, flowName, flowStatus }: { flowId: number; flowName: string; flowStatus: string }) {
     const router = useRouter()
+    const dispatch = useAppDispatch()
 
     const handleEdit = () => {
-        router.push(`/flows/${flow.id}/edit`)
+        router.push(`/flows/${flowId}/edit`)
     }
 
     const handleDuplicate = async () => {
-        const duplicatePromise = fetchAPI(`/flows/${flow.id}/duplicate`, { method: 'POST' })
-            .then((dup) => {
-                router.push(`/flows/${dup.id}/edit`)
-                return dup
-            })
-
-        toast.promise(duplicatePromise, {
-            loading: 'Duplicating workflow...',
-            success: 'Workflow duplicated successfully!',
-            error: (err) => `Failed to duplicate: ${err.message}`,
-        })
+        try {
+            const duplicated = await dispatch(duplicateFlow(flowId)).unwrap()
+            router.push(`/flows/${duplicated.id}/edit`)
+            toast.success('Flow duplicated!')
+        } catch (error) {
+            toast.error('Failed to duplicate')
+        }
     }
 
     const handlePublish = async () => {
-        const publishPromise = fetchAPI(`/flows/${flow.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'published' })
-        }).then(() => {
-            onAction()
-        })
-
-        toast.promise(publishPromise, {
-            loading: 'Publishing workflow...',
-            success: 'Workflow published successfully!',
-            error: (err) => `Failed to publish: ${err.message}`,
+        const promise = dispatch(updateFlow({ id: flowId, data: { status: 'published' } })).unwrap()
+        toast.promise(promise, {
+            loading: 'Publishing...',
+            success: 'Flow published!',
+            error: 'Failed to publish'
         })
     }
 
     const handleUnpublish = async () => {
-        const unpublishPromise = fetchAPI(`/flows/${flow.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'draft' })
-        }).then(() => {
-            onAction()
-        })
-
-        toast.promise(unpublishPromise, {
-            loading: 'Unpublishing workflow...',
-            success: 'Workflow unpublished successfully!',
-            error: (err) => `Failed to unpublish: ${err.message}`,
+        const promise = dispatch(updateFlow({ id: flowId, data: { status: 'draft' } })).unwrap()
+        toast.promise(promise, {
+            loading: 'Unpublishing...',
+            success: 'Flow unpublished!',
+            error: 'Failed to unpublish'
         })
     }
 
     const handleArchive = async () => {
-        const archivePromise = fetchAPI(`/flows/${flow.id}/archive`, { method: 'POST' })
-            .then(() => {
-                onAction()
-            })
-
-        toast.promise(archivePromise, {
-            loading: 'Archiving workflow...',
-            success: 'Workflow archived successfully!',
-            error: (err) => `Failed to archive: ${err.message}`,
+        const promise = dispatch(archiveFlow(flowId)).unwrap()
+        toast.promise(promise, {
+            loading: 'Archiving...',
+            success: 'Flow archived!',
+            error: 'Failed to archive'
         })
     }
 
     const handleUnarchive = async () => {
-        const unarchivePromise = fetchAPI(`/flows/${flow.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'draft' })
-        }).then(() => {
-            onAction()
-        })
-
-        toast.promise(unarchivePromise, {
-            loading: 'Unarchiving workflow...',
-            success: 'Workflow unarchived successfully!',
-            error: (err) => `Failed to unarchive: ${err.message}`,
+        const promise = dispatch(updateFlow({ id: flowId, data: { status: 'draft' } })).unwrap()
+        toast.promise(promise, {
+            loading: 'Unarchiving...',
+            success: 'Flow unarchived!',
+            error: 'Failed to unarchive'
         })
     }
 
@@ -171,7 +125,7 @@ function FlowDropdownMenu({ flow, onAction }: { flow: Flow; onAction: () => void
         toast((t) => (
             <div className="flex flex-col gap-3">
                 <div>
-                    <p className="font-semibold">Delete &quot;{flow.name}&quot;?</p>
+                    <p className="font-semibold">Delete &quot;{flowName}&quot;?</p>
                     <p className="text-sm text-muted-foreground">This action cannot be undone.</p>
                 </div>
                 <div className="flex gap-2">
@@ -187,15 +141,11 @@ function FlowDropdownMenu({ flow, onAction }: { flow: Flow; onAction: () => void
                         className="bg-red-500 hover:bg-red-600"
                         onClick={async () => {
                             toast.dismiss(t.id)
-                            const deletePromise = fetchAPI(`/flows/${flow.id}`, { method: 'DELETE' })
-                                .then(() => {
-                                    onAction()
-                                })
-
-                            toast.promise(deletePromise, {
-                                loading: 'Deleting workflow...',
-                                success: 'Workflow deleted successfully!',
-                                error: (err) => `Failed to delete: ${err.message}`,
+                            const promise = dispatch(deleteFlow(flowId)).unwrap()
+                            toast.promise(promise, {
+                                loading: 'Deleting...',
+                                success: 'Flow deleted!',
+                                error: 'Failed to delete'
                             })
                         }}
                     >
@@ -226,13 +176,13 @@ function FlowDropdownMenu({ flow, onAction }: { flow: Flow; onAction: () => void
                     Edit
                 </DropdownMenuItem>
 
-                {flow.status === 'draft' && (
+                {flowStatus === 'draft' && (
                     <DropdownMenuItem onClick={handlePublish} className="text-green-500">
                         <FiPlay className="w-4 h-4 mr-2" />
                         Publish
                     </DropdownMenuItem>
                 )}
-                {flow.status === 'published' && (
+                {flowStatus === 'published' && (
                     <DropdownMenuItem onClick={handleUnpublish}>
                         <FiEdit className="w-4 h-4 mr-2" />
                         Unpublish
@@ -244,7 +194,7 @@ function FlowDropdownMenu({ flow, onAction }: { flow: Flow; onAction: () => void
                     Duplicate
                 </DropdownMenuItem>
 
-                {flow.status !== 'archived' ? (
+                {flowStatus !== 'archived' ? (
                     <DropdownMenuItem onClick={handleArchive}>
                         <FiArchive className="w-4 h-4 mr-2" />
                         Archive
@@ -268,12 +218,20 @@ function FlowDropdownMenu({ flow, onAction }: { flow: Flow; onAction: () => void
 
 export default function WorkflowsPage() {
     const router = useRouter()
+    const dispatch = useAppDispatch()
+    const { 
+        items: flows = [], 
+        loading, 
+        error,
+        total,
+        page,
+        pageSize,
+        totalPages,
+        stats: backendStats,
+    } = useAppSelector((state: any) => state.flows || {})
+    
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-    const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all')
-    const [flows, setFlows] = useState<Flow[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
     const [showTemplateSelector, setShowTemplateSelector] = useState(false)
 
     // Run Modal State
@@ -281,44 +239,43 @@ export default function WorkflowsPage() {
     const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowWithNodes | null>(null)
     const [workflowInputFields, setWorkflowInputFields] = useState<InputField[]>([])
 
-    const loadFlows = useCallback(async () => {
-        try {
-            setLoading(true)
-            const data = await fetchAPI('/flows/')
-            const mappedData = (data as ApiFlow[]).map((flow) => ({
-                ...flow,
-                // Use status from API if available, otherwise derive from is_active
-                status: flow.status || (flow.is_active ? 'published' : 'draft'),
-                executions: 0,
-                successRate: 0,
-                version: flow.version || 1
+    // Pagination hook with page_size = 25 for flows
+    const pagination = usePagination({
+        initialPage: 1,
+        initialPageSize: 25,
+        onParamsChange: (params) => {
+            // Send status filter to backend
+            dispatch(fetchFlows({
+                ...params,
+                status: statusFilter !== 'all' ? statusFilter : undefined,
             }))
-            setFlows(mappedData)
-            setError(null)
-        } catch (err: unknown) {
-            console.error('Failed to load flows:', err)
-            setError('Failed to load workflows. Please check your connection.')
-            setFlows([])
-        } finally {
-            setLoading(false)
         }
-    }, [])
+    })
 
+    // Load flows on mount and when filters change
     useEffect(() => {
-        loadFlows()
-    }, [loadFlows])
+        // All filtering happens on backend
+        dispatch(fetchFlows({
+            page: pagination.page,
+            page_size: pagination.pageSize,
+            search: pagination.search || undefined,
+            status: statusFilter !== 'all' ? statusFilter : undefined,
+        }))
+    }, [dispatch, pagination.page, pagination.pageSize, pagination.search, statusFilter])
 
-    const handleRunClick = async (workflow: Flow) => {
+    const handleRunClick = async (workflowId: number) => {
         try {
             // Fetch full workflow data to get nodes
-            const fullWorkflow = await fetchAPI(`/flows/${workflow.id}`) as WorkflowWithNodes
+            const fullWorkflow = await axiosInstance.get(`/flows/${workflowId}`) as any
 
-            // Find Start Node
-            const nodes = fullWorkflow.flow_data?.nodes || []
+            // IMPORTANT: Backend uses 'data' field, not 'flow_data'
+            const flowData = fullWorkflow.data || fullWorkflow.flow_data || {}
+            const nodes = flowData.nodes || []
+            
             const startNode = nodes.find((n: WorkflowNode) => n.type === 'start' || n.type === 'trigger-manual')
 
             if (startNode && startNode.data?.config?.inputFields?.length && startNode.data.config.inputFields.length > 0) {
-                setSelectedWorkflow(fullWorkflow)
+                setSelectedWorkflow({ ...fullWorkflow, flow_data: flowData })
                 setWorkflowInputFields(startNode.data.config.inputFields)
                 setRunModalOpen(true)
             } else {
@@ -332,38 +289,27 @@ export default function WorkflowsPage() {
     }
 
     const executeWorkflow = async (workflowId: number, data: Record<string, unknown>) => {
-        const promise = fetchAPI('/executions/', {
-            method: 'POST',
-            body: JSON.stringify({
-                flow_id: workflowId,
-                input_data: data
-            })
+        const promise = axiosInstance.post('/executions/', {
+            flow_id: workflowId,
+            input_data: data
         })
 
         toast.promise(promise, {
             loading: 'Starting workflow...',
             success: 'Workflow started successfully!',
-            error: (err) => `Failed to start: ${err.message}`
+            error: (err: any) => `Failed to start: ${err.message}`
         })
     }
 
-    const filteredFlows = flows.filter(flow => {
-        // Search filter
-        const matchesSearch = flow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (flow.description && flow.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    // Display flows directly from backend (no client-side filtering)
+    const displayFlows = Array.isArray(flows) ? flows : []
 
-        // Status filter
-        const matchesStatus = statusFilter === 'all' || flow.status === statusFilter
-
-        return matchesSearch && matchesStatus
-    })
-
-    // Calculate stats
-    const stats = {
-        total: flows.length,
-        active: flows.filter(f => f.status === 'published').length,
-        draft: flows.filter(f => f.status === 'draft').length,
-        archived: flows.filter(f => f.status === 'archived').length,
+    // Use stats from backend response (already calculated server-side)
+    const stats = backendStats || {
+        total: total || 0,
+        active: 0,
+        draft: 0,
+        archived: 0,
         successRate: 0,
         avgDuration: 0
     }
@@ -381,10 +327,7 @@ export default function WorkflowsPage() {
                 <div className="flex items-center gap-2">
                     <Button
                         variant="outline"
-                        onClick={() => {
-                            console.log('Opening Templates modal')
-                            setShowTemplateSelector(true)
-                        }}
+                        onClick={() => setShowTemplateSelector(true)}
                     >
                         <FiGrid className="w-4 h-4 mr-2" />
                         Use Template
@@ -404,7 +347,7 @@ export default function WorkflowsPage() {
             {/* Filters & Search */}
             <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="flex-1">
-                    <SearchBar onSearch={setSearchQuery} />
+                    <SearchBar onSearch={pagination.handleSearchChange} />
                 </div>
                 <div className="flex items-center gap-2">
                     {/* Status Filter */}
@@ -473,127 +416,70 @@ export default function WorkflowsPage() {
             ) : error ? (
                 <div className="text-center py-20 text-red-500">
                     {error}
-                    <Button variant="outline" onClick={loadFlows} className="ml-4">Retry</Button>
+                    <Button variant="outline" onClick={() => dispatch(fetchFlows())} className="ml-4">Retry</Button>
                 </div>
-            ) : filteredFlows.length === 0 ? (
+            ) : displayFlows.length === 0 ? (
                 <Card className="text-center py-20">
                     <h3 className="text-lg font-semibold mb-2">No workflows found</h3>
                     <p className="text-muted-foreground mb-4">
-                        {searchQuery ? 'Try adjusting your search terms' : 'Create your first workflow to get started'}
+                        {pagination.search ? 'Try adjusting your search terms' : 'Create your first workflow to get started'}
                     </p>
-                    {!searchQuery && (
+                    {!pagination.search && (
                         <Link href="/flows/new/edit">
                             <Button>Create Workflow</Button>
                         </Link>
                     )}
                 </Card>
             ) : (
-                <>
+                <div className="space-y-4">
                     {viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredFlows.map((flow) => (
+                            {displayFlows.map((flow: any) => (
                                 <WorkflowCard
                                     key={flow.id}
                                     workflow={flow}
-                                    onUpdate={loadFlows}
-                                    onRun={handleRunClick}
+                                    onUpdate={() => dispatch(fetchFlows(pagination.buildParams()))}
+                                    onRun={() => handleRunClick(flow.id)}
                                 />
                             ))}
                         </div>
                     ) : (
-                        <Card className="overflow-hidden">
-                            <table className="w-full">
-                                <thead className="bg-muted/50">
-                                    <tr>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Name</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Status</th>
-                                        <th className="text-left p-4 font-medium text-muted-foreground">Last Run</th>
-                                        <th className="text-right p-4 font-medium text-muted-foreground">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredFlows.map((flow) => (
-                                        <tr key={flow.id} className="border-t border-border/40 hover:bg-muted/20">
-                                            <td className="p-4">
-                                                <Link href={`/flows/${flow.id}`} className="block">
-                                                    <div className="font-medium">{flow.name}</div>
-                                                    <div className="text-sm text-muted-foreground">{flow.description}</div>
-                                                </Link>
-                                            </td>
-                                            <td className="p-4">
-                                                <Badge variant={
-                                                    flow.status === 'published' ? 'success' :
-                                                        flow.status === 'archived' ? 'warning' : 'default'
-                                                } className="capitalize">
-                                                    {flow.status}
-                                                </Badge>
-                                            </td>
-                                            <td className="p-4 text-sm text-muted-foreground">
-                                                {flow.updated_at ? new Date(flow.updated_at).toLocaleDateString() : '-'}
-                                            </td>
-                                            <td className="p-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={() => handleRunClick(flow)}
-                                                    >
-                                                        <FiPlay className="w-4 h-4" />
-                                                    </Button>
-                                                    <FlowDropdownMenu flow={flow} onAction={loadFlows} />
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </Card>
+                        <FlowsTable
+                            flows={displayFlows}
+                            onUpdate={() => dispatch(fetchFlows(pagination.buildParams()))}
+                            onRun={handleRunClick}
+                        />
                     )}
-                </>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <Pagination
+                            currentPage={page || pagination.page}
+                            totalPages={totalPages || 1}
+                            pageSize={pageSize || pagination.pageSize}
+                            total={total || 0}
+                            onPageChange={pagination.handlePageChange}
+                            onPageSizeChange={pagination.handlePageSizeChange}
+                        />
+                    )}
+                </div>
             )}
 
             {/* Template Selector */}
             {showTemplateSelector && (
                 <TemplateSelector
                     onSelect={async (templateData) => {
-                        console.log('Template selected:', templateData)
-
-                        // Close modal
                         setShowTemplateSelector(false)
 
-                        // Create flow directly from template
-                        const createPromise = (async () => {
-                            const flowData = {
-                                name: templateData.name,
-                                description: templateData.description,
-                                template_id: templateData.id,
-                                status: 'draft',
-                                data: {
-                                    nodes: templateData.nodes || [],
-                                    edges: templateData.edges || []
-                                }
-                            }
+                        // Store template in Redux instead of localStorage
+                        dispatch(setDraftTemplate({
+                            name: templateData.name,
+                            nodes: templateData.nodes || [],
+                            edges: templateData.edges || []
+                        }))
 
-                            const created = await fetchAPI('/flows/', {
-                                method: 'POST',
-                                body: JSON.stringify(flowData)
-                            })
-
-                            // Reload flows list
-                            await loadFlows()
-
-                            // Navigate to edit the new flow
-                            router.push(`/flows/${created.id}/edit`)
-
-                            return created
-                        })()
-
-                        toast.promise(createPromise, {
-                            loading: 'Creating workflow from template...',
-                            success: 'Workflow created! Opening editor...',
-                            error: (err) => `Failed to create: ${err.message}`
-                        })
+                        // Redirect to create new flow
+                        router.push('/flows/new/edit')
                     }}
                     onClose={() => setShowTemplateSelector(false)}
                 />

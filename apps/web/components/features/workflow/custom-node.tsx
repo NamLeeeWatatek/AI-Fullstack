@@ -1,10 +1,18 @@
-import React, { memo, useEffect } from 'react'
+'use client'
+
+import React, { memo } from 'react'
 import { Handle, Position, NodeProps } from 'reactflow'
-import { useNodeTypes } from '@/lib/context/node-types-context'
-import { FiLoader, FiCheck, FiX } from 'react-icons/fi'
+import { useAppSelector } from '@/lib/store/hooks'
+import { FiLoader, FiCheck, FiX, FiAlertCircle } from 'react-icons/fi'
+import { getNodeClassName, getIconStyle } from '@/lib/workflow-theme'
 
 const CustomNodeComponent = ({ data, selected }: NodeProps) => {
-    const { getNodeType, loading, nodeTypes } = useNodeTypes()
+    const { items: nodeTypes = [] } = useAppSelector((state: any) => state.nodeTypes || {})
+    
+    const getNodeType = (typeId: string) => {
+        return nodeTypes.find((nt: any) => nt.id === typeId)
+    }
+    
     const nodeType = getNodeType(data.type)
     const Icon = nodeType?.icon
     
@@ -12,83 +20,101 @@ const CustomNodeComponent = ({ data, selected }: NodeProps) => {
     const executionStatus = data.executionStatus // 'idle' | 'running' | 'success' | 'error'
     const executionError = data.executionError
 
-    // Show loading state
-    if (loading) {
-        return (
-            <div className="px-4 py-2 shadow-md rounded-md bg-card border-2 border-border min-w-[150px]">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
-                    <div className="flex-1">
-                        <div className="h-4 bg-muted rounded animate-pulse" />
-                    </div>
-                </div>
-                <Handle type="target" position={Position.Left} className="w-3 h-3 !bg-muted-foreground" />
-                <Handle type="source" position={Position.Right} className="w-3 h-3 !bg-muted-foreground" />
-            </div>
-        )
-    }
-
-    // Determine border color based on execution status
-    const getBorderColor = () => {
-        if (selected) return 'border-primary'
-        if (executionStatus === 'running') return 'border-blue-500 animate-pulse'
-        if (executionStatus === 'success') return 'border-green-500'
-        if (executionStatus === 'error') return 'border-red-500'
-        return 'border-border'
-    }
+    // Get node styles using centralized theme
+    const nodeClassName = getNodeClassName({ selected, executionStatus })
+    const iconStyle = getIconStyle(nodeType?.color)
 
     return (
-        <div
-            className={`px-4 py-2 shadow-md rounded-md bg-card border-2 min-w-[150px] transition-colors relative ${getBorderColor()}`}
-        >
-            {/* Execution Status Badge */}
+        <div className={nodeClassName}>
+            {/* Execution Status Badge - Top Right */}
             {executionStatus && executionStatus !== 'idle' && (
-                <div className="absolute -top-2 -right-2 z-10">
+                <div className="absolute -top-2 -right-2 z-20">
                     {executionStatus === 'running' && (
-                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shadow-lg">
+                        <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center shadow-lg ring-2 ring-blue-500/20">
                             <FiLoader className="w-4 h-4 text-white animate-spin" />
                         </div>
                     )}
                     {executionStatus === 'success' && (
-                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                        <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center shadow-lg ring-2 ring-green-500/20">
                             <FiCheck className="w-4 h-4 text-white" />
                         </div>
                     )}
                     {executionStatus === 'error' && (
-                        <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
+                        <div className="w-7 h-7 rounded-full bg-red-500 flex items-center justify-center shadow-lg ring-2 ring-red-500/20">
                             <FiX className="w-4 h-4 text-white" />
                         </div>
                     )}
                 </div>
             )}
 
-            <div className="flex items-center gap-3">
-                <div className={`rounded-full w-8 h-8 flex justify-center items-center ${nodeType?.color ? '' : 'bg-muted'
-                    }`} style={{ backgroundColor: nodeType?.color ? `${nodeType.color}20` : undefined }}>
-                    {Icon && <Icon className="w-5 h-5" style={{ color: nodeType?.color }} />}
-                    {!Icon && <span className="text-xs">?</span>}
-                </div>
-                <div className="flex-1">
-                    <div className="text-sm font-bold text-foreground">
-                        {data.label || nodeType?.label || 'Node'}
+            {/* Node Content */}
+            <div className="p-4">
+                {/* Header with Icon and Label */}
+                <div className="flex items-center gap-3 mb-2">
+                    {/* Icon */}
+                    <div 
+                        className="rounded-lg w-10 h-10 flex items-center justify-center flex-shrink-0"
+                        style={iconStyle}
+                    >
+                        {Icon ? (
+                            <Icon 
+                                className="w-5 h-5" 
+                                style={{ color: nodeType?.color || 'currentColor' }} 
+                            />
+                        ) : (
+                            <FiAlertCircle className="w-5 h-5 text-muted-foreground" />
+                        )}
                     </div>
-                    <div className="text-[10px] text-muted-foreground truncate max-w-[120px]">
-                        {executionStatus === 'running' ? 'Executing...' : 
-                         executionStatus === 'error' && executionError ? executionError :
-                         nodeType?.description || data.type}
+
+                    {/* Label */}
+                    <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-foreground truncate">
+                            {data.label || nodeType?.label || 'Unknown Node'}
+                        </div>
                     </div>
                 </div>
+
+                {/* Description/Status */}
+                <div className="text-xs text-muted-foreground mt-2 px-1">
+                    {executionStatus === 'running' ? (
+                        <span className="text-blue-500 font-medium">Executing...</span>
+                    ) : executionStatus === 'error' && executionError ? (
+                        <span className="text-red-500 font-medium flex items-center gap-1">
+                            <FiX className="w-3 h-3" />
+                            {executionError}
+                        </span>
+                    ) : executionStatus === 'success' ? (
+                        <span className="text-green-500 font-medium flex items-center gap-1">
+                            <FiCheck className="w-3 h-3" />
+                            Completed
+                        </span>
+                    ) : (
+                        <span className="truncate block">
+                            {nodeType?.description || data.type || 'Custom node'}
+                        </span>
+                    )}
+                </div>
+
+                {/* Custom label if exists */}
+                {data.customLabel && (
+                    <div className="mt-2 px-2 py-1 bg-muted/50 rounded text-xs text-muted-foreground truncate">
+                        {data.customLabel}
+                    </div>
+                )}
             </div>
 
+            {/* Connection Handles */}
             <Handle
                 type="target"
                 position={Position.Left}
-                className="w-3 h-3 !bg-muted-foreground"
+                className="w-3 h-3 !bg-primary border-2 border-background transition-transform hover:scale-125"
+                style={{ left: -6 }}
             />
             <Handle
                 type="source"
                 position={Position.Right}
-                className="w-3 h-3 !bg-muted-foreground"
+                className="w-3 h-3 !bg-primary border-2 border-background transition-transform hover:scale-125"
+                style={{ right: -6 }}
             />
         </div>
     )

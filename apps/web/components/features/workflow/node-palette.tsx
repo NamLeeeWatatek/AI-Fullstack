@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { FiChevronDown, FiChevronRight, FiRefreshCw } from 'react-icons/fi'
-import { useNodeTypes } from '@/lib/context/node-types-context'
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
+import { fetchNodeTypes, fetchNodeCategories } from '@/lib/store/slices/nodeTypesSlice'
 import { NodeType } from '@/lib/nodeTypes'
 import toast from 'react-hot-toast'
 
@@ -9,9 +10,19 @@ interface NodePaletteProps {
 }
 
 export function NodePalette({ onAddNode }: NodePaletteProps) {
-    const { categories, getNodesByCategory, loading, refreshNodeTypes } = useNodeTypes()
+    const dispatch = useAppDispatch()
+    const { items: nodeTypes = [], categories = [], loading } = useAppSelector((state: any) => state.nodeTypes || {})
     const [expandedCategories, setExpandedCategories] = useState<string[]>([])
     const [refreshing, setRefreshing] = useState(false)
+
+    useEffect(() => {
+        dispatch(fetchNodeTypes())
+        dispatch(fetchNodeCategories())
+    }, [dispatch])
+
+    const getNodesByCategory = (categoryId: string) => {
+        return nodeTypes.filter((node: any) => node.category === categoryId)
+    }
 
     const toggleCategory = (categoryId: string) => {
         setExpandedCategories(prev =>
@@ -33,7 +44,8 @@ export function NodePalette({ onAddNode }: NodePaletteProps) {
     const handleRefresh = async () => {
         setRefreshing(true)
         try {
-            await refreshNodeTypes()
+            await dispatch(fetchNodeTypes()).unwrap()
+            await dispatch(fetchNodeCategories()).unwrap()
             toast.success('Node types refreshed!')
         } catch (error) {
             toast.error('Failed to refresh node types')
@@ -64,7 +76,7 @@ export function NodePalette({ onAddNode }: NodePaletteProps) {
                     <div className="text-center py-8 text-muted-foreground text-sm">
                         Loading nodes...
                     </div>
-                ) : categories.map((category) => {
+                ) : categories.map((category: any) => {
                     const isExpanded = expandedCategories.includes(category.id)
                     const nodes = getNodesByCategory(category.id)
 
@@ -97,7 +109,7 @@ export function NodePalette({ onAddNode }: NodePaletteProps) {
                             {/* Nodes List */}
                             {isExpanded && (
                                 <div className="mt-1 space-y-1 pl-2">
-                                    {nodes.map((nodeType) => {
+                                    {nodes.map((nodeType: any) => {
                                         return (
                                             <div
                                                 key={nodeType.id}

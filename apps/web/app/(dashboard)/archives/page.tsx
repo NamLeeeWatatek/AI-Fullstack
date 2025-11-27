@@ -1,53 +1,30 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
-import { fetchAPI } from '@/lib/api'
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
+import { fetchFlows, updateFlow, deleteFlow } from '@/lib/store/slices/flowsSlice'
 import toast from 'react-hot-toast'
 import {
     FiArchive,
     FiTrash2,
     FiRefreshCw
 } from 'react-icons/fi'
-
-interface ArchivedFlow {
-    id: number
-    name: string
-    description: string
-    archived_at: string
-    status: string
-}
+import { Flow } from '@/lib/api/flows'
 
 export default function ArchivesPage() {
-    const [flows, setFlows] = useState<ArchivedFlow[]>([])
-    const [loading, setLoading] = useState(true)
+    const dispatch = useAppDispatch()
+    const { items: allFlows = [], loading } = useAppSelector((state: any) => state.flows || {})
+    const flows = allFlows.filter((f: any) => f.status === 'archived')
 
     useEffect(() => {
-        loadArchivedFlows()
-    }, [])
-
-    const loadArchivedFlows = async () => {
-        try {
-            setLoading(true)
-            const data = await fetchAPI('/flows/')
-            const archived = data.filter((f: { status: string }) => f.status === 'archived')
-            setFlows(archived)
-        } catch {
-            toast.error('Failed to load archived workflows')
-        } finally {
-            setLoading(false)
-        }
-    }
+        dispatch(fetchFlows())
+    }, [dispatch])
 
     const handleRestore = async (flowId: number) => {
-        const restorePromise = fetchAPI(`/flows/${flowId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'draft' })
-        }).then(() => {
-            loadArchivedFlows()
-        })
+        const restorePromise = dispatch(updateFlow({ id: flowId, data: { status: 'draft' } })).unwrap()
 
         toast.promise(restorePromise, {
             loading: 'Restoring workflow...',
@@ -76,16 +53,12 @@ export default function ArchivesPage() {
                         className="bg-red-500 hover:bg-red-600"
                         onClick={async () => {
                             toast.dismiss(t.id)
-                            const deletePromise = fetchAPI(`/flows/${flowId}`, { method: 'DELETE' })
-                                .then(() => {
-                                    loadArchivedFlows()
-                                })
-
-                            toast.promise(deletePromise, {
-                                loading: 'Deleting workflow...',
-                                success: 'Workflow deleted permanently!',
-                                error: 'Failed to delete workflow'
-                            })
+                            try {
+                                await dispatch(deleteFlow(flowId)).unwrap()
+                                toast.success('Workflow deleted permanently!')
+                            } catch (error) {
+                                toast.error('Failed to delete workflow')
+                            }
                         }}
                     >
                         Delete
@@ -131,7 +104,7 @@ export default function ArchivesPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {flows.map((flow) => (
+                            {flows.map((flow:Flow) => (
                                 <tr key={flow.id} className="border-t border-border/40 hover:bg-muted/20">
                                     <td className="p-4">
                                         <div className="font-medium">{flow.name}</div>

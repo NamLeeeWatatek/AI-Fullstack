@@ -1,6 +1,6 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import select
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlmodel import select, func, col
 from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
 from app.models.flow import Flow, FlowCreate, FlowUpdate, FlowResponse
@@ -9,17 +9,105 @@ from app.core.auth import get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=List[FlowResponse])
+@router.get("/")
 async def list_flows(
-    skip: int = 0,
-    limit: int = 100,
+    # Pagination params
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(25, ge=1, le=100, description="Items per page"),
+    
+    # Search & Filter params - ALL handled on backend
+    search: Optional[str] = Query(None, description="Search in name and description"),
+    status: Optional[str] = Query(None, description="Filter by status: draft, published, archived"),
+    channel_id: Optional[int] = Query(None, description="Filter by channel"),
+    
+    # Sort params
+    sort_by: str = Query("created_at", description="Sort field"),
+    sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
+    
     current_user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_session)
 ):
-    statement = select(Flow).offset(skip).limit(limit)
-    result = await session.execute(statement)
+    """
+    Get paginated list of flows with search, filter, and sort
+    ALL logic handled on backend - frontend only displays results
+    """
+    # Build base query
+    query = select(Flow)
+    
+    # Apply search - backend handles this
+    if search:
+        search_filter = f"%{search}%"
+        query = query.where(
+            (col(Flow.name).ilike(search_filter)) |
+            (col(Flow.description).ilike(search_filter))
+        )
+    
+    # Apply filters - backend handles this
+    if status:
+        query = query.where(Flow.status == status)
+    if channel_id:
+        query = query.where(Flow.channel_id == channel_id)
+    
+    # Count total before pagination
+    count_query = select(func.count()).select_from(query.subquery())
+    total_result = await session.execute(count_query)
+    total = total_result.scalar() or 0
+    
+    # Apply sorting - backend handles this
+    sort_column = getattr(Flow, sort_by, Flow.created_at)
+    if sort_order == "desc":
+        query = query.order_by(sort_column.desc())
+    else:
+        query = query.order_by(sort_column.asc())
+    
+    # Apply pagination
+    offset = (page - 1) * page_size
+    query = query.offset(offset).limit(page_size)
+    
+    # Execute query
+    result = await session.execute(query)
     flows = result.scalars().all()
-    return flows
+    
+    # Calculate pagination metadata
+    total_pages = (total + page_size - 1) // page_size
+    has_next = page < total_pages
+    has_prev = page > 1
+    
+    # TODO: Enrich with execution stats (avoid N+1 queries)
+    # For now, return flows as-is
+    # In production, use JOIN or batch query to get executions count and success rate
+    
+    # Calculate aggregated stats for ALL flows (not just current page)
+    from sqlalchemy import case
+    
+    stats_query = select(
+        func.count(Flow.id).label('total'),
+        func.sum(case((Flow.status == 'published', 1), else_=0)).label('active'),
+        func.sum(case((Flow.status == 'draft', 1), else_=0)).label('draft'),
+        func.sum(case((Flow.status == 'archived', 1), else_=0)).label('archived'),
+    )
+    stats_result = await session.execute(stats_query)
+    stats_row = stats_result.first()
+    
+    # Return paginated response with stats
+    return {
+        "items": flows,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+        "has_next": has_next,
+        "has_prev": has_prev,
+        # Stats for all flows (calculated on backend)
+        "stats": {
+            "total": int(stats_row.total or 0),
+            "active": int(stats_row.active or 0),
+            "draft": int(stats_row.draft or 0),
+            "archived": int(stats_row.archived or 0),
+            "successRate": 0,  # TODO: Calculate from executions
+            "avgDuration": 0,  # TODO: Calculate from executions
+        }
+    }
 
 @router.post("/", response_model=FlowResponse)
 async def create_flow(

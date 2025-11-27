@@ -42,3 +42,53 @@ async def get_dashboard_stats(
     }
     
     return stats
+
+
+@router.get("/flows/{flow_id}")
+async def get_flow_stats(
+    flow_id: int,
+    current_user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session)
+):
+    """Get execution statistics for a specific flow"""
+    from app.models.execution import WorkflowExecution
+    
+    # Total executions
+    total_query = select(func.count()).select_from(WorkflowExecution).where(
+        WorkflowExecution.flow_id == flow_id
+    )
+    total_executions = (await session.execute(total_query)).scalar() or 0
+    
+    # Successful executions
+    success_query = select(func.count()).select_from(WorkflowExecution).where(
+        WorkflowExecution.flow_id == flow_id,
+        WorkflowExecution.status == 'completed'
+    )
+    successful_executions = (await session.execute(success_query)).scalar() or 0
+    
+    # Calculate success rate
+    success_rate = 0
+    if total_executions > 0:
+        success_rate = round((successful_executions / total_executions) * 100, 1)
+    
+    # Average duration (only for completed executions)
+    avg_duration_query = select(
+        func.avg(
+            func.extract('epoch', WorkflowExecution.completed_at - WorkflowExecution.started_at) * 1000
+        )
+    ).where(
+        WorkflowExecution.flow_id == flow_id,
+        WorkflowExecution.status == 'completed',
+        WorkflowExecution.completed_at.isnot(None)
+    )
+    avg_duration = (await session.execute(avg_duration_query)).scalar()
+    avg_duration_ms = int(avg_duration) if avg_duration else 0
+    
+    return {
+        "flow_id": flow_id,
+        "total_executions": total_executions,
+        "successful_executions": successful_executions,
+        "failed_executions": total_executions - successful_executions,
+        "success_rate": success_rate,
+        "avg_duration_ms": avg_duration_ms
+    }

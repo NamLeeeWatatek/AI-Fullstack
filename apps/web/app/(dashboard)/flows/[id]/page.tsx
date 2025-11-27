@@ -20,8 +20,9 @@ import { fetchAPI } from '@/lib/api'
 import toast from 'react-hot-toast'
 import ReactFlow, { Background, Controls, MiniMap, BackgroundVariant } from 'reactflow'
 import 'reactflow/dist/style.css'
-import { useNodeTypes } from '@/lib/context/node-types-context'
+import { useAppSelector } from '@/lib/store/hooks'
 import CustomNode from '@/components/features/workflow/custom-node'
+import { getExecutionReference, formatExecutionDuration, formatExecutionDate } from '@/lib/execution-utils'
 import {
     FiEdit,
     FiPlay,
@@ -36,11 +37,11 @@ import {
 } from 'react-icons/fi'
 
 function FlowPreview({ nodes, edges }: { nodes: any[], edges: any[] }) {
-    const { nodeTypes: allNodeTypes } = useNodeTypes()
+    const { items: allNodeTypes = [] } = useAppSelector((state: any) => state.nodeTypes || {})
 
     const nodeTypes = useMemo(() => {
         const types: Record<string, any> = { custom: CustomNode }
-        allNodeTypes.forEach(t => {
+        allNodeTypes.forEach((t: any) => {
             types[t.id] = CustomNode
         })
         return types
@@ -48,15 +49,20 @@ function FlowPreview({ nodes, edges }: { nodes: any[], edges: any[] }) {
 
     // Ensure nodes have correct type for CustomNode
     const safeNodes = useMemo(() => {
-        return nodes.map(node => ({
-            ...node,
-            type: node.type || 'custom', // Fallback
-            data: {
-                ...node.data,
-                // Ensure type is in data for CustomNode lookup
-                type: node.type || node.data?.type
+        return nodes.map(node => {
+            // Store original type in data.type for CustomNode to lookup
+            const originalType = node.data?.type || node.type
+            
+            return {
+                ...node,
+                type: 'custom', // Always use custom node component
+                data: {
+                    ...node.data,
+                    type: originalType, // Store original type for icon/style lookup
+                    label: node.data?.label || node.data?.name || originalType
+                }
             }
-        }))
+        })
     }, [nodes])
 
     return (
@@ -711,7 +717,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                                                     <FiClock className="w-5 h-5 text-yellow-500" />
                                                 )}
                                                 <div>
-                                                    <p className="font-medium">Execution #{execution.id}</p>
+                                                    <p className="font-medium">{getExecutionReference(flow.id, execution.id)}</p>
                                                     <p className="text-sm text-muted-foreground capitalize">
                                                         {execution.status} • {execution.completed_nodes}/{execution.total_nodes} nodes
                                                     </p>
@@ -786,7 +792,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                                                 </div>
                                             )}
                                             <div>
-                                                <p className="font-medium">Execution #{execution.id}</p>
+                                                <p className="font-medium">{getExecutionReference(flow.id, execution.id)}</p>
                                                 <p className="text-sm text-muted-foreground capitalize">
                                                     {execution.status}
                                                 </p>

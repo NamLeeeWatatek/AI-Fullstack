@@ -32,7 +32,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/lib/hooks/use-auth'
 import toast, { Toaster } from 'react-hot-toast'
 import { AIFloatingButton } from '@/components/features/ai-assistant/ai-floating-button'
-import { NodeTypesProvider } from '@/lib/context/node-types-context'
+import { ReduxProvider } from '@/lib/store/Provider'
 
 // Notification type
 interface Notification {
@@ -59,8 +59,8 @@ export default function DashboardLayout({
         email?: string;
     } | null>(null)
 
-    // Sidebar state
-    const [sidebarOpen, setSidebarOpen] = useState(true)
+    // Sidebar state - default closed on mobile, open on desktop (using Tailwind)
+    const [sidebarOpen, setSidebarOpen] = useState(false)
 
     // Theme state
     const [theme, setTheme] = useState<'dark' | 'light'>('dark')
@@ -86,19 +86,6 @@ export default function DashboardLayout({
         const currentUser = getUser()
         setUser(currentUser)
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-
-    // Handle responsive sidebar - close on mobile by default
-    useEffect(() => {
-        const checkMobile = () => {
-            if (window.innerWidth < 1024) {
-                setSidebarOpen(false)
-            }
-        }
-        
-        checkMobile()
-        window.addEventListener('resize', checkMobile)
-        return () => window.removeEventListener('resize', checkMobile)
     }, [])
 
     // Load theme from localStorage
@@ -237,7 +224,7 @@ export default function DashboardLayout({
     }
 
     return (
-        <NodeTypesProvider>
+        <ReduxProvider>
             <div className="h-screen flex bg-background overflow-hidden">
                 {/* Mobile Overlay - Only show on mobile when sidebar is open */}
                 {sidebarOpen && (
@@ -247,9 +234,9 @@ export default function DashboardLayout({
                     />
                 )}
 
-                {/* Sidebar - Fixed on mobile, relative on desktop */}
+                {/* Sidebar - Responsive with Tailwind */}
                 <aside className={`
-                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
                     fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto
                     w-64 border-r border-border/40 flex flex-col bg-background
                     transition-transform duration-300 ease-in-out
@@ -628,28 +615,39 @@ export default function DashboardLayout({
                 <Toaster
                     position="top-right"
                     toastOptions={{
-                        duration: 3000,
+                        duration: 4000,
                         style: {
                             background: 'hsl(var(--background))',
                             color: 'hsl(var(--foreground))',
                             border: '1px solid hsl(var(--border))',
                             backdropFilter: 'blur(10px)',
+                            padding: '16px',
+                            borderRadius: '12px',
+                            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.2)',
                         },
                         success: {
                             iconTheme: {
                                 primary: '#10b981',
                                 secondary: '#fff',
                             },
+                            duration: 3000,
                         },
                         error: {
                             iconTheme: {
                                 primary: '#ef4444',
                                 secondary: '#fff',
                             },
+                            duration: 5000,
+                        },
+                        loading: {
+                            iconTheme: {
+                                primary: '#3b82f6',
+                                secondary: '#fff',
+                            },
                         },
                     }}
                 />
-            </div>
-        </NodeTypesProvider>
+                </div>
+        </ReduxProvider>
     )
 }

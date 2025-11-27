@@ -16,8 +16,9 @@ import {
     FiRefreshCw,
     FiDownload
 } from 'react-icons/fi'
-import { fetchAPI } from '@/lib/api'
-import { useNodeTypes } from '@/lib/context/node-types-context'
+import axiosInstance from '@/lib/axios'
+import { useAppSelector } from '@/lib/store/hooks'
+import { getExecutionReference, formatExecutionDuration, formatExecutionDate } from '@/lib/execution-utils'
 
 interface NodeExecution {
     id: number
@@ -54,7 +55,12 @@ export default function ExecutionDetailPage({
 }: {
     params: { id: string; executionId: string }
 }) {
-    const { getNodeType } = useNodeTypes()
+    const { items: nodeTypes = [] } = useAppSelector((state: any) => state.nodeTypes || {})
+    
+    const getNodeType = (typeId: string) => {
+        return nodeTypes.find((nt: any) => nt.id === typeId)
+    }
+    
     const [execution, setExecution] = useState<Execution | null>(null)
     const [loading, setLoading] = useState(true)
     const [selectedNode, setSelectedNode] = useState<NodeExecution | null>(null)
@@ -66,7 +72,7 @@ export default function ExecutionDetailPage({
     const loadExecution = async () => {
         try {
             setLoading(true)
-            const data = await fetchAPI(`/executions/${params.executionId}`)
+            const data: any = await axiosInstance.get(`/executions/${params.executionId}`)
             setExecution(data)
         } catch (e: any) {
             toast.error('Failed to load execution details')
@@ -285,7 +291,7 @@ export default function ExecutionDetailPage({
                             </Button>
                         </Link>
                         <div>
-                            <h1 className="text-3xl font-bold mb-2">Execution #{execution.id}</h1>
+                            <h1 className="text-3xl font-bold mb-2">{getExecutionReference(parseInt(params.id), execution.id)}</h1>
                             <p className="text-muted-foreground">
                                 Started {formatDate(execution.started_at)}
                             </p>

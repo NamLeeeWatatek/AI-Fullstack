@@ -8,7 +8,7 @@ import { FiX, FiCheck, FiGrid, FiLayers, FiBox, FiRefreshCw } from 'react-icons/
 import * as FiIcons from 'react-icons/fi'
 import * as SiIcons from 'react-icons/si'
 import * as MdIcons from 'react-icons/md'
-import { useNodeTypes } from '@/lib/context/node-types-context'
+import { useAppSelector } from '@/lib/store/hooks'
 
 interface Template {
     id: string
@@ -26,7 +26,12 @@ interface TemplateSelectorProps {
 }
 
 export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
-    const { getNodeType } = useNodeTypes()
+    const { items: nodeTypes = [] } = useAppSelector((state: any) => state.nodeTypes || {})
+    
+    const getNodeType = (typeId: string) => {
+        return nodeTypes.find((nt: any) => nt.id === typeId)
+    }
+    
     // const [activeTab, setActiveTab] = useState<'n8n' | 'standard'>('n8n')
     const [templates, setTemplates] = useState<Template[]>([])
     const [loading, setLoading] = useState(true)

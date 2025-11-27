@@ -15,7 +15,8 @@ import {
     FiArchive,
     FiTrash2
 } from 'react-icons/fi'
-import { fetchAPI } from '@/lib/api'
+import { useAppDispatch } from '@/lib/store/hooks'
+import { duplicateFlow, archiveFlow, deleteFlow } from '@/lib/store/slices/flowsSlice'
 
 interface WorkflowCardProps {
     workflow: {
@@ -34,6 +35,7 @@ interface WorkflowCardProps {
 
 export function WorkflowCard({ workflow, onUpdate, onRun }: WorkflowCardProps) {
     const router = useRouter()
+    const dispatch = useAppDispatch()
     const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
     const getStatusColor = (status: string) => {
@@ -50,32 +52,25 @@ export function WorkflowCard({ workflow, onUpdate, onRun }: WorkflowCardProps) {
     }
 
     const handleDuplicate = async () => {
-        const duplicatePromise = fetchAPI(`/flows/${workflow.id}/duplicate`, { method: 'POST' })
-            .then((dup) => {
-                setIsDropdownOpen(false)
-                router.push(`/flows/${dup.id}/edit`)
-                return dup
-            })
-
-        toast.promise(duplicatePromise, {
-            loading: 'Duplicating workflow...',
-            success: 'Workflow duplicated successfully!',
-            error: (err) => `Failed to duplicate: ${err.message}`,
-        })
+        setIsDropdownOpen(false)
+        try {
+            const dup = await dispatch(duplicateFlow(workflow.id)).unwrap()
+            toast.success('Flow duplicated!')
+            router.push(`/flows/${dup.id}/edit`)
+        } catch (error) {
+            toast.error('Failed to duplicate flow')
+        }
     }
 
     const handleArchive = async () => {
-        const archivePromise = fetchAPI(`/flows/${workflow.id}/archive`, { method: 'POST' })
-            .then(() => {
-                setIsDropdownOpen(false)
-                onUpdate?.()
-            })
-
-        toast.promise(archivePromise, {
-            loading: 'Archiving workflow...',
-            success: 'Workflow archived successfully!',
-            error: (err) => `Failed to archive: ${err.message}`,
-        })
+        setIsDropdownOpen(false)
+        try {
+            await dispatch(archiveFlow(workflow.id)).unwrap()
+            toast.success('Flow archived!')
+            onUpdate?.()
+        } catch (error) {
+            toast.error('Failed to archive flow')
+        }
     }
 
     const handleDelete = async () => {
@@ -99,17 +94,14 @@ export function WorkflowCard({ workflow, onUpdate, onRun }: WorkflowCardProps) {
                         className="bg-red-500 hover:bg-red-600"
                         onClick={async () => {
                             toast.dismiss(t.id)
-                            const deletePromise = fetchAPI(`/flows/${workflow.id}`, { method: 'DELETE' })
-                                .then(() => {
-                                    setIsDropdownOpen(false)
-                                    onUpdate?.()
-                                })
-
-                            toast.promise(deletePromise, {
-                                loading: 'Deleting workflow...',
-                                success: 'Workflow deleted successfully!',
-                                error: (err) => `Failed to delete: ${err.message}`,
-                            })
+                            setIsDropdownOpen(false)
+                            try {
+                                await dispatch(deleteFlow(workflow.id)).unwrap()
+                                toast.success('Flow deleted!')
+                                onUpdate?.()
+                            } catch (error) {
+                                toast.error('Failed to delete flow')
+                            }
                         }}
                     >
                         Delete

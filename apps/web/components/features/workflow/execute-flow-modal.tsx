@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { FiPlay, FiX, FiLoader, FiAlertCircle } from 'react-icons/fi'
 import { DynamicFormField } from './dynamic-form-field'
 import { Node } from 'reactflow'
-import { useNodeTypes } from '@/lib/context/node-types-context'
+import { useAppSelector } from '@/lib/store/hooks'
 
 interface ExecuteFlowModalProps {
     isOpen: boolean
@@ -18,7 +18,11 @@ interface ExecuteFlowModalProps {
 export function ExecuteFlowModal({ isOpen, onClose, onExecute, nodes, isExecuting }: ExecuteFlowModalProps) {
     const [inputData, setInputData] = useState<Record<string, any>>({})
     const [allNodesData, setAllNodesData] = useState<Record<string, any>>({})
-    const { getNodeType } = useNodeTypes()
+    const { items: nodeTypes = [] } = useAppSelector((state: any) => state.nodeTypes || {})
+    
+    const getNodeType = (typeId: string) => {
+        return nodeTypes.find((nt: any) => nt.id === typeId)
+    }
 
     useEffect(() => {
         if (isOpen && nodes.length > 0) {

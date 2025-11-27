@@ -1,0 +1,242 @@
+/**
+ * Flows Redux Slice
+ */
+import { createSlice, createAsyncThunk, type PayloadAction, type ActionReducerMapBuilder } from '@reduxjs/toolkit'
+import type { Draft } from '@reduxjs/toolkit'
+import axiosInstance from '@/lib/axios'
+import type { PaginatedResponse, PaginationParams } from '@/lib/types/pagination'
+
+export interface Flow {
+  id: number
+  name: string
+  description: string
+  status: 'draft' | 'published' | 'archived'
+  is_active: boolean
+  flow_data: Record<string, unknown>
+  created_at: string
+  updated_at: string
+  archived_at?: string
+  user_id: string
+  version?: number
+  executions?: number
+  successRate?: number
+  channel_id?: number | null
+}
+
+interface FlowsState {
+  items: Flow[]
+  currentFlow: Flow | null
+  loading: boolean
+  error: string | null
+  // Pagination
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  hasNext: boolean
+  hasPrev: boolean
+  // Aggregated stats from backend
+  stats?: {
+    total_flows: number
+    total_published: number
+    total_draft: number
+    total_archived: number
+  }
+}
+
+const initialState: FlowsState = {
+  items: [],
+  currentFlow: null,
+  loading: false,
+  error: null,
+  total: 0,
+  page: 1,
+  pageSize: 25,
+  totalPages: 0,
+  hasNext: false,
+  hasPrev: false,
+  stats: undefined,
+}
+
+// Async thunks
+export const fetchFlows = createAsyncThunk<
+  PaginatedResponse<Flow>,
+  Partial<PaginationParams & { status?: string }> | void
+>(
+  'flows/fetchFlows',
+  async (params) => {
+    const queryParams = new URLSearchParams()
+    
+    if (params) {
+      if (params.page) queryParams.append('page', params.page.toString())
+      if (params.page_size) queryParams.append('page_size', params.page_size.toString())
+      if (params.search) queryParams.append('search', params.search)
+      if (params.sort_by) queryParams.append('sort_by', params.sort_by)
+      if (params.sort_order) queryParams.append('sort_order', params.sort_order)
+      
+      // Handle status filter directly (not nested in filters)
+      if ('status' in params && params.status) {
+        queryParams.append('status', params.status)
+      }
+      
+      // Handle other filters
+      if (params.filters) {
+        Object.entries(params.filters).forEach(([key, value]) => {
+          queryParams.append(key, String(value))
+        })
+      }
+    }
+    
+    const url = `/flows/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    const response: any = await axiosInstance.get(url)
+    
+    // If backend doesn't return paginated format yet, wrap it
+    if (Array.isArray(response)) {
+      return {
+        items: response,
+        total: response.length,
+        page: 1,
+        page_size: response.length,
+        total_pages: 1,
+        has_next: false,
+        has_prev: false,
+      }
+    }
+    
+    return response as PaginatedResponse<Flow>
+  }
+)
+
+export const fetchFlow = createAsyncThunk<Flow, number>(
+  'flows/fetchFlow',
+  async (id: number) => {
+    const response: any = await axiosInstance.get(`/flows/${id}`)
+    return response as Flow
+  }
+)
+
+export const createFlow = createAsyncThunk<Flow, Partial<Flow>>(
+  'flows/createFlow',
+  async (data: Partial<Flow>) => {
+    const response: any = await axiosInstance.post('/flows/', data)
+    return response as Flow
+  }
+)
+
+export const updateFlow = createAsyncThunk<Flow, { id: number; data: Partial<Flow> }>(
+  'flows/updateFlow',
+  async ({ id, data }: { id: number; data: Partial<Flow> }) => {
+    const response: any = await axiosInstance.patch(`/flows/${id}`, data)
+    return response as Flow
+  }
+)
+
+export const deleteFlow = createAsyncThunk<number, number>(
+  'flows/deleteFlow',
+  async (id: number) => {
+    await axiosInstance.delete(`/flows/${id}`)
+    return id
+  }
+)
+
+export const duplicateFlow = createAsyncThunk<Flow, number>(
+  'flows/duplicateFlow',
+  async (id: number) => {
+    const response: any = await axiosInstance.post(`/flows/${id}/duplicate`)
+    return response as Flow
+  }
+)
+
+export const archiveFlow = createAsyncThunk<Flow, number>(
+  'flows/archiveFlow',
+  async (id: number) => {
+    const response: any = await axiosInstance.post(`/flows/${id}/archive`)
+    return response as Flow
+  }
+)
+
+// Slice
+const flowsSlice = createSlice({
+  name: 'flows',
+  initialState,
+  reducers: {
+    setCurrentFlow: (state: Draft<FlowsState>, action: PayloadAction<Flow | null>) => {
+      state.currentFlow = action.payload
+    },
+    clearError: (state: Draft<FlowsState>) => {
+      state.error = null
+    },
+  },
+  extraReducers: (builder: ActionReducerMapBuilder<FlowsState>) => {
+    // Fetch flows
+    builder
+      .addCase(fetchFlows.pending, (state: Draft<FlowsState>) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchFlows.fulfilled, (state: Draft<FlowsState>, action: PayloadAction<any>) => {
+        state.loading = false
+        state.items = action.payload.items
+        state.total = action.payload.total
+        state.page = action.payload.page
+        state.pageSize = action.payload.page_size
+        state.totalPages = action.payload.total_pages
+        state.hasNext = action.payload.has_next
+        state.hasPrev = action.payload.has_prev
+        // Store aggregated stats if backend provides them
+        if (action.payload.stats) {
+          state.stats = action.payload.stats
+        }
+      })
+      .addCase(fetchFlows.rejected, (state: Draft<FlowsState>, action: any) => {
+        state.loading = false
+        state.error = action.error.message || 'Failed to fetch flows'
+      })
+
+    // Fetch single flow
+    builder.addCase(fetchFlow.fulfilled, (state: Draft<FlowsState>, action: PayloadAction<Flow>) => {
+      state.currentFlow = action.payload
+    })
+
+    // Create flow
+    builder.addCase(createFlow.fulfilled, (state: Draft<FlowsState>, action: PayloadAction<Flow>) => {
+      state.items.push(action.payload)
+      state.currentFlow = action.payload
+    })
+
+    // Update flow
+    builder.addCase(updateFlow.fulfilled, (state: Draft<FlowsState>, action: PayloadAction<Flow>) => {
+      const index = state.items.findIndex((f: Flow) => f.id === action.payload.id)
+      if (index !== -1) {
+        state.items[index] = action.payload
+      }
+      if (state.currentFlow?.id === action.payload.id) {
+        state.currentFlow = action.payload
+      }
+    })
+
+    // Delete flow
+    builder.addCase(deleteFlow.fulfilled, (state: Draft<FlowsState>, action: PayloadAction<number>) => {
+      state.items = state.items.filter((f: Flow) => f.id !== action.payload)
+      if (state.currentFlow?.id === action.payload) {
+        state.currentFlow = null
+      }
+    })
+
+    // Duplicate flow
+    builder.addCase(duplicateFlow.fulfilled, (state: Draft<FlowsState>, action: PayloadAction<Flow>) => {
+      state.items.push(action.payload)
+    })
+
+    // Archive flow
+    builder.addCase(archiveFlow.fulfilled, (state: Draft<FlowsState>, action: PayloadAction<Flow>) => {
+      const index = state.items.findIndex((f: Flow) => f.id === action.payload.id)
+      if (index !== -1) {
+        state.items[index] = action.payload
+      }
+    })
+  },
+})
+
+export const { setCurrentFlow, clearError } = flowsSlice.actions
+export default flowsSlice.reducer

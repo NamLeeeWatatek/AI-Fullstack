@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { FiSave, FiSettings } from 'react-icons/fi'
 import toast from 'react-hot-toast'
 import type { Node } from 'reactflow'
-import { useNodeTypes } from '@/lib/context/node-types-context'
+import { useAppSelector } from '@/lib/store/hooks'
 import { DynamicFormField } from './dynamic-form-field'
 
 interface NodePropertiesProps {
@@ -15,9 +15,13 @@ interface NodePropertiesProps {
 }
 
 export const NodeProperties = memo(function NodeProperties({ node, onUpdate }: NodePropertiesProps) {
-    const { getNodeType } = useNodeTypes()
+    const { items: nodeTypes = [] } = useAppSelector((state: any) => state.nodeTypes || {})
     const nodeData = node.data as any
     const [config, setConfig] = useState(nodeData.config || {})
+    
+    const getNodeType = (typeId: string) => {
+        return nodeTypes.find((nt: any) => nt.id === typeId)
+    }
 
     // Use refs to avoid recreating callbacks
     const nodeRef = useRef(node)

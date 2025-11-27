@@ -26,11 +26,14 @@ import ReactFlow, {
     Panel
 } from 'reactflow'
 import 'reactflow/dist/style.css'
-import { fetchAPI } from '@/lib/api'
+import axiosInstance from '@/lib/axios'
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
+import { clearDraftTemplate } from '@/lib/store/slices/workflowEditorSlice'
 import { NodePalette } from '@/components/features/workflow/node-palette'
 import NodeProperties from '@/components/features/workflow/node-properties'
 import CustomNode from '@/components/features/workflow/custom-node'
 import { NodeType } from '@/lib/nodeTypes'
+import { useExecutionWebSocket } from '@/lib/hooks/use-execution-websocket'
 
 const nodeTypes = {
     custom: CustomNode
@@ -53,9 +56,13 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
     // UI state
     const [isSaving, setIsSaving] = useState(false)
     const [isExecuting, setIsExecuting] = useState(false)
+    const [isTesting, setIsTesting] = useState(false)
     const [showProperties, setShowProperties] = useState(false)
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
     const [showExecutionResults, setShowExecutionResults] = useState(false)
+    
+    // WebSocket execution hook
+    const { execute: executeWithWebSocket, isExecuting: isWebSocketExecuting } = useExecutionWebSocket(setNodes)
 
     // Derived state
     const selectedNode = useMemo(() =>
@@ -82,11 +89,18 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
     }, [])
 
     // Track changes using useMemo to avoid infinite loops
+    // Only track meaningful changes (not selection/position)
     const currentStateString = useMemo(() => {
+        // Remove selection and position data for comparison
+        const cleanNodes = nodes.map(({ selected, ...node }) => ({
+            ...node,
+            position: { x: Math.round(node.position.x), y: Math.round(node.position.y) }
+        }))
+        
         return JSON.stringify({
             name: workflowName,
             channel_id: selectedChannelId,
-            nodes,
+            nodes: cleanNodes,
             edges
         })
     }, [workflowName, selectedChannelId, nodes, edges])
@@ -100,75 +114,59 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
     // Helper to migrate nodes to custom type
     const migrateNodes = (nodes: Node[]) => {
         return nodes.map(node => {
-            // If node type is not 'custom', migrate it
-            if (node.type !== 'custom') {
-                return {
-                    ...node,
-                    type: 'custom',
-                    data: {
-                        ...node.data,
-                        // Ensure type is stored in data, fallback to node.type
-                        type: node.data?.type || node.type
-                    }
+            // Store original type in data.type for CustomNode to lookup
+            const originalType = node.data?.type || node.type
+            
+            return {
+                ...node,
+                type: 'custom', // Always use custom node component
+                data: {
+                    ...node.data,
+                    type: originalType, // Store original type for icon/style lookup
+                    label: node.data?.label || node.data?.name || originalType
                 }
             }
-            return node
         })
     }
 
+    // Get draft template from Redux
+    const draftTemplate = useAppSelector((state: any) => state.workflowEditor?.draftTemplate)
+    const dispatch = useAppDispatch()
+
     useEffect(() => {
-        if (params.id !== 'new') {
-            loadFlow()
+        if (params.id === 'new') {
+            // Load template from Redux if available
+            if (draftTemplate) {
+                setNodes(migrateNodes(draftTemplate.nodes || []))
+                setEdges(draftTemplate.edges || [])
+                setWorkflowName(draftTemplate.name || 'Untitled Workflow')
+                
+                // Clear template after loading
+                dispatch(clearDraftTemplate())
+                
+                if (draftTemplate.nodes?.length > 0) {
+                    toast.success(`Template loaded with ${draftTemplate.nodes.length} nodes! Click Save to create workflow.`)
+                }
+            }
+            
+            // For new flows, always show Save button
+            setHasUnsavedChanges(true)
+            // Set empty saved state so tracking works
+            setSavedState(JSON.stringify({
+                name: 'Untitled Workflow',
+                channel_id: null,
+                nodes: [],
+                edges: []
+            }))
         } else {
-            // Check if there's an AI-generated workflow in localStorage
-            const aiWorkflow = localStorage.getItem('ai_suggested_workflow')
-            if (aiWorkflow) {
-                try {
-                    const workflow = JSON.parse(aiWorkflow)
-                    if (workflow.nodes && workflow.nodes.length > 0) {
-                        setNodes(migrateNodes(workflow.nodes))
-                        setEdges(workflow.edges || [])
-                        if (workflow.suggested_name) {
-                            setWorkflowName(workflow.suggested_name)
-                        }
-                        toast.success('AI-generated workflow loaded!')
-                    }
-                    // Clear localStorage after loading
-                    localStorage.removeItem('ai_suggested_workflow')
-                } catch (e) {
-                    console.error('Failed to load AI workflow:', e)
-                }
-            }
-
-            // Check if there's a template to load
-            const templateData = localStorage.getItem('n8n_template_data')
-            if (templateData) {
-                try {
-                    const template = JSON.parse(templateData)
-                    if (template.nodes && template.nodes.length > 0) {
-                        setNodes(migrateNodes(template.nodes))
-                        setEdges(template.edges || [])
-                        setWorkflowName(template.name || 'Untitled Workflow')
-                        setHasUnsavedChanges(true)
-
-                        toast.success(`Template "${template.name}" loaded with ${template.nodes.length} nodes! Click Save to create workflow.`, {
-                            duration: 5000
-                        })
-                    }
-                    // Clear localStorage after loading
-                    localStorage.removeItem('n8n_template_data')
-                } catch (e) {
-                    console.error('Failed to load template:', e)
-                    toast.error('Failed to load template')
-                }
-            }
+            loadFlow()
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id])
 
     const loadChannels = async () => {
         try {
-            const data = await fetchAPI('/channels/')
+            const data: any = await axiosInstance.get('/channels/')
             setChannels(data)
         } catch (e: any) {
             console.error('Failed to load channels:', e)
@@ -177,24 +175,32 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
 
     const loadFlow = async () => {
         try {
-            const data = await fetchAPI(`/flows/${params.id}`)
+            const data: any = await axiosInstance.get(`/flows/${params.id}`)
             setFlow(data)
             setWorkflowName(data.name)
             setSelectedChannelId(data.channel_id || null)
 
-            if (data.data?.nodes) {
-                setNodes(migrateNodes(data.data.nodes))
+            // IMPORTANT: Backend uses 'data' field, not 'flow_data'
+            const flowData = data.data || data.flow_data || {}
+            
+            if (flowData.nodes) {
+                setNodes(migrateNodes(flowData.nodes))
             }
-            if (data.data?.edges) {
-                setEdges(data.data.edges)
+            if (flowData.edges) {
+                setEdges(flowData.edges)
             }
 
-            // Save initial state
+            // Save initial state (clean nodes for comparison)
+            const cleanNodes = (flowData.nodes || []).map(({ selected, ...node }: any) => ({
+                ...node,
+                position: { x: Math.round(node.position.x), y: Math.round(node.position.y) }
+            }))
+            
             const initialState = JSON.stringify({
                 name: data.name,
                 channel_id: data.channel_id,
-                nodes: data.data?.nodes || [],
-                edges: data.data?.edges || []
+                nodes: cleanNodes,
+                edges: flowData.edges || []
             })
             setSavedState(initialState)
             setHasUnsavedChanges(false)
@@ -276,6 +282,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
     const handleSave = async () => {
         const savePromise = (async () => {
             setIsSaving(true)
+            // IMPORTANT: Backend uses 'data' field, not 'flow_data'
             const flowData = {
                 name: workflowName,
                 description: flow?.description || '',
@@ -287,28 +294,16 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
             }
 
             if (params.id === 'new') {
-                const created = await fetchAPI('/flows/', {
-                    method: 'POST',
-                    body: JSON.stringify(flowData)
-                })
-
-                // Update saved state after successful save
-                const newState = JSON.stringify({
-                    name: workflowName,
-                    channel_id: selectedChannelId,
-                    nodes,
-                    edges
-                })
-                setSavedState(newState)
-                setHasUnsavedChanges(false)
-
+                // Create new flow
+                const created: any = await axiosInstance.post('/flows/', flowData)
+                
+                // Redirect to edit page with the new flow ID (stay in editor)
                 router.push(`/flows/${created.id}/edit`)
+                
                 return created
             } else {
-                const updated = await fetchAPI(`/flows/${params.id}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(flowData)
-                })
+                // Update existing flow
+                const updated: any = await axiosInstance.put(`/flows/${params.id}`, flowData)
                 setFlow(updated)
 
                 // Update saved state after successful save
@@ -327,18 +322,49 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
 
         toast.promise(savePromise, {
             loading: 'Saving workflow...',
-            success: 'Workflow saved successfully!',
+            success: params.id === 'new' 
+                ? 'Workflow created! You can continue editing.' 
+                : 'Workflow saved successfully!',
             error: (err) => `Failed to save: ${err.message}`
         }).finally(() => setIsSaving(false))
     }
 
+    // Test Run with WebSocket (real-time node updates)
+    const handleTestRun = async () => {
+        if (nodes.length === 0) {
+            toast.error('Add some nodes first!')
+            return
+        }
+
+        if (hasUnsavedChanges) {
+            toast.error('Please save the workflow first!')
+            return
+        }
+
+        const flowId = params.id === 'new' ? null : parseInt(params.id)
+        if (!flowId) {
+            toast.error('Please save the workflow before testing')
+            return
+        }
+
+        setIsTesting(true)
+        try {
+            await executeWithWebSocket(flowId, {})
+            toast.success('Test run completed!')
+        } catch (error: any) {
+            toast.error(`Test run failed: ${error.message}`)
+        } finally {
+            setIsTesting(false)
+        }
+    }
+
+    // Execute (normal API call, shows results panel)
     const handleExecute = async () => {
         if (nodes.length === 0) {
             toast.error('Add some nodes first!')
             return
         }
 
-        // Must save first if there are unsaved changes
         if (hasUnsavedChanges) {
             toast.error('Please save the workflow first!')
             return
@@ -347,19 +373,15 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
         const executePromise = (async () => {
             setIsExecuting(true)
 
-            // Get flow ID
             const flowId = params.id === 'new' ? null : parseInt(params.id)
             if (!flowId) {
                 throw new Error('Please save the workflow before executing')
             }
 
             // Call backend API to execute workflow
-            const execution = await fetchAPI('/executions/', {
-                method: 'POST',
-                body: JSON.stringify({
-                    flow_id: flowId,
-                    input_data: {}
-                })
+            const execution: any = await axiosInstance.post('/executions/', {
+                flow_id: flowId,
+                input_data: {}
             })
 
             // Convert node_executions to results format
@@ -435,16 +457,30 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
                             Unsaved changes
                         </span>
                     )}
+                    
+                    {/* Test Run - WebSocket real-time */}
                     <Button
                         variant="outline"
-                        onClick={handleExecute}
-                        disabled={isExecuting}
+                        onClick={handleTestRun}
+                        disabled={isTesting || isWebSocketExecuting || isExecuting}
+                        title="Test run with real-time node updates"
                     >
                         <FiPlay className="w-4 h-4 mr-2" />
-                        {isExecuting ? 'Executing...' : 'Test Run'}
+                        {isTesting || isWebSocketExecuting ? 'Testing...' : 'Test Run'}
                     </Button>
+                    
+                    {/* Execute - Normal API */}
+                    <Button
+                        onClick={handleExecute}
+                        disabled={isExecuting || isTesting || isWebSocketExecuting}
+                        title="Execute and show detailed results"
+                    >
+                        <FiPlay className="w-4 h-4 mr-2" />
+                        {isExecuting ? 'Executing...' : 'Execute'}
+                    </Button>
+                    
                     {hasUnsavedChanges && (
-                        <Button onClick={handleSave} disabled={isSaving}>
+                        <Button onClick={handleSave} disabled={isSaving} variant="default">
                             <FiSave className="w-4 h-4 mr-2" />
                             {isSaving ? 'Saving...' : 'Save'}
                         </Button>

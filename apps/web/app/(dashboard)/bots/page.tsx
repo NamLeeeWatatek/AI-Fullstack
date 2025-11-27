@@ -22,7 +22,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { fetchAPI } from '@/lib/api'
+import axiosInstance from '@/lib/axios'
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
+import { fetchFlows } from '@/lib/store/slices/flowsSlice'
 import toast from 'react-hot-toast'
 import {
     FiPlus,
@@ -59,26 +61,18 @@ export default function BotsPage() {
         description: '',
         flow_id: null as number | null
     })
-    const [flows, setFlows] = useState<Flow[]>([])
+    const dispatch = useAppDispatch()
+    const { items: flows = [] } = useAppSelector((state: any) => state.flows || {})
 
     useEffect(() => {
         loadBots()
-        loadFlows()
-    }, [])
-
-    const loadFlows = async () => {
-        try {
-            const data = await fetchAPI('/flows/')
-            setFlows(data)
-        } catch (error) {
-            console.error('Failed to load flows:', error)
-        }
-    }
+        dispatch(fetchFlows())
+    }, [dispatch])
 
     const loadBots = async () => {
         try {
             setLoading(true)
-            const data = await fetchAPI('/bots/')
+            const data: any = await axiosInstance.get('/bots/')
             setBots(data.bots || [])
         } catch {
             toast.error('Failed to load bots')
@@ -116,16 +110,10 @@ export default function BotsPage() {
 
         try {
             if (editingBot) {
-                await fetchAPI(`/bots/${editingBot.id}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(formData)
-                })
+                await axiosInstance.put(`/bots/${editingBot.id}`, formData)
                 toast.success('Bot updated')
             } else {
-                await fetchAPI('/bots/', {
-                    method: 'POST',
-                    body: JSON.stringify(formData)
-                })
+                await axiosInstance.post('/bots/', formData)
                 toast.success('Bot created')
             }
             closeModal()
@@ -139,7 +127,7 @@ export default function BotsPage() {
         if (!confirm('Are you sure you want to delete this bot?')) return
 
         try {
-            await fetchAPI(`/bots/${id}`, { method: 'DELETE' })
+            await axiosInstance.delete(`/bots/${id}`)
             toast.success('Bot deleted')
             loadBots()
         } catch {
@@ -149,11 +137,8 @@ export default function BotsPage() {
 
     const toggleStatus = async (bot: Bot) => {
         try {
-            await fetchAPI(`/bots/${bot.id}`, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    is_active: !bot.is_active
-                })
+            await axiosInstance.put(`/bots/${bot.id}`, {
+                is_active: !bot.is_active
             })
             toast.success('Bot status updated')
             loadBots()
@@ -290,7 +275,7 @@ export default function BotsPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="">No flow (manual responses only)</SelectItem>
-                                    {flows.map((flow) => (
+                                    {flows.map((flow: any) => (
                                         <SelectItem key={flow.id} value={flow.id.toString()}>
                                             {flow.name}
                                         </SelectItem>
