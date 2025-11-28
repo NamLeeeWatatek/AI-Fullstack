@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { ThemeProvider } from '@/components/providers/theme-provider'
+import { SessionProvider } from '@/components/providers/session-provider'
 import { ReduxProvider } from '@/lib/store/Provider'
 import './globals.css'
 
@@ -21,17 +22,19 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={inter.variable}>
-                <ThemeProvider
-                    attribute="class"
-                    defaultTheme="dark"
-                    enableSystem
-                    disableTransitionOnChange
-                >
-                    <ReduxProvider>
-                        {children}
-                        <Toaster />
-                    </ReduxProvider>
-                </ThemeProvider>
+                <SessionProvider>
+                    <ThemeProvider
+                        attribute="class"
+                        defaultTheme="dark"
+                        enableSystem
+                        disableTransitionOnChange
+                    >
+                        <ReduxProvider>
+                            {children}
+                            <Toaster />
+                        </ReduxProvider>
+                    </ThemeProvider>
+                </SessionProvider>
             </body>
         </html>
     )

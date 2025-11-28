@@ -15,8 +15,20 @@ import {
 } from 'react-icons/fi'
 import { MdAutoAwesome } from 'react-icons/md'
 import Link from 'next/link'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 export default function LandingPage() {
+    const router = useRouter()
+    const { isAuthenticated, isLoading } = useAuth()
+
+    // Redirect to dashboard if already authenticated
+    useEffect(() => {
+        if (!isLoading && isAuthenticated) {
+            router.push('/dashboard')
+        }
+    }, [isAuthenticated, isLoading, router])
     return (
         <div className="min-h-screen bg-background">
             {/* Navigation */}

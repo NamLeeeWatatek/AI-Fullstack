@@ -24,7 +24,11 @@ export function AISuggestWorkflow({ onSuggest }: AISuggestProps) {
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002/api/v1'
-            const token = localStorage.getItem('wataomi_token')
+            
+            // Get token from NextAuth session
+            const { getSession } = await import('next-auth/react')
+            const session = await getSession()
+            const token = session?.accessToken
 
             const response = await fetch(`${apiUrl}/ai/workflow/suggest`, {
                 method: 'POST',

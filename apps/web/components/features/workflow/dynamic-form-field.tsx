@@ -113,7 +113,11 @@ export const DynamicFormField = memo(function DynamicFormField({ field, value, o
                 formData.append('file', file)
 
                 const API_URL = process.env.NEXT_PUBLIC_API_URL
-                const token = localStorage.getItem('wataomi_token')
+                
+                // Get token from NextAuth session
+                const { getSession } = await import('next-auth/react')
+                const session = await getSession()
+                const token = session?.accessToken
 
                 const response = await fetch(`${API_URL}/media/upload/file`, {
                     method: 'POST',

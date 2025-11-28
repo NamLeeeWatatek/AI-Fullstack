@@ -46,10 +46,15 @@ export function WorkflowRunModal({ isOpen, onClose, onSubmit, inputFields, workf
 
             const endpoint = file.type.startsWith('image/') ? '/media/upload/image' : '/media/upload/file'
 
+            // Get token from NextAuth session
+            const { getSession } = await import('next-auth/react')
+            const session = await getSession()
+            const token = session?.accessToken
+
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}${endpoint}`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('wataomi_token')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: formDataUpload
             })

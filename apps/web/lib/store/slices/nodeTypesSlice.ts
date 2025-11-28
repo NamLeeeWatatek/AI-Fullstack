@@ -3,7 +3,7 @@
  */
 import { createSlice, createAsyncThunk, type PayloadAction, type ActionReducerMapBuilder } from '@reduxjs/toolkit'
 import type { Draft } from '@reduxjs/toolkit'
-import axiosInstance from '@/lib/axios'
+import axiosClient from '@/lib/axios-client'
 // Icon names are stored as strings and resolved at render time
 // See lib/icon-resolver.ts for icon resolution logic
 
@@ -72,7 +72,7 @@ export const fetchNodeTypes = createAsyncThunk<ApiNodeType[], string | undefined
   'nodeTypes/fetchNodeTypes',
   async (category?: string) => {
     const url = category ? `/node-types/?category=${category}` : '/node-types/'
-    const response: any = await axiosInstance.get(url)
+    const response: any = await axiosClient.get(url)
     return response as ApiNodeType[]
   }
 )
@@ -80,7 +80,7 @@ export const fetchNodeTypes = createAsyncThunk<ApiNodeType[], string | undefined
 export const fetchNodeCategories = createAsyncThunk<NodeCategory[], void>(
   'nodeTypes/fetchNodeCategories',
   async () => {
-    const response: any = await axiosInstance.get('/node-types/categories')
+    const response: any = await axiosClient.get('/node-types/categories')
     return response as NodeCategory[]
   }
 )
@@ -88,7 +88,7 @@ export const fetchNodeCategories = createAsyncThunk<NodeCategory[], void>(
 export const fetchNodeType = createAsyncThunk<ApiNodeType, string>(
   'nodeTypes/fetchNodeType',
   async (nodeId: string) => {
-    const response: any = await axiosInstance.get(`/node-types/${nodeId}`)
+    const response: any = await axiosClient.get(`/node-types/${nodeId}`)
     return response as ApiNodeType
   }
 )

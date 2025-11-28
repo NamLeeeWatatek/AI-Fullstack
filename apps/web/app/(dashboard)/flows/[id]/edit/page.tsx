@@ -11,8 +11,15 @@ import {
     FiSave,
     FiPlay,
     FiX,
-    FiLoader
+    FiLoader,
+    FiMoreVertical
 } from 'react-icons/fi'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import ReactFlow, {
     MiniMap,
     Controls,
@@ -26,7 +33,7 @@ import ReactFlow, {
     Panel
 } from 'reactflow'
 import 'reactflow/dist/style.css'
-import axiosInstance from '@/lib/axios'
+import axiosClient from '@/lib/axios-client'
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import {
     setNodes,
@@ -306,7 +313,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
                             }
                         }
 
-                        const created: any = await axiosInstance.post('/flows/', flowData)
+                        const created: any = await axiosClient.post('/flows/', flowData)
                         setFlow(created)
 
                         // Update saved state
@@ -369,7 +376,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
 
     const loadChannels = async () => {
         try {
-            const data: any = await axiosInstance.get('/channels/')
+            const data: any = await axiosClient.get('/channels/')
             setChannels(data)
         } catch (e: any) {
             console.error('Failed to load channels:', e)
@@ -378,7 +385,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
 
     const loadFlow = async () => {
         try {
-            const data: any = await axiosInstance.get(`/flows/${params.id}`)
+            const data: any = await axiosClient.get(`/flows/${params.id}`)
             setFlow(data)
 
             // IMPORTANT: Backend uses 'data' field, not 'flow_data'
@@ -580,7 +587,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
 
             if (params.id === 'new') {
                 // Create new flow
-                const created: any = await axiosInstance.post('/flows/', flowData)
+                const created: any = await axiosClient.post('/flows/', flowData)
                 setFlow(created)
 
                 // Update saved state
@@ -613,7 +620,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
                 return created
             } else {
                 // Update existing flow
-                const updated: any = await axiosInstance.put(`/flows/${params.id}`, flowData)
+                const updated: any = await axiosClient.put(`/flows/${params.id}`, flowData)
                 setFlow(updated)
 
                 // Update saved state after successful save (clean execution status)
@@ -655,6 +662,46 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
         savePromise.finally(() => setIsSaving(false))
     }
 
+    // Save as Template
+    const handleSaveAsTemplate = async () => {
+        if (nodes.length === 0) {
+            toast.error('Add some nodes first!')
+            return
+        }
+
+        if (hasUnsavedChanges) {
+            toast.error('Please save your workflow first')
+            return
+        }
+
+        const templateName = prompt('Enter template name:', workflowName || 'My Template')
+        if (!templateName) return
+
+        const templateDescription = prompt('Enter template description (optional):')
+
+        try {
+            await axiosClient.post('/templates/', {
+                name: templateName,
+                description: templateDescription || '',
+                category: 'custom',
+                nodes: nodes.map((node: any) => {
+                    const { executionStatus, executionError, executionOutput, ...cleanData } = node.data || {}
+                    return {
+                        id: node.id,
+                        type: node.type,
+                        position: node.position,
+                        data: cleanData
+                    }
+                }),
+                edges: edges
+            })
+            toast.success('Template saved successfully!')
+        } catch (error) {
+            console.error('Failed to save template:', error)
+            toast.error('Failed to save template')
+        }
+    }
+
     // Test Run with WebSocket (real-time node updates)
     const handleTestRun = async () => {
         if (nodes.length === 0) {
@@ -662,7 +709,8 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
             return
         }
 
-        const flowId = params.id === 'new' ? null : parseInt(params.id)
+        // Use flow.id if available (after save), otherwise try params.id
+        const flowId = flow?.id || (params.id !== 'new' ? parseInt(params.id) : null)
         if (!flowId) {
             toast.error('Please save the workflow before testing')
             return
@@ -698,7 +746,8 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
             return
         }
 
-        const flowId = params.id === 'new' ? null : parseInt(params.id)
+        // Use flow.id if available (after save), otherwise try params.id
+        const flowId = flow?.id || (params.id !== 'new' ? parseInt(params.id) : null)
         if (!flowId) {
             toast.error('Please save the workflow before executing')
             return
@@ -721,7 +770,8 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
 
     // Execute workflow with input data from modal
     const handleExecuteWithData = async (inputData: Record<string, any>) => {
-        const flowId = params.id === 'new' ? null : parseInt(params.id)
+        // Use flow.id if available (after save), otherwise try params.id
+        const flowId = flow?.id || (params.id !== 'new' ? parseInt(params.id) : null)
         if (!flowId) {
             toast.error('Please save the workflow before executing')
             return
@@ -824,6 +874,21 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
                             Save
                         </Button>
                     )}
+
+                    {/* More Options Menu */}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="icon">
+                                <FiMoreVertical className="w-4 h-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={handleSaveAsTemplate}>
+                                <FiSave className="w-4 h-4 mr-2" />
+                                Save as Template
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
 

@@ -32,9 +32,15 @@ export default function OAuthCallbackPage() {
         const handleCallback = async () => {
             try {
                 const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002/api/v1'
+                
+                // Get token from NextAuth session
+                const { getSession } = await import('next-auth/react')
+                const session = await getSession()
+                const token = session?.accessToken
+                
                 const res = await fetch(`${apiUrl}/oauth/callback/${provider}?code=${code}`, {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem('wataomi_token')}`,
+                        Authorization: `Bearer ${token}`,
                     },
                 })
 

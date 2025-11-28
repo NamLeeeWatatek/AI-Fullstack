@@ -14,6 +14,7 @@ import {
 import {
     FiLayout,
     FiGitMerge,
+    FiGrid,
     FiInbox,
     FiRadio,
     FiBarChart2,
@@ -33,9 +34,11 @@ import {
 import { MdAutoAwesome } from 'react-icons/md'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useAuth } from '@/lib/hooks/use-auth'
+import { useAuth } from '@/lib/hooks/useAuth'
 import toast from '@/lib/toast'
 import { AIFloatingButton } from '@/components/features/ai-assistant/ai-floating-button'
+import { LoadingLogo } from '@/components/ui/loading-logo'
+import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
 
 // Notification type
 interface Notification {
@@ -54,18 +57,14 @@ export default function DashboardLayout({
 }) {
     const pathname = usePathname()
     const { theme, setTheme } = useTheme()
-    const { getUser, logout, requireAuth } = useAuth()
+    const { user, isAuthenticated, isLoading, signOut } = useAuth()
     const [workspaceName] = useState('My Workspace')
     const [expandedSections, setExpandedSections] = useState<string[]>(['workflows'])
-    const [user, setUser] = useState<{
-        displayName?: string;
-        name?: string;
-        email?: string;
-    } | null>(null)
 
     // Sidebar state - default closed on mobile, open on desktop
     const [sidebarOpen, setSidebarOpen] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
     useEffect(() => {
         setMounted(true)
@@ -84,15 +83,24 @@ export default function DashboardLayout({
     ])
     const [showNotifications, setShowNotifications] = useState(false)
 
-    // Check authentication on mount
-    useEffect(() => {
-        if (!requireAuth()) {
-            return
-        }
-        const currentUser = getUser()
-        setUser(currentUser)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    // Show loading state while checking auth
+    if (isLoading) {
+        return (
+            <div className="h-screen flex items-center justify-center bg-background">
+                <LoadingLogo size="lg" text="Loading..." />
+            </div>
+        )
+    }
+
+    // Middleware handles redirect, so if we're here and not authenticated,
+    // just show loading (middleware will redirect)
+    if (!isAuthenticated) {
+        return (
+            <div className="h-screen flex items-center justify-center bg-background">
+                <LoadingLogo size="lg" text="Redirecting to login..." />
+            </div>
+        )
+    }
 
     // Mark notification as read
     const markAsRead = (id: string) => {
@@ -122,6 +130,7 @@ export default function DashboardLayout({
                 { name: 'Create New', href: '/flows/new/edit' }
             ]
         },
+        { name: 'Templates', href: '/templates', icon: FiGrid },
         { name: 'OmniInbox', href: '/inbox', icon: FiInbox },
         { name: 'Channels & Integrations', href: '/channels', icon: FiRadio },
         {
@@ -151,46 +160,15 @@ export default function DashboardLayout({
         return pathname.startsWith(href)
     }
 
-    const handleLogout = () => {
-        toast(
-            (t) => (
-                <div className="flex flex-col gap-4">
-                    <p className="font-medium">Are you sure you want to sign out?</p>
-                    <div className="flex gap-3 justify-end">
-                        <Button
-                            variant="ghost"
-                            onClick={() => toast.dismiss(t.id)}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                toast.dismiss(t.id)
-                                toast.loading('Signing out...', { duration: 2000 })
-                                logout()
-                            }}
-                            className="bg-slate-700 hover:bg-slate-700/90"
-                        >
-                            Sign Out
-                        </Button>
-                    </div>
-                </div>
-            ),
-            {
-                duration: 10000,
-                style: {
-                    maxWidth: '400px',
-                    padding: '16px',
-                    borderRadius: '12px',
-                },
-            }
-        )
+    const handleLogout = async () => {
+        toast.loading('Signing out...')
+        await signOut()
     }
 
     // Get user display info
     const getUserName = () => {
         if (!user) return 'Loading...'
-        return user.displayName || user.name || user.email || 'User'
+        return user.name || user.email || 'User'
     }
 
     const getUserEmail = () => {
@@ -320,7 +298,7 @@ export default function DashboardLayout({
                             variant="ghost"
                             size="sm"
                             className="w-full justify-start"
-                            onClick={handleLogout}
+                            onClick={() => setShowLogoutDialog(true)}
                         >
                             <FiLogOut className="w-4 h-4 mr-2" />
                             Sign Out
@@ -589,6 +567,18 @@ export default function DashboardLayout({
 
             {/* AI Floating Button */}
             <AIFloatingButton />
+
+            {/* Logout Confirmation Dialog */}
+            <AlertDialogConfirm
+                open={showLogoutDialog}
+                onOpenChange={setShowLogoutDialog}
+                title="Sign Out"
+                description="Are you sure you want to sign out?"
+                confirmText="Sign Out"
+                cancelText="Cancel"
+                onConfirm={handleLogout}
+                variant="destructive"
+            />
         </div>
     )
 }

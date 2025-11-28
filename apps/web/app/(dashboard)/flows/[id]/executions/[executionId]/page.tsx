@@ -16,7 +16,7 @@ import {
     FiRefreshCw,
     FiDownload
 } from 'react-icons/fi'
-import axiosInstance from '@/lib/axios'
+import axiosClient from '@/lib/axios-client'
 import { useAppSelector } from '@/lib/store/hooks'
 import { getExecutionReference, formatExecutionDuration, formatExecutionDate } from '@/lib/execution-utils'
 
@@ -72,7 +72,7 @@ export default function ExecutionDetailPage({
     const loadExecution = async () => {
         try {
             setLoading(true)
-            const data: any = await axiosInstance.get(`/executions/${params.executionId}`)
+            const data: any = await axiosClient.get(`/executions/${params.executionId}`)
             setExecution(data)
         } catch (e: any) {
             toast.error('Failed to load execution details')

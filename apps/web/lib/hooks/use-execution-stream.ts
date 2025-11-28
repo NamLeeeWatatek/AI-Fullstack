@@ -64,7 +64,11 @@ export function useExecutionStream(
 
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-            const token = localStorage.getItem('wataomi_token')
+            
+            // Get token from NextAuth session
+            const { getSession } = await import('next-auth/react')
+            const session = await getSession()
+            const token = session?.accessToken
 
             console.log('🚀 Starting SSE execution:', { flowId, API_URL })
 

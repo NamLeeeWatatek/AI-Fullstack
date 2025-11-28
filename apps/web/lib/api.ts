@@ -1,8 +1,11 @@
+import { getSession } from 'next-auth/react';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002/api/v1';
 
 export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-    // Ensure we are on client side before accessing localStorage
-    const token = typeof window !== 'undefined' ? localStorage.getItem('wataomi_token') : null;
+    // Get token from NextAuth session
+    const session = await getSession();
+    const token = session?.accessToken;
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',

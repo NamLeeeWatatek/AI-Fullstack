@@ -24,7 +24,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import axiosInstance from '@/lib/axios'
+import axiosClient from '@/lib/axios-client'
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import { fetchFlows } from '@/lib/store/slices/flowsSlice'
 import toast from '@/lib/toast'
@@ -77,7 +77,7 @@ export default function BotsPage() {
     const loadBots = async () => {
         try {
             setLoading(true)
-            const data: any = await axiosInstance.get('/bots/')
+            const data: any = await axiosClient.get('/bots/')
             setBots(data.bots || [])
         } catch {
             toast.error('Failed to load bots')
@@ -116,10 +116,10 @@ export default function BotsPage() {
 
         try {
             if (editingBot) {
-                await axiosInstance.put(`/bots/${editingBot.id}`, formData)
+                await axiosClient.put(`/bots/${editingBot.id}`, formData)
                 toast.success('Bot updated')
             } else {
-                await axiosInstance.post('/bots/', formData)
+                await axiosClient.post('/bots/', formData)
                 toast.success('Bot created')
             }
             closeModal()
@@ -139,7 +139,7 @@ export default function BotsPage() {
         if (!deleteId) return
 
         try {
-            await axiosInstance.delete(`/bots/${deleteId}`)
+            await axiosClient.delete(`/bots/${deleteId}`)
             toast.success('Bot deleted')
             loadBots()
         } catch {
@@ -149,7 +149,7 @@ export default function BotsPage() {
 
     const toggleStatus = async (bot: Bot) => {
         try {
-            await axiosInstance.put(`/bots/${bot.id}`, {
+            await axiosClient.put(`/bots/${bot.id}`, {
                 is_active: !bot.is_active
             })
             toast.success('Bot status updated')
@@ -186,8 +186,7 @@ export default function BotsPage() {
 
             {loading && bots.length === 0 ? (
                 <div className="text-center py-12">
-                    <Spinner className="size-6 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-muted-foreground">Loading bots...</p>
+                    <Spinner className="size-8 text-primary" />
                 </div>
             ) : bots.length === 0 ? (
                 <Card className="text-center py-12">
@@ -217,7 +216,7 @@ export default function BotsPage() {
                                                     value={bot.icon || 'FiMessageSquare'}
                                                     onChange={async (icon) => {
                                                         try {
-                                                            await axiosInstance.put(`/bots/${bot.id}`, { icon })
+                                                            await axiosClient.put(`/bots/${bot.id}`, { icon })
                                                             toast.success('Icon updated!')
                                                             loadBots()
                                                         } catch {

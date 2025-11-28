@@ -22,7 +22,11 @@ export function useTestNodeWebSocket() {
         /*
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
         const WS_URL = API_URL.replace(/^http/, 'ws') + '/ws/test-node'
-        const token = localStorage.getItem('wataomi_token')
+        
+        // Get token from NextAuth session
+        const { getSession } = await import('next-auth/react')
+        const session = await getSession()
+        const token = session?.accessToken
 
         const ws = new WebSocket(`${WS_URL}?token=${token}`)
 

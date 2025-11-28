@@ -3,7 +3,7 @@
  */
 import { createSlice, createAsyncThunk, type PayloadAction, type ActionReducerMapBuilder } from '@reduxjs/toolkit'
 import type { Draft } from '@reduxjs/toolkit'
-import axiosInstance from '@/lib/axios'
+import axiosClient from '@/lib/axios-client'
 import type { PaginatedResponse, PaginationParams } from '@/lib/types/pagination'
 
 export interface Flow {
@@ -88,7 +88,7 @@ export const fetchFlows = createAsyncThunk<
     }
     
     const url = `/flows/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-    const response: any = await axiosInstance.get(url)
+    const response: any = await axiosClient.get(url)
     
     // If backend doesn't return paginated format yet, wrap it
     if (Array.isArray(response)) {
@@ -110,7 +110,7 @@ export const fetchFlows = createAsyncThunk<
 export const fetchFlow = createAsyncThunk<Flow, number>(
   'flows/fetchFlow',
   async (id: number) => {
-    const response: any = await axiosInstance.get(`/flows/${id}`)
+    const response: any = await axiosClient.get(`/flows/${id}`)
     return response as Flow
   }
 )
@@ -118,7 +118,7 @@ export const fetchFlow = createAsyncThunk<Flow, number>(
 export const createFlow = createAsyncThunk<Flow, Partial<Flow>>(
   'flows/createFlow',
   async (data: Partial<Flow>) => {
-    const response: any = await axiosInstance.post('/flows/', data)
+    const response: any = await axiosClient.post('/flows/', data)
     return response as Flow
   }
 )
@@ -126,7 +126,7 @@ export const createFlow = createAsyncThunk<Flow, Partial<Flow>>(
 export const updateFlow = createAsyncThunk<Flow, { id: number; data: Partial<Flow> }>(
   'flows/updateFlow',
   async ({ id, data }: { id: number; data: Partial<Flow> }) => {
-    const response: any = await axiosInstance.patch(`/flows/${id}`, data)
+    const response: any = await axiosClient.patch(`/flows/${id}`, data)
     return response as Flow
   }
 )
@@ -134,7 +134,7 @@ export const updateFlow = createAsyncThunk<Flow, { id: number; data: Partial<Flo
 export const deleteFlow = createAsyncThunk<number, number>(
   'flows/deleteFlow',
   async (id: number) => {
-    await axiosInstance.delete(`/flows/${id}`)
+    await axiosClient.delete(`/flows/${id}`)
     return id
   }
 )
@@ -142,7 +142,7 @@ export const deleteFlow = createAsyncThunk<number, number>(
 export const duplicateFlow = createAsyncThunk<Flow, number>(
   'flows/duplicateFlow',
   async (id: number) => {
-    const response: any = await axiosInstance.post(`/flows/${id}/duplicate`)
+    const response: any = await axiosClient.post(`/flows/${id}/duplicate`)
     return response as Flow
   }
 )
@@ -150,7 +150,7 @@ export const duplicateFlow = createAsyncThunk<Flow, number>(
 export const archiveFlow = createAsyncThunk<Flow, number>(
   'flows/archiveFlow',
   async (id: number) => {
-    const response: any = await axiosInstance.post(`/flows/${id}/archive`)
+    const response: any = await axiosClient.post(`/flows/${id}/archive`)
     return response as Flow
   }
 )

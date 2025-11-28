@@ -4,10 +4,22 @@ import { casdoorSdk } from '@/lib/casdoor'
 import { Button } from '@/components/ui/button'
 import { MdAutoAwesome, MdWarning, MdInfo } from 'react-icons/md'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/hooks/useAuth'
+import { LoadingLogo } from '@/components/ui/loading-logo'
 
 export default function LoginPage() {
+    const router = useRouter()
+    const { isAuthenticated, isLoading } = useAuth()
     const [configError, setConfigError] = useState<string | null>(null)
     const [showSetupGuide, setShowSetupGuide] = useState(false)
+
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (!isLoading && isAuthenticated) {
+            router.push('/dashboard')
+        }
+    }, [isAuthenticated, isLoading, router])
 
     useEffect(() => {
         // Validate Casdoor configuration on mount
@@ -26,6 +38,24 @@ export default function LoginPage() {
             setConfigError(`Missing environment variables: ${missing.join(', ')}`)
         }
     }, [])
+
+    // Show loading while checking auth
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <LoadingLogo size="lg" text="Checking authentication..." />
+            </div>
+        )
+    }
+
+    // Don't render login form if already authenticated (will redirect)
+    if (isAuthenticated) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <LoadingLogo size="lg" text="Redirecting to dashboard..." />
+            </div>
+        )
+    }
 
     const handleLogin = () => {
         try {

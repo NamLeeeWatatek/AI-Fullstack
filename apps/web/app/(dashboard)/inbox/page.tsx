@@ -186,9 +186,8 @@ export default function InboxPage() {
 
                 <div className="flex-1 overflow-auto">
                     {loading && conversations.length === 0 ? (
-                        <div className="p-8 text-center text-muted-foreground">
-                            <Spinner className="size-8 mx-auto mb-2" />
-                            <p>Loading conversations...</p>
+                        <div className="p-8 text-center">
+                            <Spinner className="size-8 text-primary" />
                         </div>
                     ) : conversations.length === 0 ? (
                         <div className="p-8 text-center text-muted-foreground">

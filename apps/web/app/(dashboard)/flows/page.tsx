@@ -44,7 +44,7 @@ import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import { usePagination } from '@/lib/hooks/use-pagination'
 import { fetchFlows, createFlow, updateFlow, deleteFlow, duplicateFlow, archiveFlow } from '@/lib/store/slices/flowsSlice'
 import { setDraftTemplate } from '@/lib/store/slices/workflowEditorSlice'
-import axiosInstance from '@/lib/axios'
+import axiosClient from '@/lib/axios-client'
 import toast from '@/lib/toast'
 import { TemplateSelector } from '@/components/features/templates/template-selector'
 import { WorkflowRunModal } from '@/components/features/workflow/workflow-run-modal'
@@ -248,7 +248,7 @@ export default function WorkflowsPage() {
     const handleRunClick = async (workflowId: number) => {
         try {
             // Fetch full workflow data to get nodes
-            const fullWorkflow = await axiosInstance.get(`/flows/${workflowId}`) as any
+            const fullWorkflow = await axiosClient.get(`/flows/${workflowId}`) as any
 
             // IMPORTANT: Backend uses 'data' field, not 'flow_data'
             const flowData = fullWorkflow.data || fullWorkflow.flow_data || {}
@@ -271,7 +271,7 @@ export default function WorkflowsPage() {
     }
 
     const executeWorkflow = async (workflowId: number, data: Record<string, unknown>) => {
-        const promise = axiosInstance.post('/executions/', {
+        const promise = axiosClient.post('/executions/', {
             flow_id: workflowId,
             input_data: data
         })
