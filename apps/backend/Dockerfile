@@ -1,23 +1,22 @@
-FROM python:3.12-slim
+FROM node:22.21.1-alpine
 
-WORKDIR /app
+RUN apk add --no-cache bash
+RUN npm i -g @nestjs/cli typescript ts-node
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
+COPY package*.json /tmp/app/
+RUN cd /tmp/app && npm install
 
-# Copy requirements from backend directory (context is root)
-COPY apps/backend/requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+COPY . /usr/src/app
+RUN cp -a /tmp/app/node_modules /usr/src/app
+COPY ./wait-for-it.sh /opt/wait-for-it.sh
+RUN chmod +x /opt/wait-for-it.sh
+COPY ./startup.relational.dev.sh /opt/startup.relational.dev.sh
+RUN chmod +x /opt/startup.relational.dev.sh
+RUN sed -i 's/\r//g' /opt/wait-for-it.sh
+RUN sed -i 's/\r//g' /opt/startup.relational.dev.sh
 
-# Copy entire monorepo
-COPY . .
+WORKDIR /usr/src/app
+RUN if [ ! -f .env ]; then cp env-example-relational .env; fi
+RUN npm run build
 
-# Set working directory to backend app
-WORKDIR /app/apps/backend
-
-# Run application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/opt/startup.relational.dev.sh"]

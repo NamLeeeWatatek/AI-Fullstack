@@ -1,1 +1,0 @@
-# This file makes the api/v1 directory a Python package

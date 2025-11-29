@@ -25,7 +25,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           // Gọi API backend để lấy token từ Casdoor
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-          const backendUrl = `${apiUrl}/casdoor/auth/callback`;
+          const backendUrl = `${apiUrl}/auth/casdoor/callback`;
           
           console.log("🌐 [NextAuth] Calling backend:", backendUrl);
           console.log("📤 [NextAuth] Request body:", { code: credentials.code, state: credentials.state });
@@ -52,17 +52,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const data = await response.json();
           console.log("✅ [NextAuth] Backend response data:", data);
           console.log("👤 [NextAuth] User email:", data.user?.email);
+          console.log("🔑 [NextAuth] Token:", data.token ? `${data.token.substring(0, 20)}...` : 'NO TOKEN');
 
-          // Trả về user object với token
+          // Backend trả về { token, refreshToken, user }
           const user = {
             id: String(data.user.id),
             email: data.user.email,
-            name: data.user.name,
-            accessToken: data.access_token,
-            refreshToken: data.refresh_token,
+            name: data.user.firstName || data.user.email,
+            accessToken: data.token, // Backend trả về 'token' chứ không phải 'access_token'
+            refreshToken: data.refreshToken,
           };
           
           console.log("✅ [NextAuth] Returning user:", user);
+          console.log("🔑 [NextAuth] User accessToken:", user.accessToken ? `${user.accessToken.substring(0, 20)}...` : 'NO TOKEN');
           return user;
         } catch (error) {
           console.error("❌ [NextAuth] Auth error:", error);
