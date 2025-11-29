@@ -7,7 +7,11 @@ import { QueryProvider } from '@/components/providers/query-provider'
 import { ReduxProvider } from '@/lib/store/Provider'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const inter = Inter({ 
+    subsets: ['latin'],
+    weight: ['300', '400', '500', '600', '700'],
+    display: 'swap',
+})
 
 export const metadata: Metadata = {
     title: 'WataOmi - One AI. Every Channel. Zero Code.',
@@ -22,12 +26,12 @@ export default function RootLayout({
 }) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={inter.variable}>
+            <body className={`${inter.className} font-sans antialiased`}>
                 <SessionProvider>
                     <QueryProvider>
                         <ThemeProvider
                             attribute="class"
-                            defaultTheme="dark"
+                            defaultTheme="system"
                             enableSystem
                             disableTransitionOnChange
                         >

@@ -3,15 +3,16 @@
 @tailwind utilities;
 
 @layer base {
+
   /* Dark mode (default) - Navy Blue Theme */
   :root {
-    --background: 230 35% 7%;
+    --background: 230 35% 7%;      /* Deep navy #0A0E27 */
     --foreground: 0 0% 98%;
-    --card: 230 30% 11%;
+    --card: 230 30% 11%;            /* Slightly lighter navy #141B3D */
     --card-foreground: 0 0% 98%;
     --popover: 230 30% 11%;
     --popover-foreground: 0 0% 98%;
-    --primary: 217 91% 60%;
+    --primary: 217 91% 60%;         /* Bright blue #3B82F6 */
     --primary-foreground: 0 0% 100%;
     --secondary: 230 25% 18%;
     --secondary-foreground: 0 0% 98%;
@@ -35,7 +36,7 @@
     --chart-5: 38 92% 50%;
   }
 
-  /* Light mode */
+  /* Light mode - Landing Page */
   html.light {
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
@@ -60,7 +61,6 @@
     --input: 220 13% 91%;
     --ring: 217 91% 60%;
   }
-
   .dark {
     --background: 230 35% 7%;
     --foreground: 0 0% 98%;
@@ -105,47 +105,74 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
-  /* Typography */
-  h1 {
-    @apply text-3xl md:text-5xl font-bold tracking-tight;
+  
+  /* Typography Scale - Modern & Clean */
+  h1 { 
+    @apply text-3xl md:text-5xl font-bold tracking-tight; 
+    font-weight: 700;
     letter-spacing: -0.02em;
   }
-  h2 {
-    @apply text-2xl md:text-4xl font-bold tracking-tight;
+  h2 { 
+    @apply text-2xl md:text-4xl font-bold tracking-tight; 
+    font-weight: 700;
     letter-spacing: -0.01em;
   }
-  h3 {
-    @apply text-xl md:text-2xl font-semibold;
+  h3 { 
+    @apply text-xl md:text-2xl font-semibold; 
+    font-weight: 600;
   }
-  h4 {
-    @apply text-lg md:text-xl font-semibold;
+  h4 { 
+    @apply text-lg md:text-xl font-semibold; 
+    font-weight: 600;
   }
-  h5 {
-    @apply text-base md:text-lg font-medium;
+  h5 { 
+    @apply text-base md:text-lg font-medium; 
+    font-weight: 500;
   }
-  h6 {
-    @apply text-sm md:text-base font-medium;
+  h6 { 
+    @apply text-sm md:text-base font-medium; 
+    font-weight: 500;
   }
-  p {
-    @apply text-base leading-relaxed;
+  
+  p { 
+    @apply text-base leading-relaxed; 
+    font-weight: 400;
   }
-
-  /* Page Layout */
+  
+  /* Standard spacing for page containers - CENTRALIZED */
   .page-container {
-    @apply px-4 max-w-7xl mx-auto;
+    padding: 1rem;        /* 16px - balanced spacing */
+    max-width: 1400px;
+    margin: 0 auto;
   }
-
+  
   .page-header {
-    @apply mb-4;
+    margin-bottom: 1rem;  /* 16px - balanced spacing */
   }
-
+  
+  /* Content sections */
+  .content-section {
+    margin-bottom: 1rem;  /* 16px - balanced spacing */
+  }
+  
+  /* Full-screen pages (no padding) - for canvas/editor */
   .full-screen-page {
     @apply absolute inset-0 overflow-hidden p-0;
   }
+
+  /* Smooth theme transition */
+  body,
+  .glass,
+  .bg-background,
+  .bg-card,
+  .bg-muted,
+  .border-border,
+  [class*="bg-"] {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
 }
 
-/* Scrollbar */
+/* WataOmi Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -163,6 +190,7 @@
   @apply bg-muted-foreground/50;
 }
 
+/* Sidebar scrollbar - thinner and more subtle */
 nav::-webkit-scrollbar {
   width: 4px;
 }
@@ -171,7 +199,11 @@ nav::-webkit-scrollbar-thumb {
   @apply bg-muted/50 rounded-full;
 }
 
-/* Glassmorphism */
+nav::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted;
+}
+
+/* Glassmorphism Effect */
 .glass {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
@@ -185,13 +217,47 @@ html.light .glass {
 
 /* Gradient Text */
 .gradient-text {
-  background: linear-gradient(135deg, #3B82F6 0%, #0EA5E9 50%, #60A5FA 100%);
+  background: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(199, 89%, 48%) 50%, hsl(217, 91%, 70%) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Cards */
+/* Responsive utilities */
+@layer utilities {
+  .sidebar-transition {
+    transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+  }
+  
+  /* Text sizes responsive */
+  .text-responsive-sm {
+    @apply text-sm sm:text-base;
+  }
+  
+  .text-responsive-base {
+    @apply text-base sm:text-lg;
+  }
+  
+  .text-responsive-lg {
+    @apply text-lg sm:text-xl md:text-2xl;
+  }
+  
+  /* Container responsive padding - balanced 16px */
+  .container-padding {
+    padding: 1rem;        /* 16px */
+  }
+  
+  .container-padding-y {
+    padding-top: 1rem;    /* 16px */
+    padding-bottom: 1rem; /* 16px */
+  }
+}
+/*
+ Landing Page - Clean & Minimal */
+.landing-page {
+  @apply bg-background text-foreground;
+}
+
 .landing-card {
   @apply bg-card/50 border border-border/50 rounded-2xl;
   backdrop-filter: blur(8px);
@@ -213,6 +279,7 @@ html.dark .landing-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* Admin Dashboard - Cards */
 .dashboard-card {
   @apply bg-card border border-border rounded-lg;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -245,7 +312,7 @@ html.dark .dashboard-card:hover {
   @apply text-destructive;
 }
 
-/* Platform Colors */
+/* Platform Colors - Centralized (No Hard-coded Colors) */
 .platform-facebook {
   @apply text-[#1877F2] bg-[#1877F2]/10 border-[#1877F2]/20;
 }
@@ -358,11 +425,139 @@ html.dark .dashboard-card:hover {
   @apply text-muted-foreground bg-muted border-border;
 }
 
-/* Landing Page Specific */
+/* Gradient Backgrounds */
+.bg-gradient-wata {
+  background: linear-gradient(135deg, hsl(217, 91%, 60%) 0%, hsl(199, 89%, 48%) 50%, hsl(217, 91%, 70%) 100%);
+}
+
+
+
+/* Navy Blue Theme Enhancements */
+.navy-gradient {
+  background: linear-gradient(135deg, hsl(230, 35%, 7%) 0%, hsl(230, 30%, 11%) 50%, hsl(230, 35%, 7%) 100%);
+}
+
+.navy-card {
+  @apply bg-card border border-border rounded-xl;
+  background: linear-gradient(135deg, hsl(230, 30%, 11%) 0%, hsl(230, 28%, 13%) 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.navy-card:hover {
+  @apply border-primary/40;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+}
+
+/* Glassmorphism for Navy Theme */
+.glass-navy {
+  background: rgba(20, 27, 61, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Text Glow Effect */
+.text-glow {
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
+
+/* Button Glow */
+.btn-glow {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-glow:hover {
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+}
+
+/* Accent Line */
+.accent-line {
+  position: relative;
+}
+
+.accent-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, hsl(217, 91%, 60%) 0%, hsl(199, 89%, 48%) 100%);
+  border-radius: 2px;
+}
+
+/* Modern Card with Accent */
+.modern-card {
+  @apply bg-card border border-border/50 rounded-xl p-6;
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, hsl(217, 91%, 60%) 0%, hsl(199, 89%, 48%) 100%);
+}
+
+/* Smooth Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Professional Spacing */
+.section-spacing {
+  @apply py-12 md:py-16 lg:py-20;
+}
+
+.content-spacing {
+  @apply space-y-6 md:space-y-8;
+}
+
+/* Landing Page Specific Styles */
 .landing-page {
   min-height: 100vh;
 }
 
+/* Landing Light Mode (Default) */
+.landing-page:not(.dark) {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 99%;
+  --muted-foreground: 220 9% 46%;
+}
+
+/* Landing Dark Mode */
+.landing-page.dark {
+  --background: 230 35% 7%;
+  --foreground: 0 0% 98%;
+  --card: 230 30% 11%;
+  --muted-foreground: 220 9% 65%;
+}
+
+/* Fix gradient text for both modes */
+.landing-page .gradient-text {
+  background: linear-gradient(135deg, #3B82F6 0%, #0EA5E9 50%, #60A5FA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Landing page cards */
 .landing-page .realistic-card {
   @apply bg-card/50 border border-border/50 rounded-2xl;
   backdrop-filter: blur(8px);
@@ -378,11 +573,4 @@ html.dark .dashboard-card:hover {
   @apply border-primary/30;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
   transform: translateY(-2px);
-}
-
-/* Utilities */
-@layer utilities {
-  .sidebar-transition {
-    transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
-  }
 }
