@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
@@ -36,6 +37,8 @@ interface Channel {
 }
 
 interface IntegrationConfig {
+    id: number
+    name?: string
     provider: string
     client_id: string
     client_secret: string
@@ -45,13 +48,16 @@ interface IntegrationConfig {
 
 export default function ChannelsPage() {
     const [channels, setChannels] = useState<Channel[]>([])
-    const [configs, setConfigs] = useState<Record<string, IntegrationConfig>>({})
+    const [configs, setConfigs] = useState<IntegrationConfig[]>([])
     const [loading, setLoading] = useState(true)
     const [connecting, setConnecting] = useState<string | null>(null)
-    const [configuring, setConfiguring] = useState<string | null>(null)
+
 
     // Config Form State
     const [configForm, setConfigForm] = useState({
+        id: null as number | null,
+        provider: '',
+        name: '',
         client_id: '',
         client_secret: '',
         scopes: ''
@@ -69,13 +75,7 @@ export default function ChannelsPage() {
                 fetchAPI('/integrations/')
             ])
             setChannels(channelsData)
-
-            // Map configs by provider
-            const configMap: Record<string, IntegrationConfig> = {}
-            configsData.forEach((c: IntegrationConfig) => {
-                configMap[c.provider] = c
-            })
-            setConfigs(configMap)
+            setConfigs(configsData)
 
         } catch (error) {
             console.error(error)
@@ -84,11 +84,12 @@ export default function ChannelsPage() {
         }
     }
 
-    const handleConnect = async (provider: string) => {
+    const handleConnect = async (provider: string, configId?: number) => {
         // Check if configured
-        if (!configs[provider]?.client_id) {
+        const config = configId ? configs.find(c => c.id === configId) : configs.find(c => c.provider === provider)
+        if (!config) {
             toast.error(`Please configure ${provider} settings first`)
-            openConfig(provider)
+            openConfig(undefined, provider)
             return
         }
 
@@ -96,7 +97,8 @@ export default function ChannelsPage() {
             setConnecting(provider)
 
             // Get OAuth URL
-            const { url } = await fetchAPI(`/oauth/login/${provider}`)
+            const configParam = configId ? `?configId=${configId}` : ''
+            const { url } = await fetchAPI(`/oauth/login/${provider}${configParam}`)
 
             // Open popup
             const width = 600
@@ -160,29 +162,42 @@ export default function ChannelsPage() {
         }
     }
 
-    const openConfig = (provider: string) => {
-        const existing = configs[provider]
+    const openConfig = (configId?: number, provider?: string) => {
+        const existing = configId ? configs.find(c => c.id === configId) : null
         setConfigForm({
+            id: existing?.id || null,
+            provider: existing?.provider || provider || '',
+            name: existing?.name || '',
             client_id: existing?.client_id || '',
             client_secret: existing?.client_secret || '',
             scopes: existing?.scopes || ''
         })
-        setConfiguring(provider)
+
     }
 
     const saveConfig = async () => {
-        if (!configuring) return
+        if (!configForm.provider) {
+            toast.error('Provider is required')
+            return
+        }
 
         try {
-            await fetchAPI('/integrations/', {
-                method: 'POST',
+            const method = configForm.id ? 'PUT' : 'POST'
+            const url = configForm.id ? `/integrations/${configForm.id}` : '/integrations/'
+
+            await fetchAPI(url, {
+                method,
                 body: JSON.stringify({
-                    provider: configuring,
-                    ...configForm
+                    provider: configForm.provider,
+                    name: configForm.name,
+                    clientId: configForm.client_id,
+                    clientSecret: configForm.client_secret,
+                    scopes: configForm.scopes,
+                    isActive: true
                 })
             })
             toast.success('Configuration saved')
-            setConfiguring(null)
+
             loadData()
         } catch {
             toast.error('Failed to save configuration')
@@ -293,27 +308,30 @@ export default function ChannelsPage() {
     const [activeTab, setActiveTab] = useState<'connected' | 'configurations'>('connected')
 
     // Count configured integrations
-    const configuredCount = Object.keys(configs).length
+    const configuredCount = configs.length
     const allChannels = [...MESSAGING_CHANNELS, ...BUSINESS_INTEGRATIONS]
 
     // Group channels by connection status
-    const configuredNotConnected = Object.keys(configs).filter(provider =>
+    const configuredProviders = new Set(configs.map(c => c.provider))
+    const configuredNotConnected = Array.from(configuredProviders).filter(provider =>
         !channels.some(c => c.type === provider)
     )
     const notConfigured = allChannels.filter(ch =>
-        !configs[ch.id] && !channels.some(c => c.type === ch.id)
-    )
+        !configuredProviders.has(ch.id) && !channels.some(c => c.type === ch.id)
+    );
 
     return (
-        <div className="h-full relative">
-            <div className="page-header flex items-center justify-between">
+        <div className="h-full relative p-6 space-y-8">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold mb-2">Channels & Integrations</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                        Channels & Integrations
+                    </h1>
+                    <p className="text-muted-foreground text-lg">
                         Connect your communication channels to start automating
                     </p>
                 </div>
-                <Button variant="outline" onClick={loadData} disabled={loading}>
+                <Button variant="outline" onClick={loadData} disabled={loading} className="hover:bg-primary/10 hover:text-primary transition-colors">
                     {loading ? (
                         <Spinner className="size-4 mr-2" />
                     ) : (
@@ -324,31 +342,31 @@ export default function ChannelsPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-6 border-b border-border/40 pb-4">
+            <div className="flex gap-2 border-b border-white/10 pb-4">
                 <button
                     onClick={() => setActiveTab('connected')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${activeTab === 'connected'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted hover:bg-muted/80'
+                    className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === 'connected'
+                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
+                        : 'bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground'
                         }`}
                 >
                     <FiCheckCircle className="w-4 h-4" />
                     Connections
-                    <span className={`px-1.5 py-0.5 text-xs rounded-full ${activeTab === 'connected' ? 'bg-white/20' : 'bg-muted'
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${activeTab === 'connected' ? 'bg-white/20' : 'bg-white/5'
                         }`}>
                         {channels.length}
                     </span>
                 </button>
                 <button
                     onClick={() => setActiveTab('configurations')}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${activeTab === 'configurations'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted hover:bg-muted/80'
+                    className={`px-6 py-2.5 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === 'configurations'
+                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105'
+                        : 'bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-foreground'
                         }`}
                 >
                     <FiSettings className="w-4 h-4" />
                     Configurations
-                    <span className={`px-1.5 py-0.5 text-xs rounded-full ${activeTab === 'configurations' ? 'bg-white/20' : 'bg-muted'
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${activeTab === 'configurations' ? 'bg-white/20' : 'bg-white/5'
                         }`}>
                         {configuredCount}
                     </span>
@@ -357,71 +375,81 @@ export default function ChannelsPage() {
 
             {/* Connected Tab */}
             {activeTab === 'connected' && (
-                <div>
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                >
                     {channels.length === 0 && configuredCount === 0 ? (
-                        <div className="text-center py-16">
-                            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-muted flex items-center justify-center">
-                                <FiMessageCircle className="w-10 h-10 text-muted-foreground" />
+                        <div className="text-center py-20">
+                            <div className="w-24 h-24 mx-auto mb-6 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                <FiMessageCircle className="w-12 h-12 text-muted-foreground" />
                             </div>
-                            <h3 className="text-xl font-semibold mb-2">No connections yet</h3>
-                            <p className="text-muted-foreground mb-6">
-                                Configure your first integration to start connecting channels
+                            <h3 className="text-2xl font-semibold mb-3">No connections yet</h3>
+                            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+                                Configure your first integration to start connecting channels and automating your workflow
                             </p>
-                            <Button onClick={() => setActiveTab('configurations')}>
+                            <Button onClick={() => setActiveTab('configurations')} size="lg" className="rounded-xl">
                                 Go to Configurations
                             </Button>
                         </div>
                     ) : (
-                        <div className="space-y-8">
+                        <div className="space-y-10">
                             {/* Connected Channels */}
                             {channels.length > 0 && (
                                 <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-lg font-semibold flex items-center gap-2">
-                                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-xl font-semibold flex items-center gap-3">
+                                            <span className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
                                             Connected ({channels.length})
                                         </h2>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {channels.map((channel) => {
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {channels.map((channel, index) => {
                                             const channelInfo = allChannels.find(c => c.id === channel.type)
                                             const sameTypeCount = channels.filter(c => c.type === channel.type).length
 
                                             return (
-                                                <div key={channel.id} className="glass rounded-xl p-5 border border-green-500/20 bg-green-500/5 group">
-                                                    <div className="flex items-start justify-between mb-4">
-                                                        <div className={`p-3 rounded-xl border ${getColor(channel.type)}`}>
+                                                <motion.div
+                                                    key={channel.id}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: index * 0.05 }}
+                                                    className="glass rounded-2xl p-6 border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 group hover:shadow-xl hover:shadow-green-500/5 hover:-translate-y-1"
+                                                >
+                                                    <div className="flex items-start justify-between mb-5">
+                                                        <div className={`p-3.5 rounded-2xl border ${getColor(channel.type)} shadow-sm`}>
                                                             {getIcon(channel.type)}
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             {sameTypeCount > 1 && (
-                                                                <span className="text-xs font-medium bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded-full">
+                                                                <span className="text-xs font-medium bg-blue-500/10 text-blue-500 px-2.5 py-1 rounded-full border border-blue-500/10">
                                                                     {sameTypeCount} accounts
                                                                 </span>
                                                             )}
-                                                            <span className="flex items-center text-xs font-medium text-green-500 bg-green-500/10 px-2 py-1 rounded-full">
-                                                                <FiCheckCircle className="w-3 h-3 mr-1" />
+                                                            <span className="flex items-center text-xs font-medium text-green-500 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/10">
+                                                                <FiCheckCircle className="w-3 h-3 mr-1.5" />
                                                                 Active
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <h3 className="font-semibold text-lg mb-1">{channel.name}</h3>
-                                                    <p className="text-sm text-muted-foreground capitalize mb-3">
+                                                    <h3 className="font-semibold text-xl mb-1.5">{channel.name}</h3>
+                                                    <p className="text-sm text-muted-foreground capitalize mb-4">
                                                         {channelInfo?.name || channel.type}
                                                     </p>
-                                                    <div className="flex items-center justify-between pt-3 border-t border-border/20">
+                                                    <div className="flex items-center justify-between pt-4 border-t border-white/5">
                                                         <span className="text-xs text-muted-foreground">
-                                                            {new Date(channel.connected_at).toLocaleDateString()}
+                                                            Connected {new Date(channel.connected_at).toLocaleDateString()}
                                                         </span>
                                                         <button
                                                             onClick={() => handleDisconnect(channel.id)}
-                                                            className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600 transition-colors"
+                                                            className="flex items-center gap-1.5 text-xs font-medium text-red-400 hover:text-red-300 transition-colors px-2 py-1 rounded-lg hover:bg-red-500/10"
                                                         >
-                                                            <FiTrash2 className="w-3 h-3" />
+                                                            <FiTrash2 className="w-3.5 h-3.5" />
                                                             Disconnect
                                                         </button>
                                                     </div>
-                                                </div>
+                                                </motion.div>
                                             )
                                         })}
                                     </div>
@@ -431,39 +459,44 @@ export default function ChannelsPage() {
                             {/* Configured but Not Connected */}
                             {configuredNotConnected.length > 0 && (
                                 <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-lg font-semibold flex items-center gap-2">
-                                            <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-xl font-semibold flex items-center gap-3">
+                                            <span className="w-2.5 h-2.5 bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)]"></span>
                                             Ready to Connect ({configuredNotConnected.length})
                                         </h2>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {configuredNotConnected.map((provider) => {
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {configuredNotConnected.map((provider, index) => {
                                             const channelInfo = allChannels.find(c => c.id === provider)
 
                                             return (
-                                                <div key={provider} className="glass rounded-xl p-5 border border-amber-500/20 bg-amber-500/5">
-                                                    <div className="flex items-start justify-between mb-4">
-                                                        <div className={`p-3 rounded-xl border ${getColor(provider)}`}>
+                                                <motion.div
+                                                    key={provider}
+                                                    initial={{ opacity: 0, y: 20 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: index * 0.05 }}
+                                                    className="glass rounded-2xl p-6 border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 transition-all duration-300 hover:shadow-xl hover:shadow-amber-500/5 hover:-translate-y-1"
+                                                >
+                                                    <div className="flex items-start justify-between mb-5">
+                                                        <div className={`p-3.5 rounded-2xl border ${getColor(provider)} shadow-sm`}>
                                                             {getIcon(provider)}
                                                         </div>
-                                                        <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full">
+                                                        <span className="text-xs font-medium text-amber-500 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/10">
                                                             Ready
                                                         </span>
                                                     </div>
-                                                    <h3 className="font-semibold text-lg mb-1">{channelInfo?.name || provider}</h3>
-                                                    <p className="text-sm text-muted-foreground mb-4">
+                                                    <h3 className="font-semibold text-xl mb-1.5">{channelInfo?.name || provider}</h3>
+                                                    <p className="text-sm text-muted-foreground mb-5">
                                                         {channelInfo?.description || 'Configured and ready to connect'}
                                                     </p>
                                                     <Button
-                                                        size="sm"
-                                                        className="w-full"
+                                                        className="w-full rounded-xl shadow-lg shadow-amber-500/10"
                                                         onClick={() => handleConnect(provider)}
                                                         disabled={connecting === provider}
                                                     >
                                                         {connecting === provider ? 'Connecting...' : 'Connect Now'}
                                                     </Button>
-                                                </div>
+                                                </motion.div>
                                             )
                                         })}
                                     </div>
@@ -473,134 +506,163 @@ export default function ChannelsPage() {
                             {/* Not Configured */}
                             {notConfigured.length > 0 && (
                                 <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <h2 className="text-lg font-semibold flex items-center gap-2">
-                                            <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h2 className="text-xl font-semibold flex items-center gap-3">
+                                            <span className="w-2.5 h-2.5 bg-gray-500 rounded-full"></span>
                                             Not Configured ({notConfigured.length})
                                         </h2>
                                         <Button
-                                            variant="outline"
+                                            variant="ghost"
                                             size="sm"
                                             onClick={() => setActiveTab('configurations')}
+                                            className="text-muted-foreground hover:text-foreground"
                                         >
-                                            Configure
+                                            Go to Configurations
                                         </Button>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                                        {notConfigured.slice(0, 8).map((channel) => (
-                                            <button
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {notConfigured.map((channel, index) => (
+                                            <motion.div
                                                 key={channel.id}
-                                                onClick={() => {
-                                                    setActiveTab('configurations')
-                                                    setTimeout(() => openConfig(channel.id), 100)
-                                                }}
-                                                className="glass rounded-lg p-3 border border-border/40 hover:border-primary/40 transition-all text-left group"
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                className="glass rounded-2xl p-6 border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-lg border ${getColor(channel.id)}`}>
+                                                <div className="flex items-start justify-between mb-5">
+                                                    <div className={`p-3.5 rounded-2xl border ${getColor(channel.id)} opacity-80 grayscale group-hover:grayscale-0 transition-all`}>
                                                         {getIcon(channel.id)}
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium truncate">{channel.name}</p>
-                                                        <p className="text-xs text-muted-foreground">Click to configure</p>
-                                                    </div>
+                                                    <span className="text-xs font-medium text-muted-foreground bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                                                        Not Configured
+                                                    </span>
                                                 </div>
-                                            </button>
+                                                <h3 className="font-semibold text-xl mb-1.5">{channel.name}</h3>
+                                                <p className="text-sm text-muted-foreground mb-5">
+                                                    {channel.description || 'Configure API credentials to connect'}
+                                                </p>
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="w-full rounded-xl border-white/10 hover:bg-white/5"
+                                                    onClick={() => {
+                                                        setActiveTab('configurations')
+                                                        openConfig(undefined, channel.id)
+                                                    }}
+                                                >
+                                                    Configure Now
+                                                </Button>
+                                            </motion.div>
                                         ))}
-                                        {notConfigured.length > 8 && (
-                                            <button
-                                                onClick={() => setActiveTab('configurations')}
-                                                className="glass rounded-lg p-3 border border-border/40 hover:border-primary/40 transition-all flex items-center justify-center"
-                                            >
-                                                <div className="text-center">
-                                                    <p className="text-sm font-medium">+{notConfigured.length - 8} more</p>
-                                                    <p className="text-xs text-muted-foreground">View all</p>
-                                                </div>
-                                            </button>
-                                        )}
                                     </div>
                                 </div>
                             )}
                         </div>
                     )}
-                </div>
+                </motion.div>
             )}
 
             {/* Configurations Tab */}
             {activeTab === 'configurations' && (
-                <div>
-                    <div className="mb-6 flex items-center justify-between">
-                        <p className="text-sm text-muted-foreground">
-                            Configure API credentials for each integration. One configuration can be used to connect multiple accounts.
-                        </p>
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-10"
+                >
+                    <div className="flex items-center justify-between p-4 rounded-xl bg-blue-500/5 border border-blue-500/10">
+                        <div className="flex gap-3">
+                            <div className="p-2 bg-blue-500/10 rounded-lg h-fit">
+                                <FiSettings className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-blue-100">Configuration Management</h3>
+                                <p className="text-sm text-blue-200/60 mt-1">
+                                    Configure API credentials for each integration. One configuration can be used to connect multiple accounts.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="space-y-8">
+                    <div className="space-y-10">
                         {/* Configured Integrations */}
                         {configuredCount > 0 && (
                             <div>
-                                <h2 className="text-lg font-semibold mb-4">Configured ({configuredCount})</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    {Object.entries(configs).map(([provider, config]) => {
+                                <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                                    Configured Integrations
+                                    <span className="text-sm font-normal text-muted-foreground bg-white/5 px-2 py-0.5 rounded-full">
+                                        {configuredCount}
+                                    </span>
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {configs.map((config, index) => {
+                                        const provider = config.provider
                                         const channelInfo = allChannels.find(c => c.id === provider)
                                         const connectedCount = channels.filter(c => c.type === provider).length
 
                                         return (
-                                            <div key={provider} className="glass rounded-xl p-5 border border-border/40 group">
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className={`p-3 rounded-xl border ${getColor(provider)}`}>
+                                            <motion.div
+                                                key={config.id}
+                                                initial={{ opacity: 0, y: 20 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.05 }}
+                                                className="glass rounded-2xl p-6 border border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300 group hover:shadow-xl hover:-translate-y-1"
+                                            >
+                                                <div className="flex items-start justify-between mb-5">
+                                                    <div className={`p-3.5 rounded-2xl border ${getColor(provider)} shadow-sm`}>
                                                         {getIcon(provider)}
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         {connectedCount > 0 && (
-                                                            <span className="text-xs font-medium text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
+                                                            <span className="text-xs font-medium text-green-500 bg-green-500/10 px-2.5 py-1 rounded-full border border-green-500/10">
                                                                 {connectedCount} connected
                                                             </span>
                                                         )}
                                                         <button
-                                                            onClick={() => openConfig(provider)}
-                                                            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                                                            onClick={() => openConfig(config.id)}
+                                                            className="p-2 rounded-lg hover:bg-white/10 transition-colors text-muted-foreground hover:text-foreground"
                                                             title="Edit Configuration"
                                                         >
                                                             <FiSettings className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <h3 className="font-semibold text-lg mb-1">{channelInfo?.name || provider}</h3>
-                                                <p className="text-sm text-muted-foreground mb-4">
+                                                <h3 className="font-semibold text-xl mb-1.5">{config.name || channelInfo?.name || provider}</h3>
+                                                <p className="text-sm text-muted-foreground mb-5">
                                                     {channelInfo?.description || 'API configured'}
                                                 </p>
-                                                <div className="space-y-2 text-xs">
-                                                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                                                        <span className="text-muted-foreground">Client ID:</span>
-                                                        <span className="font-mono">{config.client_id.slice(0, 12)}...</span>
+                                                <div className="space-y-3 text-xs mb-6">
+                                                    <div className="flex items-center justify-between p-2.5 bg-black/20 rounded-lg border border-white/5">
+                                                        <span className="text-muted-foreground">Client ID</span>
+                                                        <span className="font-mono text-foreground/80">{config.client_id.slice(0, 12)}...</span>
                                                     </div>
-                                                    <div className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                                                        <span className="text-muted-foreground">Status:</span>
-                                                        <span className={config.is_active ? 'text-green-500' : 'text-red-500'}>
+                                                    <div className="flex items-center justify-between p-2.5 bg-black/20 rounded-lg border border-white/5">
+                                                        <span className="text-muted-foreground">Status</span>
+                                                        <span className={`flex items-center gap-1.5 ${config.is_active ? 'text-green-400' : 'text-red-400'}`}>
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${config.is_active ? 'bg-green-400' : 'bg-red-400'}`}></span>
                                                             {config.is_active ? 'Active' : 'Inactive'}
                                                         </span>
                                                     </div>
                                                 </div>
-                                                <div className="mt-4 pt-4 border-t border-border/20 flex gap-2">
+                                                <div className="flex gap-3">
                                                     <Button
                                                         size="sm"
-                                                        variant="outline"
-                                                        className="flex-1"
-                                                        onClick={() => handleConnect(provider)}
+                                                        className="flex-1 rounded-xl shadow-lg shadow-primary/10"
+                                                        onClick={() => handleConnect(provider, config.id)}
                                                         disabled={connecting === provider}
                                                     >
-                                                        {connecting === provider ? 'Connecting...' : connectedCount > 0 ? 'Add Another' : 'Connect'}
+                                                        {connecting === provider ? 'Connecting...' : 'Connect'}
                                                     </Button>
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
-                                                        onClick={() => openConfig(provider)}
+                                                        className="rounded-xl border-white/10 hover:bg-white/5"
+                                                        onClick={() => openConfig(config.id)}
                                                     >
                                                         Edit
                                                     </Button>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         )
                                     })}
                                 </div>
@@ -609,28 +671,28 @@ export default function ChannelsPage() {
 
                         {/* Available to Configure */}
                         <div>
-                            <h2 className="text-lg font-semibold mb-4">
-                                Available Integrations ({allChannels.length - configuredCount})
+                            <h2 className="text-xl font-semibold mb-6">
+                                Available Integrations
                             </h2>
 
                             {/* Messaging Channels */}
-                            <div className="mb-6">
-                                <h3 className="text-sm font-medium text-muted-foreground mb-3">Messaging Channels</h3>
+                            <div className="mb-8">
+                                <h3 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider pl-1">Messaging Channels</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                    {MESSAGING_CHANNELS.filter(ch => !configs[ch.id]).map((channel) => (
+                                    {MESSAGING_CHANNELS.map((channel) => (
                                         <button
                                             key={channel.id}
-                                            onClick={() => openConfig(channel.id)}
-                                            className="glass rounded-xl p-4 border border-border/40 hover:border-primary/20 transition-all text-left group"
+                                            onClick={() => openConfig(undefined, channel.id)}
+                                            className="glass rounded-xl p-4 border border-white/5 bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/10 transition-all duration-300 text-left group hover:-translate-y-0.5"
                                         >
                                             <div className="flex items-start justify-between mb-3">
-                                                <div className={`p-2.5 rounded-xl border ${getColor(channel.id)}`}>
+                                                <div className={`p-2.5 rounded-xl border ${getColor(channel.id)} group-hover:scale-110 transition-transform duration-300`}>
                                                     {getIcon(channel.id)}
                                                 </div>
-                                                <FiSettings className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <FiSettings className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0" />
                                             </div>
-                                            <h3 className="font-semibold mb-1">{channel.name}</h3>
-                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                            <h3 className="font-semibold mb-1 text-foreground/90 group-hover:text-foreground transition-colors">{channel.name}</h3>
+                                            <p className="text-xs text-muted-foreground line-clamp-2 group-hover:text-muted-foreground/80 transition-colors">
                                                 {channel.description}
                                             </p>
                                         </button>
@@ -640,24 +702,24 @@ export default function ChannelsPage() {
 
                             {/* Business Integrations */}
                             <div>
-                                <h3 className="text-sm font-medium text-muted-foreground mb-3">Business Integrations</h3>
+                                <h3 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider pl-1">Business Integrations</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                    {BUSINESS_INTEGRATIONS.filter(ch => !configs[ch.id]).map((integration) => (
+                                    {BUSINESS_INTEGRATIONS.map((integration) => (
                                         <button
                                             key={integration.id}
-                                            onClick={() => openConfig(integration.id)}
-                                            className="glass rounded-xl p-4 border border-border/40 hover:border-primary/20 transition-all text-left group"
+                                            onClick={() => openConfig(undefined, integration.id)}
+                                            className="glass rounded-xl p-4 border border-white/5 bg-white/[0.02] hover:bg-white/[0.08] hover:border-white/10 transition-all duration-300 text-left group hover:-translate-y-0.5"
                                         >
                                             <div className="flex items-start justify-between mb-3">
-                                                <div className={`p-2.5 rounded-xl border ${getColor(integration.id)}`}>
+                                                <div className={`p-2.5 rounded-xl border ${getColor(integration.id)} group-hover:scale-110 transition-transform duration-300`}>
                                                     {getIcon(integration.id)}
                                                 </div>
-                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
+                                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-muted-foreground capitalize border border-white/5 group-hover:border-white/10 transition-colors">
                                                     {integration.category}
                                                 </span>
                                             </div>
-                                            <h3 className="font-semibold mb-1">{integration.name}</h3>
-                                            <p className="text-xs text-muted-foreground line-clamp-2">
+                                            <h3 className="font-semibold mb-1 text-foreground/90 group-hover:text-foreground transition-colors">{integration.name}</h3>
+                                            <p className="text-xs text-muted-foreground line-clamp-2 group-hover:text-muted-foreground/80 transition-colors">
                                                 {integration.description}
                                             </p>
                                         </button>
@@ -666,224 +728,119 @@ export default function ChannelsPage() {
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Removed old tabs - now using Connections and Configurations only */}
-            {false && (
-                <div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {MESSAGING_CHANNELS.map((channel) => {
-                            const isConnected = channels.some(c => c.type === channel.id)
-                            const connectedCount = channels.filter(c => c.type === channel.id).length
-                            const isConfigured = !!configs[channel.id]?.client_id
-                            const canAddMore = channel.multiAccount || !isConnected
-
-                            return (
-                                <div key={channel.id} className="glass rounded-xl p-4 border border-border/40 hover:border-primary/20 transition-all group">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className={`p-2.5 rounded-xl border ${getColor(channel.id)}`}>
-                                            {getIcon(channel.id)}
-                                        </div>
-                                        <div className="flex gap-1">
-                                            {isConnected && connectedCount > 0 && (
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-500 font-medium">
-                                                    {connectedCount}
-                                                </span>
-                                            )}
-                                            <button
-                                                onClick={() => openConfig(channel.id)}
-                                                className={`p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100 ${isConfigured ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:bg-muted'}`}
-                                                title="Configure"
-                                            >
-                                                <FiSettings className="w-3.5 h-3.5" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <h3 className="font-semibold mb-1">{channel.name}</h3>
-                                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                                        {channel.description}
-                                    </p>
-                                    {canAddMore ? (
-                                        <Button
-                                            size="sm"
-                                            className="w-full"
-                                            variant={isConnected ? "outline" : "default"}
-                                            onClick={() => handleConnect(channel.id)}
-                                            disabled={connecting === channel.id}
-                                        >
-                                            {connecting === channel.id ? 'Connecting...' : isConnected && channel.multiAccount ? 'Add Another' : 'Connect'}
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            size="sm"
-                                            className="w-full"
-                                            variant="outline"
-                                            disabled
-                                        >
-                                            <FiCheckCircle className="w-3.5 h-3.5 mr-1" />
-                                            Connected
-                                        </Button>
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
-            )}
-
-            {/* Removed old integrations tab */}
-            {false && (
-                <div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {BUSINESS_INTEGRATIONS.map((integration) => {
-                            const isConnected = channels.some(c => c.type === integration.id)
-                            const connectedCount = channels.filter(c => c.type === integration.id).length
-                            const canAddMore = integration.multiAccount || !isConnected
-
-                            return (
-                                <div key={integration.id} className="glass rounded-xl p-4 border border-border/40 hover:border-primary/20 transition-all group">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className={`p-2.5 rounded-xl border ${getColor(integration.id)}`}>
-                                            {getIcon(integration.id)}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            {isConnected && connectedCount > 0 && (
-                                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-500 font-medium">
-                                                    {connectedCount}
-                                                </span>
-                                            )}
-                                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground capitalize">
-                                                {integration.category}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <h3 className="font-semibold mb-1">{integration.name}</h3>
-                                    <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-                                        {integration.description}
-                                    </p>
-                                    {canAddMore ? (
-                                        <Button
-                                            size="sm"
-                                            className="w-full"
-                                            variant={isConnected ? "outline" : "default"}
-                                            onClick={() => handleConnect(integration.id)}
-                                            disabled={connecting === integration.id}
-                                        >
-                                            {connecting === integration.id ? 'Connecting...' : isConnected && integration.multiAccount ? 'Add Another' : isConnected ? 'Reconnect' : 'Connect'}
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            size="sm"
-                                            className="w-full"
-                                            variant="outline"
-                                            disabled
-                                        >
-                                            <FiCheckCircle className="w-3.5 h-3.5 mr-1" />
-                                            Connected
-                                        </Button>
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
-                </div>
+                </motion.div>
             )}
 
             {/* Configuration Modal */}
-            {configuring && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="bg-background border border-border rounded-xl p-6 w-full max-w-md shadow-2xl">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className={`p-2.5 rounded-xl border ${getColor(configuring)}`}>
-                                {getIcon(configuring)}
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-xl font-semibold capitalize">{configuring}</h3>
-                                <p className="text-xs text-muted-foreground">API Configuration</p>
-                            </div>
-                            <button onClick={() => setConfiguring(null)} className="text-muted-foreground hover:text-foreground">
-                                <FiX className="w-5 h-5" />
-                            </button>
-                        </div>
+            {configForm.provider && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-[#0B0F19] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden"
+                    >
+                        {/* Background Gradients */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl -ml-32 -mb-32 pointer-events-none"></div>
 
-                        {/* Info Banner */}
-                        <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                            <p className="text-xs text-blue-400">
-                                💡 Get your API credentials from the {configuring} developer portal
-                            </p>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    App ID / Client ID <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={configForm.client_id}
-                                    onChange={(e) => setConfigForm({ ...configForm, client_id: e.target.value })}
-                                    className="w-full glass rounded-lg px-3 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    placeholder="Enter App ID"
-                                />
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-4 mb-8">
+                                <div className={`p-3 rounded-2xl border ${getColor(configForm.provider)} shadow-lg`}>
+                                    {getIcon(configForm.provider)}
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-bold capitalize">{configForm.provider}</h3>
+                                    <p className="text-xs text-muted-foreground">API Configuration</p>
+                                </div>
+                                <button onClick={() => {
+                                    setConfigForm(prev => ({ ...prev, provider: '' }))
+                                }} className="p-2 rounded-full hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors">
+                                    <FiX className="w-5 h-5" />
+                                </button>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    App Secret / Client Secret <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="password"
-                                    value={configForm.client_secret}
-                                    onChange={(e) => setConfigForm({ ...configForm, client_secret: e.target.value })}
-                                    className="w-full glass rounded-lg px-3 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    placeholder="Enter App Secret"
-                                />
-                                {configForm.client_secret && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        Secret is encrypted and stored securely
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium mb-2">Scopes (Optional)</label>
-                                <input
-                                    type="text"
-                                    value={configForm.scopes}
-                                    onChange={(e) => setConfigForm({ ...configForm, scopes: e.target.value })}
-                                    className="w-full glass rounded-lg px-3 py-2 border border-border/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                    placeholder="e.g., pages_messaging, instagram_basic"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    Comma separated permission scopes
+                            {/* Info Banner */}
+                            <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl flex gap-3 items-start">
+                                <span className="text-lg">💡</span>
+                                <p className="text-xs text-blue-200/80 leading-relaxed">
+                                    You need to create an app in the <span className="font-semibold text-blue-200">{configForm.provider} developer portal</span> to get these credentials.
                                 </p>
                             </div>
 
-                            {/* Show if already configured */}
-                            {configs[configuring]?.client_id && (
-                                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
-                                    <p className="text-xs text-green-400 flex items-center gap-2">
-                                        <FiCheckCircle className="w-4 h-4" />
-                                        This integration is already configured. Saving will update the settings.
-                                    </p>
+                            <div className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 text-foreground/90">
+                                        Configuration Name <span className="text-muted-foreground font-normal">(Optional)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={configForm.name || ''}
+                                        onChange={(e) => setConfigForm({ ...configForm, name: e.target.value })}
+                                        className="w-full bg-white/5 rounded-xl px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                                        placeholder="e.g. My Main Page"
+                                    />
                                 </div>
-                            )}
 
-                            <div className="pt-4 flex gap-3">
-                                <Button variant="outline" className="flex-1" onClick={() => setConfiguring(null)}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    className="flex-1"
-                                    onClick={saveConfig}
-                                    disabled={!configForm.client_id || !configForm.client_secret}
-                                >
-                                    {configs[configuring]?.client_id ? 'Update' : 'Save'} Configuration
-                                </Button>
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 text-foreground/90">
+                                        App ID / Client ID <span className="text-red-400">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={configForm.client_id}
+                                        onChange={(e) => setConfigForm({ ...configForm, client_id: e.target.value })}
+                                        className="w-full bg-white/5 rounded-xl px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                                        placeholder="Enter App ID"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 text-foreground/90">
+                                        App Secret / Client Secret <span className="text-red-400">*</span>
+                                    </label>
+                                    <input
+                                        type="password"
+                                        value={configForm.client_secret}
+                                        onChange={(e) => setConfigForm({ ...configForm, client_secret: e.target.value })}
+                                        className="w-full bg-white/5 rounded-xl px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                                        placeholder="Enter App Secret"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium mb-2 text-foreground/90">
+                                        Scopes <span className="text-muted-foreground font-normal">(Optional)</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={configForm.scopes}
+                                        onChange={(e) => setConfigForm({ ...configForm, scopes: e.target.value })}
+                                        className="w-full bg-white/5 rounded-xl px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                                        placeholder="email, public_profile"
+                                    />
+                                </div>
+
+                                <div className="flex justify-end gap-3 mt-8 pt-2">
+                                    <Button
+                                        variant="ghost"
+                                        onClick={() => {
+                                            setConfigForm(prev => ({ ...prev, provider: '' }))
+                                        }}
+                                        className="rounded-xl hover:bg-white/5"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        onClick={saveConfig}
+                                        disabled={!configForm.client_id || !configForm.client_secret}
+                                        className="rounded-xl shadow-lg shadow-primary/20"
+                                    >
+                                        {configForm.id ? 'Update Configuration' : 'Save Configuration'}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             )}
 

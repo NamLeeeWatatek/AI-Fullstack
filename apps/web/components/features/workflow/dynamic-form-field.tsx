@@ -113,7 +113,7 @@ export const DynamicFormField = memo(function DynamicFormField({ field, value, o
                 formData.append('file', file)
 
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-                
+
                 // Get token from NextAuth session
                 const { getSession } = await import('next-auth/react')
                 const session = await getSession()
@@ -229,32 +229,53 @@ export const DynamicFormField = memo(function DynamicFormField({ field, value, o
                 // Ensure value is a string and exists in options
                 const selectValue = currentValue ? String(currentValue) : undefined
 
+                // Check if this is a channel selector
+                const isChannelSelector = typeof field.options === 'string' && field.options === 'dynamic:channels'
+
                 return (
-                    <Select
-                        value={selectValue}
-                        onValueChange={(value) => onChange(field.name, value)}
-                        disabled={loadingOptions}
-                    >
-                        <SelectTrigger className="w-full glass border-border/40">
-                            <SelectValue placeholder={loadingOptions ? "Loading..." : "Select..."} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {options.length === 0 && !loadingOptions && (
-                                <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                                    No options available
-                                </div>
-                            )}
-                            {options.map((opt: any) => {
-                                const optValue = typeof opt === 'string' ? opt : opt.value
-                                const optLabel = typeof opt === 'string' ? opt : opt.label
-                                return (
-                                    <SelectItem key={optValue} value={String(optValue)}>
-                                        {optLabel}
-                                    </SelectItem>
-                                )
-                            })}
-                        </SelectContent>
-                    </Select>
+                    <div className="space-y-2">
+                        <Select
+                            value={selectValue}
+                            onValueChange={(value) => onChange(field.name, value)}
+                            disabled={loadingOptions}
+                        >
+                            <SelectTrigger className="w-full glass border-border/40">
+                                <SelectValue placeholder={loadingOptions ? "Loading channels..." : "Select a channel..."} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {options.length === 0 && !loadingOptions && (
+                                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                                        {isChannelSelector ? 'No channels connected' : 'No options available'}
+                                    </div>
+                                )}
+                                {options.map((opt: any) => {
+                                    const optValue = typeof opt === 'string' ? opt : opt.value
+                                    const optLabel = typeof opt === 'string' ? opt : opt.label
+                                    return (
+                                        <SelectItem key={optValue} value={String(optValue)}>
+                                            {optLabel}
+                                        </SelectItem>
+                                    )
+                                })}
+                            </SelectContent>
+                        </Select>
+
+                        {/* Show helpful message for channel selector when empty */}
+                        {isChannelSelector && options.length === 0 && !loadingOptions && (
+                            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                                    No channels connected yet. Connect a channel first to send messages.
+                                </p>
+                                <a
+                                    href="/channels"
+                                    target="_blank"
+                                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                                >
+                                    Go to Channels →
+                                </a>
+                            </div>
+                        )}
+                    </div>
                 )
 
             case 'boolean':
