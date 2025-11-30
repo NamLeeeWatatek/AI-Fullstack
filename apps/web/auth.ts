@@ -25,6 +25,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           // Gọi API backend để lấy token từ Casdoor
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+          console.log("🔍 [NextAuth] NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
+          console.log("🔍 [NextAuth] apiUrl:", apiUrl);
           const backendUrl = `${apiUrl}/auth/casdoor/callback`;
           
           console.log("🌐 [NextAuth] Calling backend:", backendUrl);

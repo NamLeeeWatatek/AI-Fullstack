@@ -21,7 +21,7 @@ export class KnowledgeBaseService {
   private qdrantClient: QdrantClient;
   private genAI: GoogleGenerativeAI;
   private readonly collectionName = 'knowledge-base';
-  private readonly embeddingModel = 'embedding-001';
+  private readonly embeddingModel = 'text-embedding-004';
 
   constructor(private configService: ConfigService) {
     // Initialize Qdrant client
