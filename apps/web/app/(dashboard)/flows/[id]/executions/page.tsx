@@ -20,19 +20,7 @@ import {
 } from 'react-icons/fi'
 import { fetchAPI } from '@/lib/api'
 import { useExecutionSocket } from '@/lib/hooks/useExecutionSocket'
-
-interface Execution {
-    id: number
-    flow_version_id: number
-    status: string
-    started_at: string
-    completed_at?: string
-    total_nodes: number
-    completed_nodes: number
-    duration_ms?: number
-    success_rate?: number
-    error_message?: string
-}
+import type { Execution } from '@/lib/types'
 
 export default function ExecutionsPage({ params }: { params: { id: string } }) {
     const router = useRouter()
@@ -269,10 +257,10 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
                                         </div>
                                     </td>
                                     <td className="p-4 text-sm">
-                                        {formatDate(execution.started_at)}
+                                        {formatDate(execution.started_at ?? execution.startedAt ?? '')}
                                     </td>
                                     <td className="p-4 text-sm font-medium">
-                                        {formatDuration(execution.duration_ms)}
+                                        {formatDuration(execution.duration_ms ?? execution.duration)}
                                     </td>
                                     <td className="p-4">
                                         <div className="flex items-center gap-2">
@@ -280,15 +268,15 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
                                                 <div
                                                     className="h-full bg-primary transition-all"
                                                     style={{
-                                                        width: `${(execution.completed_nodes /
-                                                                execution.total_nodes) *
+                                                        width: `${((execution.completed_nodes ?? 0) /
+                                                                (execution.total_nodes ?? 1)) *
                                                             100
                                                             }%`
                                                     }}
                                                 />
                                             </div>
                                             <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                                {execution.completed_nodes}/{execution.total_nodes}
+                                                {execution.completed_nodes ?? 0}/{execution.total_nodes ?? 0}
                                             </span>
                                         </div>
                                     </td>
@@ -299,7 +287,7 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
                                     </td>
                                     <td className="p-4 text-right">
                                         <div className="flex items-center justify-end gap-2">
-                                            <Link href={`/flows/${params.id}/executions/${execution.id}`}>
+                                            <Link href={`/flows/${params.id}/executions/${String(execution.id)}`}>
                                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                                     <FiEye className="w-4 h-4" />
                                                 </Button>
@@ -308,7 +296,7 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-8 w-8 text-red-500 hover:bg-red-500/10"
-                                                onClick={() => handleDelete(execution.id)}
+                                                onClick={() => handleDelete(typeof execution.id === 'number' ? execution.id : parseInt(String(execution.id)))}
                                             >
                                                 <FiTrash2 className="w-4 h-4" />
                                             </Button>

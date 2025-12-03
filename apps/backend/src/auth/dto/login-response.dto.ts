@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { User } from '../../users/domain/user';
+import { Workspace } from '../../workspaces/domain/workspace';
 
 export class LoginResponseDto {
   @ApiProperty()
@@ -15,4 +16,16 @@ export class LoginResponseDto {
     type: () => User,
   })
   user: User;
+
+  @ApiPropertyOptional({
+    type: () => Workspace,
+    description: 'User default workspace',
+  })
+  workspace?: Workspace;
+
+  @ApiPropertyOptional({
+    type: [Workspace],
+    description: 'All user workspaces',
+  })
+  workspaces?: Workspace[];
 }

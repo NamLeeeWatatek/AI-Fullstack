@@ -5,12 +5,7 @@
 'use client'
 
 import { usePermissions } from '@/lib/hooks/usePermissions'
-import type { Role } from '@/lib/types/permissions'
-
-interface RoleBadgeProps {
-  role?: Role
-  className?: string
-}
+import type { Role, RoleBadgeProps } from '@/lib/types'
 
 const roleColors: Record<Role, string> = {
   super_admin: 'bg-purple-500/20 text-purple-500 border-purple-500/30',
@@ -33,7 +28,7 @@ const roleLabels: Record<Role, string> = {
 export function RoleBadge({ role, className = '' }: RoleBadgeProps) {
   const { capabilities } = usePermissions()
   const userRole = role || capabilities?.role || 'user'
-  
+
   return (
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${roleColors[userRole]} ${className}`}

@@ -98,7 +98,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
     const [flow, setFlow] = useState<any>(null)
     const [channels, setChannels] = useState<Channel[]>([])
     const [savedState, setSavedState] = useState<string>('')
-    
+
     // Ref to prevent double-save of template
     const templateSavedRef = useRef(false)
 
@@ -274,6 +274,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
                 data: {
                     ...node.data,
                     type: originalType,
+                    nodeType: originalType,
                     label: node.data?.label || node.data?.name || originalType
                 }
             }
@@ -286,7 +287,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
             if (draftTemplate && !templateSavedRef.current) {
                 // Mark as being saved to prevent double-save
                 templateSavedRef.current = true
-                
+
                 const migratedNodes = migrateNodes(draftTemplate.nodes || [])
                 const templateName = draftTemplate.name || 'Untitled Workflow'
                 const templateEdges = draftTemplate.edges || []
@@ -345,7 +346,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
 
                         // No toast needed for auto-save of template
                     } catch (error) {
-                        console.error('Failed to auto-save template:', error)
+
                         toast.error('Failed to save template as new flow')
                     } finally {
                         setIsSaving(false)
@@ -379,7 +380,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
             const data: any = await axiosClient.get('/channels/')
             setChannels(data)
         } catch (e: any) {
-            console.error('Failed to load channels:', e)
+
         }
     }
 
@@ -466,6 +467,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
                 data: {
                     label: nodeType.label,
                     type: nodeType.id,
+                    nodeType: nodeType.id,
                     config: {}
                 }
             }
@@ -488,6 +490,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
             data: {
                 label: nodeType.label,
                 type: nodeType.id,
+                nodeType: nodeType.id,
                 config: {}
             }
         }
@@ -620,7 +623,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
                 return created
             } else {
                 // Update existing flow
-                const updated: any = await axiosClient.put(`/flows/${params.id}`, flowData)
+                const updated: any = await axiosClient.patch(`/flows/${params.id}`, flowData)
                 setFlow(updated)
 
                 // Update saved state after successful save (clean execution status)
@@ -697,7 +700,7 @@ export default function WorkflowEditorPage({ params }: { params: { id: string } 
             })
             toast.success('Template saved successfully!')
         } catch (error) {
-            console.error('Failed to save template:', error)
+
             toast.error('Failed to save template')
         }
     }

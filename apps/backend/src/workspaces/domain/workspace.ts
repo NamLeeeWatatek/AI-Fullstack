@@ -1,6 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { User } from '../../users/domain/user';
 
+/**
+ * Workspace domain entity - theo schema mới
+ * Table: workspaces
+ * Fields: id, name, slug, avatar_url, plan, owner_id, deleted_at, created_at, updated_at
+ */
 export class Workspace {
   @ApiProperty({ type: String })
   id: string;
@@ -11,11 +16,24 @@ export class Workspace {
   @ApiProperty({ type: String })
   slug: string;
 
+  @ApiPropertyOptional({ type: String, description: 'Workspace avatar URL' })
+  avatarUrl?: string | null;
+
+  @ApiProperty({
+    type: String,
+    enum: ['free', 'starter', 'pro', 'enterprise'],
+    default: 'free',
+  })
+  plan: 'free' | 'starter' | 'pro' | 'enterprise';
+
   @ApiProperty({ type: String })
   ownerId: string;
 
-  @ApiProperty({ type: () => User })
+  @ApiPropertyOptional({ type: () => User })
   owner?: User;
+
+  @ApiPropertyOptional({ type: Date })
+  deletedAt?: Date | null;
 
   @ApiProperty()
   createdAt: Date;
@@ -24,25 +42,31 @@ export class Workspace {
   updatedAt: Date;
 }
 
+/**
+ * WorkspaceMember domain entity - theo schema mới
+ * Table: workspace_members
+ * Fields: workspace_id, user_id, role, joined_at
+ */
 export class WorkspaceMember {
-  @ApiProperty({ type: String })
-  id: string;
-
   @ApiProperty({ type: String })
   workspaceId: string;
 
   @ApiProperty({ type: String })
   userId: string;
 
-  @ApiProperty({ type: String, enum: ['owner', 'admin', 'member'] })
-  role: string;
+  @ApiProperty({
+    type: String,
+    enum: ['owner', 'admin', 'member'],
+    default: 'member',
+  })
+  role: 'owner' | 'admin' | 'member';
 
-  @ApiProperty({ type: () => Workspace })
+  @ApiPropertyOptional({ type: () => Workspace })
   workspace?: Workspace;
 
-  @ApiProperty({ type: () => User })
+  @ApiPropertyOptional({ type: () => User })
   user?: User;
 
-  @ApiProperty()
-  createdAt: Date;
+  @ApiProperty({ description: 'When user joined the workspace' })
+  joinedAt: Date;
 }

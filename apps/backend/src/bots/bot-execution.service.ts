@@ -8,7 +8,7 @@ import { ExecutionService } from '../flows/execution.service';
 import { MessengerService } from '../channels/providers/messenger.service';
 import { InstagramService } from '../channels/providers/instagram.service';
 import { TelegramService } from '../channels/providers/telegram.service';
-import { KnowledgeBaseService } from '../ai/knowledge-base.service';
+import { KBRagService } from '../knowledge-base/services/kb-rag.service';
 
 export interface IncomingMessage {
   channel: string;
@@ -32,7 +32,7 @@ export class BotExecutionService {
     private messengerService: MessengerService,
     private instagramService: InstagramService,
     private telegramService: TelegramService,
-    private knowledgeBaseService: KnowledgeBaseService,
+    private kbRagService: KBRagService,
   ) {}
 
   /**
@@ -62,7 +62,10 @@ export class BotExecutionService {
         await this.answerWithKnowledgeBase(bot, incomingMessage);
       }
     } catch (error) {
-      this.logger.error(`Error processing message: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error processing message: ${error.message}`,
+        error.stack,
+      );
     }
   }
 
@@ -167,7 +170,10 @@ export class BotExecutionService {
           this.logger.warn(`Unsupported channel: ${channel}`);
       }
     } catch (error) {
-      this.logger.error(`Error sending response: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error sending response: ${error.message}`,
+        error.stack,
+      );
     }
   }
 
@@ -185,9 +191,7 @@ export class BotExecutionService {
         `✅ Facebook message sent to ${recipientId}: ${result.messageId}`,
       );
     } else {
-      this.logger.error(
-        `❌ Failed to send Facebook message: ${result.error}`,
-      );
+      this.logger.error(`❌ Failed to send Facebook message: ${result.error}`);
     }
   }
 
@@ -205,9 +209,7 @@ export class BotExecutionService {
         `✅ Instagram message sent to ${recipientId}: ${result.messageId}`,
       );
     } else {
-      this.logger.error(
-        `❌ Failed to send Instagram message: ${result.error}`,
-      );
+      this.logger.error(`❌ Failed to send Instagram message: ${result.error}`);
     }
   }
 
@@ -225,14 +227,12 @@ export class BotExecutionService {
         `✅ Telegram message sent to ${recipientId}: ${result.messageId}`,
       );
     } else {
-      this.logger.error(
-        `❌ Failed to send Telegram message: ${result.error}`,
-      );
+      this.logger.error(`❌ Failed to send Telegram message: ${result.error}`);
     }
   }
 
   /**
-   * Answer using knowledge base (RAG)
+   * Answer using knowledge base (RAG) with bot system prompt
    */
   private async answerWithKnowledgeBase(
     bot: BotEntity,
@@ -243,11 +243,20 @@ export class BotExecutionService {
         `Querying knowledge base for bot ${bot.name}: "${incomingMessage.message}"`,
       );
 
-      // Generate answer using RAG
-      const answer = await this.knowledgeBaseService.generateAnswer(
+      // Get bot's system prompt
+      const systemPrompt = bot.systemPrompt || bot.description || undefined;
+
+      // Generate answer using RAG with bot's system prompt
+      const result = await this.kbRagService.generateAnswerForAgent(
         incomingMessage.message,
         bot.id.toString(),
+        undefined, // conversation history - TODO: implement
+        undefined, // model - use default
+        systemPrompt,
       );
+
+      // Only send the answer, not sources/relevance
+      const answer = result.answer;
 
       // Send response back to channel
       await this.sendResponse(
@@ -256,7 +265,9 @@ export class BotExecutionService {
         answer,
       );
 
-      this.logger.log(`✅ Knowledge base answer sent to ${incomingMessage.senderId}`);
+      this.logger.log(
+        `✅ Knowledge base answer sent to ${incomingMessage.senderId}`,
+      );
     } catch (error) {
       this.logger.error(
         `Error answering with knowledge base: ${error.message}`,

@@ -10,11 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import * as Icons from 'react-icons/fi';
 import { FiSearch } from 'react-icons/fi';
-
-interface IconPickerProps {
-  value: string;
-  onChange: (icon: string) => void;
-}
+import type { IconPickerProps } from '@/lib/types';
 
 const POPULAR_ICONS = [
   'FiFolder', 'FiFile', 'FiZap', 'FiStar', 'FiHeart',
@@ -29,7 +25,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
 
-  const SelectedIcon = (Icons as any)[value] || Icons.FiFolder;
+  const SelectedIcon = value ? (Icons as any)[value] || Icons.FiFolder : Icons.FiFolder;
 
   const filteredIcons = POPULAR_ICONS.filter(icon =>
     icon.toLowerCase().includes(search.toLowerCase())

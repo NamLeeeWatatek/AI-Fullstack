@@ -70,7 +70,7 @@ export const DynamicFormField = memo(function DynamicFormField({ field, value, o
             // Handle ai-models:provider format
             if (optionsConfig.startsWith('ai-models:')) {
                 const provider = optionsConfig.split(':')[1]
-                const data = await fetchAPI('/ai/models')
+                const data = await fetchAPI('/ai-providers/models')
                 const providerData = data.find((p: any) => p.provider === provider)
 
                 if (providerData) {
@@ -93,7 +93,7 @@ export const DynamicFormField = memo(function DynamicFormField({ field, value, o
                 setDynamicOptions(options)
             }
         } catch (error) {
-            console.error('Failed to load dynamic options:', error)
+
         } finally {
             setLoadingOptions(false)
         }
@@ -143,7 +143,7 @@ export const DynamicFormField = memo(function DynamicFormField({ field, value, o
                 onChange(field.name, uploadedUrls[0])
             }
         } catch (error) {
-            console.error('File upload error:', error)
+
             setUploadError(error instanceof Error ? error.message : 'Upload failed')
         } finally {
             setUploadingFiles(false)

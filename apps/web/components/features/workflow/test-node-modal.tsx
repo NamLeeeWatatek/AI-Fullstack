@@ -92,7 +92,7 @@ export function TestNodeModal({ node, onClose, flowId }: TestNodeModalProps) {
             } else {
                 // Fallback to HTTP API
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-                
+
                 // Get token from NextAuth session
                 const { getSession } = await import('next-auth/react')
                 const session = await getSession()
@@ -121,7 +121,7 @@ export function TestNodeModal({ node, onClose, flowId }: TestNodeModalProps) {
                 toast.success('Node tested successfully!')
             }
         } catch (error: any) {
-            console.error('Test error:', error)
+
             setTestError(error.message || 'Test failed')
             toast.error(`Test failed: ${error.message}`)
         }

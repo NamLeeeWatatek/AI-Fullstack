@@ -1,26 +1,67 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   BotEntity,
   FlowVersionEntity,
+  BotKnowledgeBaseEntity,
 } from './infrastructure/persistence/relational/entities/bot.entity';
-import { ConversationEntity } from '../conversations/infrastructure/persistence/relational/entities/conversation.entity';
+import { WidgetVersionEntity } from './infrastructure/persistence/relational/entities/widget-version.entity';
+import { WidgetDeploymentEntity } from './infrastructure/persistence/relational/entities/widget-deployment.entity';
+import { WorkspaceMemberEntity } from '../workspaces/infrastructure/persistence/relational/entities/workspace.entity';
+import {
+  ConversationEntity,
+  MessageEntity,
+} from '../conversations/infrastructure/persistence/relational/entities/conversation.entity';
 import { BotsService } from './bots.service';
 import { BotsController } from './bots.controller';
+import { PublicBotController } from './controllers/public-bot.controller';
+import { WidgetVersionController } from './controllers/widget-version.controller';
+import { WidgetDeploymentController } from './controllers/widget-deployment.controller';
+import { PublicBotService } from './services/public-bot.service';
+import { WidgetVersionService } from './services/widget-version.service';
 import { BotExecutionService } from './bot-execution.service';
+import { BotFunctionsService } from './bot-functions.service';
+import { BotInteractionService } from './bot-interaction.service';
 import { FlowsModule } from '../flows/flows.module';
-import { AiModule } from '../ai/ai.module';
+import { AiProvidersModule } from '../ai-providers/ai-providers.module';
+import { KnowledgeBaseModule } from '../knowledge-base/knowledge-base.module';
 import { MessagingModule } from '../channels/messaging.module';
+import { WorkspacesModule } from '../workspaces/workspaces.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([BotEntity, FlowVersionEntity, ConversationEntity]),
-    FlowsModule,
-    AiModule,
+    TypeOrmModule.forFeature([
+      BotEntity,
+      FlowVersionEntity,
+      BotKnowledgeBaseEntity,
+      WidgetVersionEntity,
+      WidgetDeploymentEntity,
+      WorkspaceMemberEntity,
+      ConversationEntity,
+      MessageEntity,
+    ]),
+    WorkspacesModule,
+    forwardRef(() => FlowsModule),
+    forwardRef(() => AiProvidersModule),
+    forwardRef(() => KnowledgeBaseModule),
     MessagingModule,
   ],
-  controllers: [BotsController],
-  providers: [BotsService, BotExecutionService],
-  exports: [BotsService, BotExecutionService],
+  controllers: [BotsController, PublicBotController, WidgetVersionController, WidgetDeploymentController],
+  providers: [
+    BotsService,
+    PublicBotService,
+    WidgetVersionService,
+    BotExecutionService,
+    BotFunctionsService,
+    BotInteractionService,
+  ],
+  exports: [
+    BotsService,
+    PublicBotService,
+    WidgetVersionService,
+    BotExecutionService,
+    BotFunctionsService,
+    BotInteractionService,
+  ],
 })
-export class BotsModule {}
+export class BotsModule { }

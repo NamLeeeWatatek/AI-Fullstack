@@ -42,7 +42,7 @@ export function AlertDialogConfirm({
       }
     } catch (error) {
       // If error, don't close dialog so user can see error toast
-      console.error('Confirm action failed:', error)
+
     }
   }
 

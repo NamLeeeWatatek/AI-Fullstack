@@ -55,7 +55,8 @@ describe('Execution Verification', () => {
     strategy.register('ai-chat', ai);
     strategy.register('condition', condition);
     strategy.register('webhook', {
-      execute: async (input) => ({ success: true, output: input.input }),
+      execute: (input) =>
+        Promise.resolve({ success: true, output: input.input }),
     });
   });
 
@@ -84,8 +85,7 @@ describe('Execution Verification', () => {
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const execution = service.getExecution(executionId);
-      const fs = require('fs');
-      fs.writeFileSync('test_debug.json', JSON.stringify(execution, null, 2));
+      // fs.writeFileSync('test_debug.json', JSON.stringify(execution, null, 2));
 
       if (!execution) {
         throw new Error('Execution not found');
@@ -99,8 +99,7 @@ describe('Execution Verification', () => {
       expect(execution.result).toEqual({ result: 10 });
       expect(mockGateway.emitExecutionComplete).toHaveBeenCalled();
     } catch (error) {
-      const fs = require('fs');
-      fs.writeFileSync('test_error.log', error.message + '\n' + error.stack);
+      // fs.writeFileSync('test_error.log', error.message + '\n' + error.stack);
       throw error;
     }
   });

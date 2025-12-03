@@ -75,7 +75,7 @@ export class TokenRefreshService {
         'auth.refreshExpires',
         { infer: true },
       );
-      const refreshExpiresMs = ms(refreshExpiresIn);
+      // const refreshExpiresMs = ms(refreshExpiresIn);
       const refreshExpiresAt = payload.exp * 1000; // Convert to milliseconds
       const timeUntilExpiry = refreshExpiresAt - Date.now();
       const sevenDays = 7 * 24 * 60 * 60 * 1000;
@@ -130,7 +130,7 @@ export class TokenRefreshService {
       const fiveMinutes = 5 * 60 * 1000;
 
       return timeUntilExpiry < fiveMinutes;
-    } catch (error) {
+    } catch {
       return true;
     }
   }
@@ -144,7 +144,7 @@ export class TokenRefreshService {
         secret: this.configService.getOrThrow('auth.secret', { infer: true }),
       });
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -59,7 +59,7 @@ export function TagDialog({ open, onOpenChange, tag, onSave }: TagDialogProps) {
 
       onSave();
     } catch (error) {
-      console.error('Failed to save tag:', error);
+
       alert('Failed to save tag');
     } finally {
       setLoading(false);

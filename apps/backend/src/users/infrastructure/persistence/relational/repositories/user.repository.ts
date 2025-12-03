@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-
 import { FindOptionsWhere, Repository, In } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { NullableType } from '../../../../../utils/types/nullable.type';
@@ -15,7 +14,7 @@ export class UsersRelationalRepository implements UserRepository {
   constructor(
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
-  ) { }
+  ) {}
 
   async create(data: User): Promise<User> {
     const persistenceModel = UserMapper.toPersistence(data);
@@ -35,16 +34,29 @@ export class UsersRelationalRepository implements UserRepository {
     paginationOptions: IPaginationOptions;
   }): Promise<User[]> {
     const where: FindOptionsWhere<UserEntity> = {};
+
+    // Filter by roles (support both new string format and legacy)
     if (filterOptions?.roles?.length) {
-      where.role = filterOptions.roles.map((role) => ({
-        id: Number(role.id),
-      }));
+      const roleValues = filterOptions.roles.map((role) => {
+        if (typeof role === 'string') return role;
+        if (typeof role === 'object' && role.id) {
+          // Legacy: convert role id to string
+          return role.id === 1 ? 'admin' : 'user';
+        }
+        return 'user';
+      });
+      where.role = In(roleValues) as any;
+    }
+
+    // Filter by isActive
+    if (filterOptions && 'isActive' in filterOptions) {
+      where.isActive = (filterOptions as any).isActive;
     }
 
     const entities = await this.usersRepository.find({
       skip: (paginationOptions.page - 1) * paginationOptions.limit,
       take: paginationOptions.limit,
-      where: where,
+      where,
       order: sortOptions?.reduce(
         (accumulator, sort) => ({
           ...accumulator,
@@ -61,7 +73,6 @@ export class UsersRelationalRepository implements UserRepository {
     const entity = await this.usersRepository.findOne({
       where: { id },
     });
-
     return entity ? UserMapper.toDomain(entity) : null;
   }
 
@@ -69,7 +80,6 @@ export class UsersRelationalRepository implements UserRepository {
     const entities = await this.usersRepository.find({
       where: { id: In(ids) },
     });
-
     return entities.map((user) => UserMapper.toDomain(user));
   }
 
@@ -79,7 +89,6 @@ export class UsersRelationalRepository implements UserRepository {
     const entity = await this.usersRepository.findOne({
       where: { email },
     });
-
     return entity ? UserMapper.toDomain(entity) : null;
   }
 
@@ -92,9 +101,16 @@ export class UsersRelationalRepository implements UserRepository {
   }): Promise<NullableType<User>> {
     if (!socialId || !provider) return null;
 
-    const entity = await this.usersRepository.findOne({
-      where: { socialId, provider },
+    // Try new providerId field first, then fallback to legacy socialId
+    let entity = await this.usersRepository.findOne({
+      where: { providerId: socialId, provider },
     });
+
+    if (!entity) {
+      entity = await this.usersRepository.findOne({
+        where: { socialId, provider },
+      });
+    }
 
     return entity ? UserMapper.toDomain(entity) : null;
   }

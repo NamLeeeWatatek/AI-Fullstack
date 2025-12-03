@@ -91,7 +91,7 @@ export function CategoryDialog({
 
       onSave();
     } catch (error) {
-      console.error('Failed to save category:', error);
+
       alert('Failed to save category');
     } finally {
       setLoading(false);

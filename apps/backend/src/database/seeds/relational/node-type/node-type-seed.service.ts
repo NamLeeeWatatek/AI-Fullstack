@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NodeTypeEntity } from '../../../../node-types/infrastructure/persistence/relational/entities/node-type.entity';
+import {
+  CHAT_MODEL_OPTIONS,
+  IMAGE_MODEL_OPTIONS,
+} from '../../../../constants/ai-models';
 
 @Injectable()
 export class NodeTypeSeedService {
@@ -144,8 +148,8 @@ export class NodeTypeSeedService {
             label: 'AI Model',
             type: 'select',
             required: true,
-            options: ['gpt-4', 'gpt-3.5-turbo', 'claude-3', 'gemini-pro'],
-            default: 'gpt-3.5-turbo',
+            options: CHAT_MODEL_OPTIONS,
+            default: 'gemini-2.5-flash',
           },
           {
             name: 'prompt',
@@ -176,7 +180,7 @@ export class NodeTypeSeedService {
             name: 'model',
             label: 'Model',
             type: 'select',
-            options: ['dall-e-3', 'stable-diffusion'],
+            options: IMAGE_MODEL_OPTIONS,
             default: 'dall-e-3',
           },
           {

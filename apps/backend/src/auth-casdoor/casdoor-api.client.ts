@@ -15,7 +15,8 @@ export class CasdoorApiClient {
   private readonly orgName: string;
 
   constructor(private readonly configService: ConfigService<AllConfigType>) {
-    this.casdoorEndpoint = process.env.CASDOOR_ENDPOINT || 'http://localhost:8030';
+    this.casdoorEndpoint =
+      process.env.CASDOOR_ENDPOINT || 'http://localhost:8030';
     this.clientId = process.env.CASDOOR_CLIENT_ID || '';
     this.clientSecret = process.env.CASDOOR_CLIENT_SECRET || '';
     this.orgName = process.env.CASDOOR_ORG_NAME || 'built-in';
@@ -27,7 +28,7 @@ export class CasdoorApiClient {
   private async getAdminToken(): Promise<string> {
     // Use client credentials to get admin token
     const tokenUrl = `${this.casdoorEndpoint}/api/login/oauth/access_token`;
-    
+
     const params = new URLSearchParams({
       grant_type: 'client_credentials',
       client_id: this.clientId,
@@ -171,7 +172,7 @@ export class CasdoorApiClient {
   ): Promise<any> {
     try {
       const token = await this.getAdminToken();
-      
+
       // Get current user data first
       const currentUser = await this.getUser(name);
       if (!currentUser) {
@@ -297,7 +298,9 @@ export class CasdoorApiClient {
       const result = await response.json();
       return result.data || [];
     } catch (error) {
-      this.logger.error(`Failed to get permissions from Casdoor: ${error.message}`);
+      this.logger.error(
+        `Failed to get permissions from Casdoor: ${error.message}`,
+      );
       throw error;
     }
   }

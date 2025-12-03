@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 import {
   ChannelProvider,
   ChannelMessage,
@@ -18,11 +17,11 @@ export class OmiProvider implements ChannelProvider {
   private readonly webhookSecret: string;
 
   constructor(private configService: ConfigService) {
-    this.apiKey = this.configService.get<string>('OMI_API_KEY', '');
-    this.webhookSecret = this.configService.get<string>(
-      'OMI_WEBHOOK_SECRET',
-      '',
-    );
+    this.apiKey =
+      this.configService.get<string>('OMI_API_KEY', { infer: true }) || '';
+    this.webhookSecret =
+      this.configService.get<string>('OMI_WEBHOOK_SECRET', { infer: true }) ||
+      '';
   }
 
   async sendMessage(message: ChannelMessage): Promise<ChannelMessageResponse> {
@@ -41,7 +40,7 @@ export class OmiProvider implements ChannelProvider {
     }
   }
 
-  verifyWebhook(payload: any, signature: string): boolean {
+  verifyWebhook(): boolean {
     // TODO: Implement Omi webhook verification
     return true;
   }

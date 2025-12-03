@@ -28,6 +28,7 @@ import { Session } from '../session/domain/session';
 import { SessionService } from '../session/session.service';
 import { StatusEnum } from '../statuses/statuses.enum';
 import { User } from '../users/domain/user';
+import { WorkspaceHelperService } from '../workspaces/workspace-helper.service';
 
 @Injectable()
 export class AuthService {
@@ -37,6 +38,7 @@ export class AuthService {
     private sessionService: SessionService,
     private mailService: MailService,
     private configService: ConfigService<AllConfigType>,
+    private workspaceHelper: WorkspaceHelperService,
   ) {}
 
   async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseDto> {
@@ -100,11 +102,20 @@ export class AuthService {
       hash,
     });
 
+    // Ensure user has workspace and get workspace info
+    const workspace = await this.workspaceHelper.ensureUserHasWorkspace(
+      user.id,
+      user.name || undefined,
+    );
+    const workspaces = await this.workspaceHelper.getUserWorkspaces(user.id);
+
     return {
       refreshToken,
       token,
       tokenExpires,
       user,
+      workspace: workspace as any,
+      workspaces: workspaces as any,
     };
   }
 
@@ -135,21 +146,15 @@ export class AuthService {
     } else if (userByEmail) {
       user = userByEmail;
     } else if (socialData.id) {
-      const role = {
-        id: RoleEnum.user,
-      };
-      const status = {
-        id: StatusEnum.active,
-      };
-
       user = await this.usersService.create({
         email: socialEmail ?? null,
-        firstName: socialData.firstName ?? null,
-        lastName: socialData.lastName ?? null,
+        name:
+          `${socialData.firstName ?? ''} ${socialData.lastName ?? ''}`.trim() ||
+          null,
         socialId: socialData.id,
         provider: authProvider,
-        role,
-        status,
+        role: 'user',
+        isActive: true,
       });
 
       user = await this.usersService.findById(user.id);
@@ -185,24 +190,30 @@ export class AuthService {
       hash,
     });
 
+    // Ensure user has workspace and get workspace info
+    const workspace = await this.workspaceHelper.ensureUserHasWorkspace(
+      user.id,
+      user.name || undefined,
+    );
+    const workspaces = await this.workspaceHelper.getUserWorkspaces(user.id);
+
     return {
       refreshToken,
       token: jwtToken,
       tokenExpires,
       user,
+      workspace: workspace as any,
+      workspaces: workspaces as any,
     };
   }
 
   async register(dto: AuthRegisterLoginDto): Promise<void> {
     const user = await this.usersService.create({
-      ...dto,
       email: dto.email,
-      role: {
-        id: RoleEnum.user,
-      },
-      status: {
-        id: StatusEnum.inactive,
-      },
+      name: `${dto.firstName} ${dto.lastName}`.trim(),
+      password: dto.password,
+      role: 'user',
+      isActive: false,
     });
 
     const hash = await this.jwtService.signAsync(
@@ -251,21 +262,14 @@ export class AuthService {
 
     const user = await this.usersService.findById(userId);
 
-    if (
-      !user ||
-      user?.status?.id?.toString() !== StatusEnum.inactive.toString()
-    ) {
+    if (!user || user.isActive) {
       throw new NotFoundException({
         status: HttpStatus.NOT_FOUND,
         error: `notFound`,
       });
     }
 
-    user.status = {
-      id: StatusEnum.active,
-    };
-
-    await this.usersService.update(user.id, user);
+    await this.usersService.update(user.id, { isActive: true });
   }
 
   async confirmNewEmail(hash: string): Promise<void> {
@@ -303,11 +307,11 @@ export class AuthService {
     }
 
     user.email = newEmail;
-    user.status = {
-      id: StatusEnum.active,
-    };
 
-    await this.usersService.update(user.id, user);
+    await this.usersService.update(user.id, {
+      email: newEmail,
+      isActive: true,
+    });
   }
 
   async forgotPassword(email: string): Promise<void> {
@@ -522,9 +526,7 @@ export class AuthService {
 
     const { token, refreshToken, tokenExpires } = await this.getTokensData({
       id: session.user.id,
-      role: {
-        id: user.role.id,
-      },
+      role: user.role,
       sessionId: session.id,
       hash,
     });

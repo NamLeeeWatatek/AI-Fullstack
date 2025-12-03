@@ -10,11 +10,11 @@ export class PermissionsService {
    * Get user capabilities based on role and custom permissions
    */
   getUserCapabilities(user: User): UserCapabilitiesDto {
-    const isAdmin = user.role?.id === RoleEnum.admin;
+    const isAdmin = user.role === 'admin';
     const customPermissions = user.permissions || {};
 
     // Base permissions from role
-    const basePermissions = this.getBasePermissions(user.role?.id);
+    const basePermissions = this.getBasePermissions(user.role);
 
     // Merge with custom permissions
     const allPermissions = [
@@ -123,8 +123,8 @@ export class PermissionsService {
   /**
    * Get base permissions for a role
    */
-  private getBasePermissions(roleId?: number | string): string[] {
-    if (roleId === RoleEnum.admin) {
+  private getBasePermissions(role?: 'admin' | 'user'): string[] {
+    if (role === 'admin') {
       return [
         'flows:read',
         'flows:write',

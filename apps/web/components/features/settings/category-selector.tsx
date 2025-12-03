@@ -29,7 +29,7 @@ export function CategorySelector({
         const data = await fetchAPI(`/metadata/categories?entity_type=${entityType}`);
         setCategories(data);
       } catch (error) {
-        console.error('Failed to load categories:', error);
+
       } finally {
         setLoading(false);
       }

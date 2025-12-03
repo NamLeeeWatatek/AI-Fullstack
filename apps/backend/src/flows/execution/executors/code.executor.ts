@@ -8,7 +8,11 @@ import * as vm from 'vm';
 
 @Injectable()
 export class CodeExecutor implements NodeExecutor {
-  async execute(input: NodeExecutionInput): Promise<NodeExecutionOutput> {
+  execute(input: NodeExecutionInput): Promise<NodeExecutionOutput> {
+    return Promise.resolve(this.executeSync(input));
+  }
+
+  private executeSync(input: NodeExecutionInput): NodeExecutionOutput {
     try {
       const { code } = input.data;
       const sandbox = {

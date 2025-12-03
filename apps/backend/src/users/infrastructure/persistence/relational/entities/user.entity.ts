@@ -4,93 +4,87 @@ import {
   DeleteDateColumn,
   Entity,
   Index,
-  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-  JoinColumn,
-  OneToOne,
 } from 'typeorm';
-import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
-import { StatusEntity } from '../../../../../statuses/infrastructure/persistence/relational/entities/status.entity';
-import { FileEntity } from '../../../../../files/infrastructure/persistence/relational/entities/file.entity';
-
-import { AuthProvidersEnum } from '../../../../../auth/auth-providers.enum';
 import { EntityRelationalHelper } from '../../../../../utils/relational-entity-helper';
 
-@Entity({
-  name: 'user',
-})
+/**
+ * User entity - theo schema mới
+ * Table: users
+ */
+@Entity({ name: 'user' })
 export class UserEntity extends EntityRelationalHelper {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // For "string | null" we need to use String type.
-  // More info: https://github.com/typeorm/typeorm/issues/2567
   @Column({ type: String, unique: true, nullable: true })
+  @Index()
   email: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
+  name: string | null;
+
+  @Column({ name: 'avatar_url', type: String, nullable: true })
+  avatarUrl?: string | null;
+
+  @Column({ name: 'password_hash', type: String, nullable: true })
   password?: string;
 
-  @Column({ default: AuthProvidersEnum.email })
+  @Column({ type: String, default: 'email' })
   provider: string;
 
+  @Column({ name: 'provider_id', type: String, nullable: true })
   @Index()
-  @Column({ type: String, nullable: true })
+  providerId?: string | null;
+
+  @Column({ name: 'email_verified_at', type: 'timestamp', nullable: true })
+  emailVerifiedAt?: Date | null;
+
+  @Column({ name: 'is_active', type: Boolean, default: true })
+  isActive: boolean;
+
+  @Column({ type: String, default: 'user' })
+  role: 'admin' | 'user';
+
+  // Legacy fields - backward compatibility
+  @Column({ name: 'first_name', type: String, nullable: true })
+  @Index()
+  firstName?: string | null;
+
+  @Column({ name: 'last_name', type: String, nullable: true })
+  @Index()
+  lastName?: string | null;
+
+  @Column({ name: 'social_id', type: String, nullable: true })
+  @Index()
   socialId?: string | null;
 
-  @Index()
-  @Column({ type: String, nullable: true })
-  firstName: string | null;
-
-  @Index()
-  @Column({ type: String, nullable: true })
-  lastName: string | null;
-
-  @OneToOne(() => FileEntity, {
-    eager: true,
-  })
-  @JoinColumn()
-  photo?: FileEntity | null;
-
-  @ManyToOne(() => RoleEntity, {
-    eager: true,
-  })
-  role?: RoleEntity | null;
-
-  @ManyToOne(() => StatusEntity, {
-    eager: true,
-  })
-  status?: StatusEntity;
-
   // WataOmi specific fields
-  @Column({ type: String, unique: true, nullable: true })
+  @Column({ name: 'external_id', type: String, unique: true, nullable: true })
   externalId?: string | null;
 
-  @Column({ type: String, unique: true, nullable: true })
+  @Column({ name: 'casdoor_id', type: String, unique: true, nullable: true })
   casdoorId?: string | null;
-
-  @Column({ type: String, nullable: true })
-  avatar?: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
   permissions?: Record<string, any>;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ name: 'last_login', type: 'timestamp', nullable: true })
   lastLogin?: Date | null;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ name: 'failed_login_attempts', type: 'int', default: 0 })
   failedLoginAttempts: number;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ name: 'locked_until', type: 'timestamp', nullable: true })
   lockedUntil?: Date | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @DeleteDateColumn()
-  deletedAt: Date;
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt?: Date | null;
 }

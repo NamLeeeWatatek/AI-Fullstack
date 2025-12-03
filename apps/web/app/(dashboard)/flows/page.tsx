@@ -50,23 +50,7 @@ import axiosClient from '@/lib/axios-client'
 import toast from '@/lib/toast'
 import { TemplateSelector } from '@/components/features/templates/template-selector'
 import { WorkflowRunModal } from '@/components/features/workflow/workflow-run-modal'
-
-interface WorkflowNode {
-    type: string
-    data?: {
-        config?: {
-            inputFields?: InputField[]
-        }
-    }
-}
-
-interface InputField {
-    id: string
-    label: string
-    key: string
-    type: 'text' | 'number' | 'boolean' | 'file'
-    required: boolean
-}
+import type { WorkflowNode, InputField } from '@/lib/types'
 
 interface WorkflowWithNodes {
     id: number
@@ -292,7 +276,7 @@ export default function WorkflowsPage() {
                 executeWorkflow(fullWorkflow.id, {})
             }
         } catch (error) {
-            console.error('Failed to prepare run:', error)
+
             toast.error('Failed to load workflow details')
         }
     }

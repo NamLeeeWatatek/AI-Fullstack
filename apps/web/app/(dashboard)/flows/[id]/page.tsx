@@ -109,7 +109,7 @@ function VersionsTab({ flowId, onUpdate }: { flowId: number, onUpdate: () => voi
             const data = await fetchAPI(`/flows/${flowId}/versions`)
             setVersions(data)
         } catch (e: any) {
-            console.error('Failed to load versions:', e)
+
             toast.error('Failed to load versions')
         } finally {
             setLoading(false)
@@ -463,7 +463,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
             const data = await fetchAPI(`/executions/?flow_id=${params.id}&limit=5`)
             setRecentExecutions(data)
         } catch (e: any) {
-            console.error('Failed to load executions:', e)
+
         } finally {
             setExecutionsLoading(false)
         }
@@ -492,7 +492,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                 avgDuration
             })
         } catch (e: any) {
-            console.error('Failed to load stats:', e)
+
         }
     }
 
@@ -596,16 +596,16 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
 
             {/* Stats Cards */}
             <div className="content-section">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="glass rounded-xl p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <Card className="p-6">
                         <div className="flex items-center justify-between mb-2">
                             <FiActivity className="w-8 h-8 text-slate-400" />
                         </div>
                         <h3 className="text-2xl font-bold mb-1">{stats.totalExecutions}</h3>
                         <p className="text-sm text-muted-foreground">Total Executions</p>
-                    </div>
+                    </Card>
 
-                    <div className="glass rounded-xl p-6">
+                    <Card className="p-6">
                         <div className="flex items-center justify-between mb-2">
                             <FiCheckCircle className="w-8 h-8 text-slate-400" />
                             {stats.successRate > 0 && (
@@ -616,9 +616,9 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                         </div>
                         <h3 className="text-2xl font-bold mb-1">{stats.successRate.toFixed(0)}%</h3>
                         <p className="text-sm text-muted-foreground">Success Rate</p>
-                    </div>
+                    </Card>
 
-                    <div className="glass rounded-xl p-6">
+                    <Card className="p-6">
                         <div className="flex items-center justify-between mb-2">
                             <FiClock className="w-8 h-8 text-slate-400" />
                         </div>
@@ -626,15 +626,15 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                             {stats.avgDuration > 0 ? formatDuration(stats.avgDuration) : '0s'}
                         </h3>
                         <p className="text-sm text-muted-foreground">Avg Duration</p>
-                    </div>
+                    </Card>
 
-                    <div className="glass rounded-xl p-6">
+                    <Card className="p-6">
                         <div className="flex items-center justify-between mb-2">
                             <FiActivity className="w-8 h-8 text-stone-400" />
                         </div>
                         <h3 className="text-2xl font-bold mb-1">v{flow.version || 1}</h3>
                         <p className="text-sm text-muted-foreground">Current Version</p>
-                    </div>
+                    </Card>
                 </div>
             </div>
 

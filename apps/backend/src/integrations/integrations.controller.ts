@@ -14,7 +14,7 @@ import { CreateCredentialDto } from './dto/create-credential.dto';
 @ApiTags('Integrations')
 @Controller({ path: 'integrations', version: '1' })
 export class IntegrationsController {
-  constructor(private readonly integrationsService: IntegrationsService) { }
+  constructor(private readonly integrationsService: IntegrationsService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all integration credentials' })

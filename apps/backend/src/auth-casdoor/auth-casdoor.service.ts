@@ -9,6 +9,7 @@ import { LoginResponseDto } from '../auth/dto/login-response.dto';
 import { AllConfigType } from '../config/config.type';
 import { UsersService } from '../users/users.service';
 import { SessionService } from '../session/session.service';
+import { WorkspaceHelperService } from '../workspaces/workspace-helper.service';
 
 @Injectable()
 export class AuthCasdoorService {
@@ -25,6 +26,7 @@ export class AuthCasdoorService {
     private readonly usersService: UsersService,
     private readonly sessionService: SessionService,
     private readonly jwtService: JwtService,
+    private readonly workspaceHelper: WorkspaceHelperService,
   ) {
     this.casdoorEndpoint =
       process.env.CASDOOR_ENDPOINT || 'http://localhost:8030';
@@ -37,7 +39,7 @@ export class AuthCasdoorService {
   async handleCallback(
     casdoorCallbackDto: CasdoorCallbackDto,
   ): Promise<LoginResponseDto> {
-    const { code, state } = casdoorCallbackDto;
+    const { code } = casdoorCallbackDto;
 
     this.logger.log(
       `Received Casdoor callback with code: ${code?.substring(0, 10)}...`,
@@ -108,11 +110,23 @@ export class AuthCasdoorService {
         },
       );
 
+      // 5. Ensure user has workspace and get workspace info
+      const workspace = await this.workspaceHelper.ensureUserHasWorkspace(
+        user.id,
+        user.name || undefined,
+      );
+      const workspaces = await this.workspaceHelper.getUserWorkspaces(user.id);
+
+      this.logger.log(`User workspace: ${workspace.name}`);
+      this.logger.log(`User has ${workspaces.length} workspaces`);
+
       return {
         token,
         refreshToken,
         tokenExpires,
         user,
+        workspace: workspace as any,
+        workspaces: workspaces as any,
       };
     } catch (error) {
       this.logger.error(`Casdoor callback error: ${error.message}`);
@@ -276,11 +290,9 @@ export class AuthCasdoorService {
       this.logger.log(`User type: ${casdoorUser.type}, isAdmin: ${isAdmin}`);
     }
 
-    const roleId = isAdmin ? 1 : 2; // 1 = admin, 2 = user (from RoleEnum)
+    const role = isAdmin ? 'admin' : 'user';
 
-    this.logger.log(
-      `Final determination - isAdmin: ${isAdmin}, roleId: ${roleId}`,
-    );
+    this.logger.log(`Final determination - isAdmin: ${isAdmin}, role: ${role}`);
 
     let user = await this.usersService.findByEmail(email);
 
@@ -288,25 +300,21 @@ export class AuthCasdoorService {
       // Create new user
       user = await this.usersService.create({
         email,
-        firstName: casdoorUser.displayName || casdoorUser.name,
-        lastName: '',
+        name: casdoorUser.displayName || casdoorUser.name,
         password: undefined, // No password for OAuth users
         provider: 'casdoor',
         socialId: casdoorUser.id || `${casdoorUser.owner}/${casdoorUser.name}`,
-        role: { id: roleId },
-        status: { id: 1 }, // 1 = active
-        photo: null, // Don't set photo to avoid FK constraint error
+        role,
+        isActive: true,
       });
-      this.logger.log(
-        `Created new user: ${email} with role: ${isAdmin ? 'admin' : 'user'}`,
-      );
+      this.logger.log(`Created new user: ${email} with role: ${role}`);
     } else {
       // Update existing user role if changed
-      if (user.role?.id !== roleId) {
+      if (user.role !== role) {
         user = await this.usersService.update(user.id, {
-          role: { id: roleId },
+          role,
         });
-        this.logger.log(`Updated user role to: ${isAdmin ? 'admin' : 'user'}`);
+        this.logger.log(`Updated user role to: ${role}`);
       } else {
         this.logger.log(`User already exists: ${email} with correct role`);
       }

@@ -1,68 +1,169 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
+  Index,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
-import { EntityRelationalHelper } from 'src/utils/relational-entity-helper';
+import { EntityRelationalHelper } from '../../../../../utils/relational-entity-helper';
 import { BotEntity } from '../../../../../bots/infrastructure/persistence/relational/entities/bot.entity';
 
+/**
+ * Conversation entity - theo schema mới
+ * Table: conversations
+ */
 @Entity({ name: 'conversation' })
 export class ConversationEntity extends EntityRelationalHelper {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ name: 'bot_id', type: 'uuid' })
+  @Index()
   botId: string;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ name: 'channel_type', type: String, default: 'web' })
+  channelType: string;
+
+  @Column({ name: 'channel_id', type: 'uuid', nullable: true })
+  @Index()
   channelId?: string | null;
 
-  @Column({ type: String })
-  externalId: string;
+  @Column({ name: 'contact_name', type: String, nullable: true })
+  contactName?: string | null;
 
-  @Column({ type: String, default: 'active' })
-  status: string;
+  @Column({ name: 'contact_avatar', type: String, nullable: true })
+  contactAvatar?: string | null;
 
   @Column({ type: 'jsonb', default: {} })
   metadata: Record<string, any>;
 
-  @ManyToOne(() => BotEntity)
+  @Column({ type: String, default: 'active' })
+  @Index()
+  status: 'active' | 'closed' | 'handover' | 'archived';
+
+  @Column({ name: 'last_message_at', type: 'timestamp', nullable: true })
+  @Index()
+  lastMessageAt?: Date | null;
+
+  @Column({ name: 'handover_ticket_id', type: 'uuid', nullable: true })
+  handoverTicketId?: string | null;
+
+  // Legacy field
+  @Column({ name: 'external_id', type: String, nullable: true })
+  @Index()
+  externalId?: string | null;
+
+  @ManyToOne(() => BotEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'bot_id' })
   bot?: BotEntity;
 
   @OneToMany(() => MessageEntity, (message) => message.conversation)
   messages?: MessageEntity[];
 
-  @CreateDateColumn()
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt?: Date | null;
+
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }
 
+/**
+ * Message entity - theo schema mới
+ * Table: messages
+ */
 @Entity({ name: 'message' })
 export class MessageEntity extends EntityRelationalHelper {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ name: 'conversation_id', type: 'uuid' })
+  @Index()
   conversationId: string;
+
+  @Column({ type: String, default: 'user' })
+  role: 'user' | 'assistant' | 'system' | 'tool';
 
   @Column({ type: 'text' })
   content: string;
 
-  @Column({ type: String })
-  sender: string;
+  @Column({ type: 'jsonb', nullable: true })
+  attachments?: Array<{
+    type: string;
+    url: string;
+    name?: string;
+    size?: number;
+  }> | null;
 
   @Column({ type: 'jsonb', default: {} })
   metadata: Record<string, any>;
 
-  @ManyToOne(() => ConversationEntity, (conversation) => conversation.messages)
+  @Column({ type: 'jsonb', nullable: true })
+  sources?: Array<{
+    documentId: string;
+    title: string;
+    content: string;
+    score: number;
+  }> | null;
+
+  @Column({ name: 'tool_calls', type: 'jsonb', nullable: true })
+  toolCalls?: Array<{
+    id: string;
+    name: string;
+    arguments: Record<string, any>;
+    result?: any;
+  }> | null;
+
+  @Column({ type: String, nullable: true })
+  feedback?: 'positive' | 'negative' | null;
+
+  @Column({ name: 'feedback_comment', type: 'text', nullable: true })
+  feedbackComment?: string | null;
+
+  // Legacy field
+  @Column({ type: String, nullable: true })
+  sender?: string | null;
+
+  @ManyToOne(
+    () => ConversationEntity,
+    (conversation) => conversation.messages,
+    {
+      onDelete: 'CASCADE',
+    },
+  )
+  @JoinColumn({ name: 'conversation_id' })
   conversation?: ConversationEntity;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'sent_at' })
+  sentAt: Date;
+}
+
+/**
+ * MessageFeedback entity - theo schema mới
+ * Table: message_feedback
+ */
+@Entity({ name: 'message_feedback' })
+export class MessageFeedbackEntity extends EntityRelationalHelper {
+  @Column({ name: 'message_id', type: 'uuid', primary: true })
+  messageId: string;
+
+  @Column({ type: 'int' })
+  rating: number;
+
+  @Column({ type: 'text', nullable: true })
+  comment?: string | null;
+
+  @ManyToOne(() => MessageEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'message_id' })
+  message?: MessageEntity;
+
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 }

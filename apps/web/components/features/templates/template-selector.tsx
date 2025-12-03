@@ -29,16 +29,16 @@ export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
     const loadTemplates = async () => {
         try {
             setLoading(true)
-            console.log('Loading templates from API...')
+
             const data = await fetchAPI('/templates/')
-            console.log('Templates loaded:', data)
+
             setTemplates(data)
 
             if (data.length === 0) {
                 // toast.error('No templates found. Please seed templates first.')
             }
         } catch (e: any) {
-            console.error('Failed to load templates:', e)
+
             toast.error('Failed to load templates: ' + e.message)
         } finally {
             setLoading(false)
@@ -50,7 +50,7 @@ export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
 
         try {
             const template = await fetchAPI(`/templates/${selectedId}`)
-            console.log('Template received:', template)
+
 
             // Enrich nodes with node type definition
             const enrichedNodes = (template.template_data?.nodes || []).map((node: any) => {
@@ -60,7 +60,7 @@ export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
                 const nodeType = getNodeType(nodeTypeId)
 
                 if (!nodeType) {
-                    console.warn(`Node type not found: ${nodeTypeId}`)
+
                     return node
                 }
 
@@ -95,7 +95,7 @@ export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
                 edges: template.template_data?.edges || []
             }
 
-            console.log('Enriched template data:', templateData)
+
 
             // Ensure data is properly formatted
             if (!templateData.nodes || !Array.isArray(templateData.nodes)) {
@@ -105,7 +105,7 @@ export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
             onSelect(templateData)
             toast.success('Template loaded! Redirecting...')
         } catch (e: any) {
-            console.error('Template load error:', e)
+
             toast.error('Failed to load template: ' + e.message)
         }
     }

@@ -24,7 +24,7 @@ export function TagSelector({ selectedTags, onChange, maxTags = 5 }: TagSelector
         const data = await fetchAPI('/metadata/tags');
         setTags(data);
       } catch (error) {
-        console.error('Failed to load tags:', error);
+
       }
     };
     loadTags();

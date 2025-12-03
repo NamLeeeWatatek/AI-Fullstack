@@ -2,8 +2,6 @@ import {
   HttpStatus,
   Injectable,
   UnprocessableEntityException,
-  Inject,
-  forwardRef,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { NullableType } from '../utils/types/nullable.type';
@@ -12,23 +10,14 @@ import { UserRepository } from './infrastructure/persistence/user.repository';
 import { User } from './domain/user';
 import bcrypt from 'bcryptjs';
 import { AuthProvidersEnum } from '../auth/auth-providers.enum';
-import { FilesService } from '../files/files.service';
-import { RoleEnum } from '../roles/roles.enum';
-import { StatusEnum } from '../statuses/statuses.enum';
 import { IPaginationOptions } from '../utils/types/pagination-options';
-import { FileType } from '../files/domain/file';
-import { Role } from '../roles/domain/role';
-import { Status } from '../statuses/domain/status';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
   private casdoorSyncService: any;
 
-  constructor(
-    private readonly usersRepository: UserRepository,
-    private readonly filesService: FilesService,
-  ) {}
+  constructor(private readonly usersRepository: UserRepository) {}
 
   /**
    * Set Casdoor sync service (to avoid circular dependency)
@@ -38,9 +27,6 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    // Do not remove comment below.
-    // <creating-property />
-
     let password: string | undefined = undefined;
 
     if (createUserDto.password) {
@@ -65,76 +51,26 @@ export class UsersService {
       email = createUserDto.email;
     }
 
-    let photo: FileType | null | undefined = undefined;
-
-    if (createUserDto.photo?.id) {
-      const fileObject = await this.filesService.findById(
-        createUserDto.photo.id,
-      );
-      if (!fileObject) {
-        throw new UnprocessableEntityException({
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            photo: 'imageNotExists',
-          },
-        });
-      }
-      photo = fileObject;
-    } else if (createUserDto.photo === null) {
-      photo = null;
-    }
-
-    let role: Role | undefined = undefined;
-
-    if (createUserDto.role?.id) {
-      const roleObject = Object.values(RoleEnum)
-        .map(String)
-        .includes(String(createUserDto.role.id));
-      if (!roleObject) {
-        throw new UnprocessableEntityException({
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            role: 'roleNotExists',
-          },
-        });
-      }
-
-      role = {
-        id: createUserDto.role.id,
-      };
-    }
-
-    let status: Status | undefined = undefined;
-
-    if (createUserDto.status?.id) {
-      const statusObject = Object.values(StatusEnum)
-        .map(String)
-        .includes(String(createUserDto.status.id));
-      if (!statusObject) {
-        throw new UnprocessableEntityException({
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            status: 'statusNotExists',
-          },
-        });
-      }
-
-      status = {
-        id: createUserDto.status.id,
-      };
+    // Build name from firstName + lastName if name not provided (backward compatibility)
+    let name = createUserDto.name;
+    if (!name && (createUserDto.firstName || createUserDto.lastName)) {
+      name = [createUserDto.firstName, createUserDto.lastName]
+        .filter(Boolean)
+        .join(' ');
     }
 
     const user = await this.usersRepository.create({
-      // Do not remove comment below.
-      // <creating-property-payload />
+      email,
+      name,
+      avatarUrl: createUserDto.avatarUrl,
+      password,
+      provider: createUserDto.provider ?? AuthProvidersEnum.email,
+      providerId: createUserDto.providerId ?? createUserDto.socialId,
+      isActive: createUserDto.isActive ?? true,
+      role: createUserDto.role ?? 'user',
+      // Legacy fields
       firstName: createUserDto.firstName,
       lastName: createUserDto.lastName,
-      email: email,
-      password: password,
-      photo: photo,
-      role: role,
-      status: status,
-      provider: createUserDto.provider ?? AuthProvidersEnum.email,
       socialId: createUserDto.socialId,
     });
 
@@ -143,7 +79,6 @@ export class UsersService {
       try {
         await this.casdoorSyncService.syncUserToCasdoor(user);
       } catch (error) {
-        // Log but don't fail user creation
         console.error('Failed to sync user to Casdoor:', error);
       }
     }
@@ -196,14 +131,10 @@ export class UsersService {
     id: User['id'],
     updateUserDto: UpdateUserDto,
   ): Promise<User | null> {
-    // Do not remove comment below.
-    // <updating-property />
-
     let password: string | undefined = undefined;
 
     if (updateUserDto.password) {
       const userObject = await this.usersRepository.findById(id);
-
       if (userObject && userObject?.password !== updateUserDto.password) {
         const salt = await bcrypt.genSalt();
         password = await bcrypt.hash(updateUserDto.password, salt);
@@ -216,7 +147,6 @@ export class UsersService {
       const userObject = await this.usersRepository.findByEmail(
         updateUserDto.email,
       );
-
       if (userObject && userObject.id !== id) {
         throw new UnprocessableEntityException({
           status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -225,91 +155,45 @@ export class UsersService {
           },
         });
       }
-
       email = updateUserDto.email;
     } else if (updateUserDto.email === null) {
       email = null;
     }
 
-    let photo: FileType | null | undefined = undefined;
-
-    if (updateUserDto.photo?.id) {
-      const fileObject = await this.filesService.findById(
-        updateUserDto.photo.id,
-      );
-      if (!fileObject) {
-        throw new UnprocessableEntityException({
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            photo: 'imageNotExists',
-          },
-        });
-      }
-      photo = fileObject;
-    } else if (updateUserDto.photo === null) {
-      photo = null;
-    }
-
-    let role: Role | undefined = undefined;
-
-    if (updateUserDto.role?.id) {
-      const roleObject = Object.values(RoleEnum)
-        .map(String)
-        .includes(String(updateUserDto.role.id));
-      if (!roleObject) {
-        throw new UnprocessableEntityException({
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            role: 'roleNotExists',
-          },
-        });
-      }
-
-      role = {
-        id: updateUserDto.role.id,
-      };
-    }
-
-    let status: Status | undefined = undefined;
-
-    if (updateUserDto.status?.id) {
-      const statusObject = Object.values(StatusEnum)
-        .map(String)
-        .includes(String(updateUserDto.status.id));
-      if (!statusObject) {
-        throw new UnprocessableEntityException({
-          status: HttpStatus.UNPROCESSABLE_ENTITY,
-          errors: {
-            status: 'statusNotExists',
-          },
-        });
-      }
-
-      status = {
-        id: updateUserDto.status.id,
-      };
+    // Build name from firstName + lastName if name not provided
+    let name = updateUserDto.name;
+    if (
+      name === undefined &&
+      (updateUserDto.firstName !== undefined ||
+        updateUserDto.lastName !== undefined)
+    ) {
+      const currentUser = await this.usersRepository.findById(id);
+      const firstName = updateUserDto.firstName ?? currentUser?.firstName;
+      const lastName = updateUserDto.lastName ?? currentUser?.lastName;
+      name = [firstName, lastName].filter(Boolean).join(' ') || null;
     }
 
     const updatedUser = await this.usersRepository.update(id, {
-      // Do not remove comment below.
-      // <updating-property-payload />
+      email,
+      name,
+      avatarUrl: updateUserDto.avatarUrl,
+      password,
+      provider: updateUserDto.provider,
+      providerId: updateUserDto.providerId ?? updateUserDto.socialId,
+      isActive: updateUserDto.isActive,
+      role: updateUserDto.role,
+      emailVerifiedAt: updateUserDto.emailVerifiedAt,
+      // Legacy fields
       firstName: updateUserDto.firstName,
       lastName: updateUserDto.lastName,
-      email,
-      password,
-      photo,
-      role,
-      status,
-      provider: updateUserDto.provider,
       socialId: updateUserDto.socialId,
     });
 
     // Sync to Casdoor if role changed
-    if (this.casdoorSyncService && updatedUser && role) {
+    if (this.casdoorSyncService && updatedUser && updateUserDto.role) {
       try {
         await this.casdoorSyncService.syncUserToCasdoor(updatedUser);
       } catch (error) {
-        // Log but don't fail user update
         console.error('Failed to sync user to Casdoor:', error);
       }
     }
@@ -318,9 +202,7 @@ export class UsersService {
   }
 
   async remove(id: User['id']): Promise<void> {
-    // Get user email before deletion
     const user = await this.usersRepository.findById(id);
-    
     await this.usersRepository.remove(id);
 
     // Sync deletion to Casdoor
@@ -328,9 +210,29 @@ export class UsersService {
       try {
         await this.casdoorSyncService.deleteUserFromCasdoor(user.email);
       } catch (error) {
-        // Log but don't fail user deletion
         console.error('Failed to delete user from Casdoor:', error);
       }
     }
+  }
+
+  // Helper method to verify email
+  async verifyEmail(id: User['id']): Promise<User | null> {
+    return this.usersRepository.update(id, {
+      emailVerifiedAt: new Date(),
+    });
+  }
+
+  // Helper method to deactivate user
+  async deactivate(id: User['id']): Promise<User | null> {
+    return this.usersRepository.update(id, {
+      isActive: false,
+    });
+  }
+
+  // Helper method to activate user
+  async activate(id: User['id']): Promise<User | null> {
+    return this.usersRepository.update(id, {
+      isActive: true,
+    });
   }
 }

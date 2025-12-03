@@ -15,23 +15,12 @@ export class UserMapper {
     domainEntity.password = raw.password;
     domainEntity.provider = raw.provider;
     domainEntity.socialId = raw.socialId;
-    domainEntity.firstName = raw.firstName;
-    domainEntity.lastName = raw.lastName;
-    if (raw.photo) {
-      domainEntity.photo = FileMapper.toDomain(raw.photo);
-    } else if (raw.photo === null) {
-      domainEntity.photo = null;
-    }
-
-    if (raw.role) {
-      domainEntity.role = new Role();
-      domainEntity.role.id = raw.role._id;
-    }
-
-    if (raw.status) {
-      domainEntity.status = new Status();
-      domainEntity.status.id = raw.status._id;
-    }
+    domainEntity.name =
+      raw.firstName && raw.lastName
+        ? `${raw.firstName} ${raw.lastName}`.trim()
+        : raw.firstName || raw.lastName || null;
+    domainEntity.role = raw.role?._id === '1' ? 'admin' : 'user';
+    domainEntity.isActive = true; // Default for document DB users
 
     domainEntity.createdAt = raw.createdAt;
     domainEntity.updatedAt = raw.updatedAt;
@@ -45,22 +34,7 @@ export class UserMapper {
 
     if (domainEntity.role) {
       role = new RoleSchema();
-      role._id = domainEntity.role.id.toString();
-    }
-
-    let photo: FileSchemaClass | undefined = undefined;
-
-    if (domainEntity.photo) {
-      photo = new FileSchemaClass();
-      photo._id = domainEntity.photo.id;
-      photo.path = domainEntity.photo.path;
-    }
-
-    let status: StatusSchema | undefined = undefined;
-
-    if (domainEntity.status) {
-      status = new StatusSchema();
-      status._id = domainEntity.status.id.toString();
+      role._id = domainEntity.role === 'admin' ? '1' : '2';
     }
 
     const persistenceSchema = new UserSchemaClass();
@@ -71,14 +45,14 @@ export class UserMapper {
     persistenceSchema.password = domainEntity.password;
     persistenceSchema.provider = domainEntity.provider;
     persistenceSchema.socialId = domainEntity.socialId;
-    persistenceSchema.firstName = domainEntity.firstName;
-    persistenceSchema.lastName = domainEntity.lastName;
-    persistenceSchema.photo = photo;
+    // Split name into firstName and lastName for document DB
+    const nameParts = domainEntity.name?.split(' ') || [];
+    persistenceSchema.firstName = nameParts[0] || null;
+    persistenceSchema.lastName = nameParts.slice(1).join(' ') || null;
     persistenceSchema.role = role;
-    persistenceSchema.status = status;
     persistenceSchema.createdAt = domainEntity.createdAt;
     persistenceSchema.updatedAt = domainEntity.updatedAt;
-    persistenceSchema.deletedAt = domainEntity.deletedAt;
+    persistenceSchema.deletedAt = domainEntity.deletedAt ?? new Date(0);
     return persistenceSchema;
   }
 }

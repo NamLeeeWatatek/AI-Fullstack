@@ -3,11 +3,18 @@ import {
   Injectable,
   PayloadTooLargeException,
   UnprocessableEntityException,
+  Logger,
 } from '@nestjs/common';
 import { FileRepository } from '../../persistence/file.repository';
 
 import { FileUploadDto } from './dto/file.dto';
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  PutObjectCommand,
+  S3Client,
+  HeadBucketCommand,
+  CreateBucketCommand,
+  PutBucketPolicyCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
 import { ConfigService } from '@nestjs/config';
@@ -17,13 +24,17 @@ import { AllConfigType } from '../../../../config/config.type';
 @Injectable()
 export class FilesS3PresignedService {
   private s3: S3Client;
+  private readonly logger = new Logger(FilesS3PresignedService.name);
+  private bucketsChecked = new Set<string>();
 
   constructor(
     private readonly fileRepository: FileRepository,
     private readonly configService: ConfigService<AllConfigType>,
   ) {
-    const minioEndpoint = configService.get('file.minioEndpoint', { infer: true });
-    
+    const minioEndpoint = configService.get('file.minioEndpoint', {
+      infer: true,
+    });
+
     this.s3 = new S3Client({
       region: configService.get('file.awsS3Region', { infer: true }),
       credentials: {
@@ -41,6 +52,68 @@ export class FilesS3PresignedService {
     });
   }
 
+  /**
+   * Ensure bucket exists, create if not
+   */
+  private async ensureBucketExists(bucket: string): Promise<void> {
+    // Skip if already checked
+    if (this.bucketsChecked.has(bucket)) {
+      return;
+    }
+
+    try {
+      // Check if bucket exists
+      await this.s3.send(new HeadBucketCommand({ Bucket: bucket }));
+      this.logger.log(`✅ Bucket '${bucket}' exists`);
+      this.bucketsChecked.add(bucket);
+    } catch (error) {
+      if (
+        error.name === 'NotFound' ||
+        error.$metadata?.httpStatusCode === 404
+      ) {
+        // Bucket doesn't exist, create it
+        this.logger.log(`📦 Creating bucket '${bucket}'...`);
+
+        try {
+          await this.s3.send(new CreateBucketCommand({ Bucket: bucket }));
+
+          // Set public read policy for the bucket (for MinIO)
+          const policy = {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Principal: '*',
+                Action: ['s3:GetObject'],
+                Resource: [`arn:aws:s3:::${bucket}/*`],
+              },
+            ],
+          };
+
+          await this.s3.send(
+            new PutBucketPolicyCommand({
+              Bucket: bucket,
+              Policy: JSON.stringify(policy),
+            }),
+          );
+
+          this.logger.log(`✅ Bucket '${bucket}' created successfully`);
+          this.bucketsChecked.add(bucket);
+        } catch (createError) {
+          this.logger.error(
+            `❌ Failed to create bucket '${bucket}': ${createError.message}`,
+          );
+          throw createError;
+        }
+      } else {
+        this.logger.error(
+          `❌ Error checking bucket '${bucket}': ${error.message}`,
+        );
+        throw error;
+      }
+    }
+  }
+
   async create(
     file: FileUploadDto,
   ): Promise<{ file: FileType; uploadSignedUrl: string }> {
@@ -55,8 +128,10 @@ export class FilesS3PresignedService {
 
     // Allow more file types for documents
     const isImage = file.fileName.match(/\.(jpg|jpeg|png|gif|webp|svg)$/i);
-    const isDocument = file.fileName.match(/\.(pdf|doc|docx|txt|csv|xls|xlsx)$/i);
-    
+    const isDocument = file.fileName.match(
+      /\.(pdf|doc|docx|txt|csv|xls|xlsx)$/i,
+    );
+
     if (!isImage && !isDocument) {
       throw new UnprocessableEntityException({
         status: HttpStatus.UNPROCESSABLE_ENTITY,
@@ -85,9 +160,14 @@ export class FilesS3PresignedService {
       ?.toLowerCase()}`;
 
     // Use bucket from request or default
-    const bucket = file.bucket || this.configService.getOrThrow('file.awsDefaultS3Bucket', {
-      infer: true,
-    });
+    const bucket =
+      file.bucket ||
+      this.configService.getOrThrow('file.awsDefaultS3Bucket', {
+        infer: true,
+      });
+
+    // Ensure bucket exists before creating presigned URL
+    await this.ensureBucketExists(bucket);
 
     const command = new PutObjectCommand({
       Bucket: bucket,
@@ -103,5 +183,35 @@ export class FilesS3PresignedService {
       file: data,
       uploadSignedUrl: signedUrl,
     };
+  }
+
+  /**
+   * Generate presigned URL for downloading a file
+   */
+  async generateDownloadUrl(
+    filePath: string,
+    expiresIn: number = 3600,
+  ): Promise<string> {
+    const bucket = this.configService.getOrThrow('file.awsDefaultS3Bucket', {
+      infer: true,
+    });
+
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: filePath,
+    });
+
+    // Use GetObjectCommand for download
+    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+    const downloadCommand = new GetObjectCommand({
+      Bucket: bucket,
+      Key: filePath,
+    });
+
+    const signedUrl = await getSignedUrl(this.s3, downloadCommand, {
+      expiresIn,
+    });
+
+    return signedUrl;
   }
 }

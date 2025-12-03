@@ -1,4 +1,12 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Get,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CasdoorSyncService } from './casdoor-sync.service';
 
@@ -27,7 +35,7 @@ export class CasdoorWebhookController {
     this.logger.log(`Received Casdoor webhook: ${JSON.stringify(payload)}`);
 
     try {
-      const { action, object, data } = payload;
+      const { action, data } = payload;
 
       switch (action) {
         case 'user-added':
@@ -77,7 +85,7 @@ export class CasdoorWebhookController {
    */
   @Get('status')
   @ApiOperation({ summary: 'Get sync status' })
-  async getSyncStatus(): Promise<{ isSyncing: boolean }> {
+  getSyncStatus(): { isSyncing: boolean } {
     return this.casdoorSyncService.getSyncStatus();
   }
 }

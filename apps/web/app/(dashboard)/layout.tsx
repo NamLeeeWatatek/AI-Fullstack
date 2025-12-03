@@ -15,9 +15,7 @@ import {
     FiLayout,
     FiGitMerge,
     FiGrid,
-    FiInbox,
     FiRadio,
-    FiBarChart2,
     FiSettings,
     FiDatabase,
     FiChevronDown,
@@ -30,8 +28,11 @@ import {
     FiHome,
     FiMenu,
     FiChevronsLeft,
-    FiChevronsRight
+    FiChevronsRight,
+    FiMessageCircle
 } from 'react-icons/fi'
+import { TiMessages } from "react-icons/ti";
+import { RiRobot2Line } from "react-icons/ri";
 import { MdAutoAwesome } from 'react-icons/md'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -42,6 +43,7 @@ import toast from '@/lib/toast'
 import { AIFloatingButton } from '@/components/features/ai-assistant/ai-floating-button'
 import { LoadingLogo } from '@/components/ui/loading-logo'
 import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
+import { WorkspaceSwitcher } from '@/components/workspace/workspace-switcher'
 
 // Notification type
 interface Notification {
@@ -91,7 +93,7 @@ export default function DashboardLayout({
     if (isLoading) {
         return (
             <div className="h-screen flex items-center justify-center bg-background">
-                <LoadingLogo size="lg" text="Loading..." />
+                <LoadingLogo size="lg" text="WATA OMI" />
             </div>
         )
     }
@@ -134,22 +136,11 @@ export default function DashboardLayout({
                 { name: 'Create New', href: '/flows/new/edit' }
             ]
         },
+        { name: 'Channels', href: '/channels', icon: FiRadio },
         { name: 'Templates', href: '/templates', icon: FiGrid },
-        { name: 'OmniInbox', href: '/inbox', icon: FiInbox },
-        { name: 'Channels & Integrations', href: '/channels', icon: FiRadio },
-        {
-            name: 'Management',
-            icon: FiSettings,
-            children: [
-                { name: 'Nodes', href: '/nodes' },
-                { name: 'Bots', href: '/bots' },
-                { name: 'Team', href: '/team' },
-                { name: 'Archives', href: '/archives' }
-            ]
-        },
-        { name: 'Analytics', href: '/analytics', icon: FiBarChart2 },
-        { name: 'AI Assistant', href: '/ai-assistant', icon: MdAutoAwesome },
         { name: 'Knowledge Base', href: '/knowledge-base', icon: FiDatabase },
+        { name: 'Bots', href: '/bots', icon: RiRobot2Line },
+        { name: 'Chat AI', href: '/chat', icon: TiMessages },
         { name: 'Settings', href: '/settings', icon: FiSettings },
     ]
 
@@ -167,13 +158,22 @@ export default function DashboardLayout({
     }
 
     const handleLogout = async () => {
-        toast.loading('Signing out...')
-        await signOut()
+        toast.promise(
+            signOut(),
+            {
+                loading: 'Signing out...',
+                success: 'Signed out successfully',
+                error: 'Failed to sign out'
+            }
+        )
     }
 
     // Get user display info
     const getUserName = () => {
         if (!user) return 'Loading...'
+
+
+
         return user.name || user.email || 'User'
     }
 
@@ -212,17 +212,7 @@ export default function DashboardLayout({
 
                 {/* Workspace Selector */}
                 <div className="p-4 border-b border-border/40">
-                    <Button variant="ghost" className="w-full justify-between h-auto p-3">
-                        <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 rounded-lg bg-gradient-wata flex items-center justify-center">
-                                <span className="text-white font-semibold text-sm">
-                                    {workspaceName.charAt(0)}
-                                </span>
-                            </div>
-                            <span className="font-medium text-sm">{workspaceName}</span>
-                        </div>
-                        <FiChevronDown className="w-4 h-4 text-muted-foreground" />
-                    </Button>
+                    <WorkspaceSwitcher />
                 </div>
 
                 {/* Navigation */}
@@ -563,7 +553,8 @@ export default function DashboardLayout({
                 <div className="flex-1 overflow-auto relative">
                     <div className={`h-full ${pathname.includes('/edit') ||
                         pathname === '/ai-assistant' ||
-                        pathname === '/inbox'
+                        pathname === '/inbox' ||
+                        pathname === '/chat'
                         ? ''
                         : 'page-container'
                         }`}>

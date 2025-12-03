@@ -6,34 +6,7 @@
 
 import { ReactNode } from 'react'
 import { usePermissions } from '@/lib/hooks/usePermissions'
-import type { ResourceType } from '@/lib/types/permissions'
-
-interface PermissionGateProps {
-  children: ReactNode
-  fallback?: ReactNode
-  
-  // Permission checks
-  permission?: string
-  permissions?: string[]
-  requireAll?: boolean // If true, requires all permissions. If false, requires any
-  
-  // Resource checks
-  resource?: ResourceType
-  action?: 'create' | 'read' | 'update' | 'delete'
-  
-  // Widget checks
-  widget?: string
-  
-  // Feature checks
-  feature?: string
-  
-  // Role checks
-  requireAdmin?: boolean
-  requireSuperAdmin?: boolean
-  
-  // Loading state
-  showLoadingFallback?: boolean
-}
+import type { ResourceType, PermissionGateProps } from '@/lib/types'
 
 export function PermissionGate({
   children,
@@ -95,7 +68,7 @@ export function PermissionGate({
     const hasAccess = requireAll
       ? hasAllPermissions(permissions)
       : hasAnyPermission(permissions)
-    
+
     if (!hasAccess) {
       return <>{fallback}</>
     }
@@ -118,7 +91,7 @@ export function PermissionGate({
         hasAccess = canDelete(resource)
         break
     }
-    
+
     if (!hasAccess) {
       return <>{fallback}</>
     }

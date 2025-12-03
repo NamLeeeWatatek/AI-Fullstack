@@ -30,7 +30,7 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
 
         return response.json();
     } catch (error) {
-        console.error(`API call failed: ${endpoint}`, error);
+
         throw error;
     }
 }

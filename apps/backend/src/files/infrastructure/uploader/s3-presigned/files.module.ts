@@ -32,8 +32,10 @@ const infrastructurePersistenceModule = (databaseConfig() as DatabaseConfig)
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService<AllConfigType>) => {
-        const minioEndpoint = configService.get('file.minioEndpoint', { infer: true });
-        
+        const minioEndpoint = configService.get('file.minioEndpoint', {
+          infer: true,
+        });
+
         const s3 = new S3Client({
           region: configService.get('file.awsS3Region', { infer: true }),
           credentials: {

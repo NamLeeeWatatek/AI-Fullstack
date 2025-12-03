@@ -1,0 +1,86 @@
+import { Controller, Post, Body, UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { KBRagService } from '../services/kb-rag.service';
+import {
+  QueryKnowledgeBaseDto,
+  GenerateAnswerDto,
+} from '../dto/kb-document.dto';
+
+@ApiTags('Knowledge Base - Query & RAG')
+@ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'))
+@Controller({ path: 'knowledge-bases', version: '1' })
+export class KBQueryController {
+  constructor(private readonly ragService: KBRagService) {}
+
+  @Post('query')
+  @ApiOperation({ summary: 'Query knowledge base (vector search)' })
+  async query(@Body() queryDto: QueryKnowledgeBaseDto) {
+    const results = await this.ragService.query(
+      queryDto.query,
+      queryDto.knowledgeBaseId,
+      queryDto.limit || 5,
+      queryDto.similarityThreshold || 0.5, // Lowered from 0.7
+    );
+
+    return {
+      success: true,
+      query: queryDto.query,
+      resultsCount: results.length,
+      results,
+    };
+  }
+
+  @Post('answer')
+  @ApiOperation({
+    summary: 'Generate answer using RAG (with sources and relevance)',
+  })
+  async generateAnswer(@Body() answerDto: GenerateAnswerDto) {
+    const result = await this.ragService.generateAnswer(
+      answerDto.question,
+      answerDto.knowledgeBaseId,
+      answerDto.model,
+      {
+        limit: answerDto.limit || 5,
+        similarityThreshold: answerDto.similarityThreshold || 0.5,
+      },
+    );
+
+    return {
+      success: true,
+      question: answerDto.question,
+      ...result,
+    };
+  }
+
+  @Post('chat')
+  @ApiOperation({ summary: 'Chat with bot (with optional RAG)' })
+  async chat(
+    @Body()
+    body: {
+      message: string;
+      botId?: string;
+      knowledgeBaseIds?: string[];
+      conversationHistory?: Array<{
+        role: 'user' | 'assistant';
+        content: string;
+      }>;
+      model?: string;
+    },
+  ) {
+    const result = await this.ragService.chatWithBotAndRAG(
+      body.message,
+      body.botId,
+      body.knowledgeBaseIds,
+      body.conversationHistory,
+      body.model,
+    );
+
+    return {
+      success: true,
+      answer: result.answer,
+      sources: result.sources,
+    };
+  }
+}

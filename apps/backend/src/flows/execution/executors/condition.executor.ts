@@ -7,7 +7,11 @@ import {
 
 @Injectable()
 export class ConditionExecutor implements NodeExecutor {
-  async execute(input: NodeExecutionInput): Promise<NodeExecutionOutput> {
+  execute(input: NodeExecutionInput): Promise<NodeExecutionOutput> {
+    return Promise.resolve(this.executeSync(input));
+  }
+
+  private executeSync(input: NodeExecutionInput): NodeExecutionOutput {
     try {
       const { conditions } = input.data;
       // Simple evaluation: check if any condition matches
@@ -23,9 +27,7 @@ export class ConditionExecutor implements NodeExecutor {
 
       if (conditions && Array.isArray(conditions)) {
         // Implement simple AND logic
-        result = conditions.every((condition) =>
-          this.evaluate(condition, input.input),
-        );
+        result = conditions.every(() => this.evaluate());
       } else {
         // Fallback or default behavior
         result = true;
@@ -47,7 +49,7 @@ export class ConditionExecutor implements NodeExecutor {
     }
   }
 
-  private evaluate(condition: any, input: any): boolean {
+  private evaluate(): boolean {
     // Placeholder evaluation logic
     // const value = this.getValue(condition.field, input);
     // switch(condition.operator) { ... }

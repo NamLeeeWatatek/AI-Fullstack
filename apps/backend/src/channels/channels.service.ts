@@ -9,7 +9,7 @@ export class ChannelsService {
   constructor(
     @InjectRepository(ChannelConnectionEntity)
     private connectionRepository: Repository<ChannelConnectionEntity>,
-  ) { }
+  ) {}
 
   async findAll(userId?: string): Promise<ChannelConnectionEntity[]> {
     const where: any = {};

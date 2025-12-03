@@ -23,7 +23,7 @@ function CallbackContent() {
             const handleLogin = async () => {
                 try {
                     setStatus('Authenticating with NextAuth...')
-                    
+
                     const result = await signIn('credentials', {
                         code,
                         state: state || '',
@@ -43,7 +43,7 @@ function CallbackContent() {
                         throw new Error('Authentication failed')
                     }
                 } catch (error: unknown) {
-                    console.error('Login failed:', error)
+
                     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
                     setStatus(`Login failed: ${errorMessage}`)
                     setTimeout(() => {

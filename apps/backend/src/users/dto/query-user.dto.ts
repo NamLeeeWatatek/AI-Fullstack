@@ -4,44 +4,71 @@ import {
   IsOptional,
   IsString,
   ValidateNested,
+  IsBoolean,
+  IsArray,
+  IsEnum,
 } from 'class-validator';
 import { Transform, Type, plainToInstance } from 'class-transformer';
 import { User } from '../domain/user';
-import { RoleDto } from '../../roles/dto/role.dto';
 
 export class FilterUserDto {
-  @ApiPropertyOptional({ type: RoleDto })
+  @ApiPropertyOptional({
+    type: [String],
+    enum: ['admin', 'user'],
+    description: 'Filter by roles',
+  })
   @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => RoleDto)
-  roles?: RoleDto[] | null;
+  @IsArray()
+  @IsEnum(['admin', 'user'], { each: true })
+  roles?: ('admin' | 'user')[] | any[];
+
+  @ApiPropertyOptional({
+    type: Boolean,
+    description: 'Filter by active status',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({ type: String, description: 'Search by email' })
+  @IsOptional()
+  @IsString()
+  email?: string;
+
+  @ApiPropertyOptional({ type: String, description: 'Search by name' })
+  @IsOptional()
+  @IsString()
+  name?: string;
 }
 
 export class SortUserDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'Field to sort by' })
   @Type(() => String)
   @IsString()
   orderBy: keyof User;
 
-  @ApiProperty()
+  @ApiProperty({ enum: ['ASC', 'DESC'], description: 'Sort order' })
   @IsString()
-  order: string;
+  order: 'ASC' | 'DESC';
 }
 
 export class QueryUserDto {
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ default: 1 })
   @Transform(({ value }) => (value ? Number(value) : 1))
   @IsNumber()
   @IsOptional()
   page?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ default: 10, maximum: 50 })
   @Transform(({ value }) => (value ? Number(value) : 10))
   @IsNumber()
   @IsOptional()
   limit?: number;
 
-  @ApiPropertyOptional({ type: String })
+  @ApiPropertyOptional({
+    type: String,
+    description: 'JSON string of FilterUserDto',
+  })
   @IsOptional()
   @Transform(({ value }) =>
     value ? plainToInstance(FilterUserDto, JSON.parse(value)) : undefined,
@@ -50,11 +77,14 @@ export class QueryUserDto {
   @Type(() => FilterUserDto)
   filters?: FilterUserDto | null;
 
-  @ApiPropertyOptional({ type: String })
-  @IsOptional()
-  @Transform(({ value }) => {
-    return value ? plainToInstance(SortUserDto, JSON.parse(value)) : undefined;
+  @ApiPropertyOptional({
+    type: String,
+    description: 'JSON string of SortUserDto[]',
   })
+  @IsOptional()
+  @Transform(({ value }) =>
+    value ? plainToInstance(SortUserDto, JSON.parse(value)) : undefined,
+  )
   @ValidateNested({ each: true })
   @Type(() => SortUserDto)
   sort?: SortUserDto[] | null;

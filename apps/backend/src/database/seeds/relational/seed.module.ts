@@ -15,7 +15,7 @@ import appConfig from '../../../config/app.config';
 
 @Module({
   imports: [
-    PermissionSeedModule, // Must be first - roles depend on permissions
+    PermissionSeedModule,
     RoleSeedModule,
     StatusSeedModule,
     UserSeedModule,

@@ -1,5 +1,13 @@
-import { Controller, Get, Query, Param } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Query,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
 import { OAuthService } from './oauth.service';
 import { ChannelsService } from '../channels/channels.service';
 import { IntegrationsService } from './integrations.service';
@@ -11,7 +19,7 @@ export class OAuthController {
     private readonly oauthService: OAuthService,
     private readonly channelsService: ChannelsService,
     private readonly integrationsService: IntegrationsService,
-  ) { }
+  ) {}
 
   @Get('login/:provider')
   @ApiOperation({ summary: 'Start OAuth flow' })
@@ -47,11 +55,15 @@ export class OAuthController {
 
   @Get('callback/:provider')
   @ApiOperation({ summary: 'Handle OAuth callback' })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   async callback(
     @Param('provider') provider: string,
     @Query('code') code: string,
     @Query('state') state: string,
+    @Request() req,
   ) {
+    const userId = req.user?.id;
     if (!code) {
       return {
         status: 'error',
@@ -69,7 +81,7 @@ export class OAuthController {
 
     let accessToken: string;
     let refreshToken: string | undefined;
-    let expiresIn: number | undefined;
+    // let expiresIn: number | undefined;
     let pages: any[] = [];
 
     try {
@@ -82,7 +94,7 @@ export class OAuthController {
             code,
           );
           accessToken = tokenData.accessToken;
-          expiresIn = tokenData.expiresIn;
+          // expiresIn = tokenData.expiresIn;
 
           // Get user's Facebook pages
           pages = await this.oauthService.getFacebookPages(accessToken);
@@ -96,7 +108,7 @@ export class OAuthController {
           );
           accessToken = tokenData.accessToken;
           refreshToken = tokenData.refreshToken;
-          expiresIn = tokenData.expiresIn;
+          // expiresIn = tokenData.expiresIn;
           break;
         }
         default:
@@ -109,25 +121,66 @@ export class OAuthController {
       // For Facebook, create a connection for each page
       if (provider === 'facebook' && pages.length > 0) {
         for (const page of pages) {
-          await this.channelsService.create({
-            name: page.name,
-            type: 'facebook',
-            accessToken: page.access_token,
-            metadata: {
-              pageId: page.id,
-              category: page.category,
+          // Create Facebook Page channel
+          await this.channelsService.create(
+            {
+              name: page.name,
+              type: 'facebook',
+              accessToken: page.access_token,
+              metadata: {
+                pageId: page.id,
+                category: page.category,
+              },
             },
-          });
+            userId,
+          );
+
+          // Auto-create Messenger channel (same page, same token)
+          await this.channelsService.create(
+            {
+              name: `${page.name} (Messenger)`,
+              type: 'messenger',
+              accessToken: page.access_token,
+              metadata: {
+                pageId: page.id,
+                category: page.category,
+              },
+            },
+            userId,
+          );
+
+          // Auto-create Instagram channel if page has Instagram connected
+          // Note: In production, you should check if page.instagram_business_account exists
+          try {
+            await this.channelsService.create(
+              {
+                name: `${page.name} (Instagram)`,
+                type: 'instagram',
+                accessToken: page.access_token,
+                metadata: {
+                  pageId: page.id,
+                  category: page.category,
+                },
+              },
+              userId,
+            );
+          } catch {
+            // Instagram connection might fail if page doesn't have Instagram linked
+            console.log(`Instagram not available for page ${page.name}`);
+          }
         }
       } else {
         // For other providers, create a single connection
-        await this.channelsService.create({
-          name: `${provider} Account`,
-          type: provider,
-          accessToken,
-          refreshToken,
-          metadata: {},
-        });
+        await this.channelsService.create(
+          {
+            name: `${provider} Account`,
+            type: provider,
+            accessToken,
+            refreshToken,
+            metadata: {},
+          },
+          userId,
+        );
       }
 
       return {

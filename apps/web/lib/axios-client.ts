@@ -10,9 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1
 export const axiosClient = axios.create({
   baseURL: API_URL,
   timeout: 30000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // Don't set default Content-Type - let axios handle it based on data type
 })
 
 // Request interceptor - Add auth token from NextAuth session
@@ -22,14 +20,20 @@ axiosClient.interceptors.request.use(
     if (session?.accessToken) {
       config.headers.Authorization = `Bearer ${session.accessToken}`
     }
+    
+    // Set Content-Type to application/json only if not already set and not FormData
+    if (!config.headers['Content-Type'] && !(config.data instanceof FormData)) {
+      config.headers['Content-Type'] = 'application/json'
+    }
+    
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Response interceptor - Extract data and handle errors
+// Response interceptor - Handle errors
 axiosClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid - redirect to login

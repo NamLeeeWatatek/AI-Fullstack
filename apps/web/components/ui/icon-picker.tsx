@@ -1,156 +1,131 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import * as React from "react"
+import { Button } from "@/components/ui/button"
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from "@/components/ui/popover"
-import * as FiIcons from 'react-icons/fi'
-
-// Popular bot icons
-const BOT_ICONS = [
-  'FiMessageSquare',
-  'FiMessageCircle',
-  'FiCpu',
-  'FiZap',
-  'FiActivity',
-  'FiCommand',
-  'FiTarget',
-  'FiStar',
-  'FiHeart',
-  'FiSmile',
-  'FiUser',
-  'FiUsers',
-  'FiMail',
-  'FiSend',
-  'FiPhone',
-  'FiHeadphones',
-  'FiMic',
-  'FiVideo',
-  'FiCamera',
-  'FiImage',
-  'FiMusic',
-  'FiPlay',
-  'FiPause',
-  'FiSkipForward',
-  'FiVolume2',
-  'FiTrendingUp',
-  'FiBarChart',
-  'FiPieChart',
-  'FiShoppingCart',
-  'FiShoppingBag',
-  'FiGift',
-  'FiPackage',
-  'FiTruck',
-  'FiMapPin',
-  'FiGlobe',
-  'FiCompass',
-  'FiAward',
-  'FiThumbsUp',
-  'FiCheckCircle',
-  'FiAlertCircle',
-  'FiInfo',
-  'FiHelpCircle',
-  'FiSettings',
-  'FiTool',
-  'FiCode',
-  'FiTerminal',
-  'FiDatabase',
-  'FiServer',
-  'FiCloud',
-  'FiLock',
-  'FiUnlock',
-  'FiKey',
-  'FiShield',
-  'FiEye',
-  'FiSearch',
-  'FiFilter',
-  'FiBell',
-  'FiCalendar',
-  'FiClock',
-  'FiWatch',
-  'FiSun',
-  'FiMoon',
-  'FiCloudRain',
-  'FiWind',
-  'FiFeather',
-  'FiAnchor',
-  'FiUmbrella',
-  'FiCoffee',
-  'FiBook',
-  'FiBookOpen',
-  'FiFileText',
-  'FiFolder',
-  'FiArchive',
-  'FiInbox',
-  'FiLayers',
-  'FiGrid',
-  'FiBox',
-  'FiPackage',
-]
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "./scroll-area"
+import * as Icons from 'react-icons/fi'
+import { cn } from "@/lib/utils"
 
 interface IconPickerProps {
-  value?: string
-  onChange: (iconName: string) => void
+    value?: string
+    onChange: (icon: string) => void
+    className?: string
 }
 
-export function IconPicker({ value = 'FiMessageSquare', onChange }: IconPickerProps) {
-  const [open, setOpen] = useState(false)
-  const [search, setSearch] = useState('')
+const commonIcons = [
+    'FiFolder',
+    'FiFile',
+    'FiFileText',
+    'FiBook',
+    'FiBookOpen',
+    'FiDatabase',
+    'FiArchive',
+    'FiBox',
+    'FiBriefcase',
+    'FiClipboard',
+    'FiCode',
+    'FiCoffee',
+    'FiCpu',
+    'FiCreditCard',
+    'FiDollarSign',
+    'FiGlobe',
+    'FiGrid',
+    'FiHardDrive',
+    'FiHash',
+    'FiHeart',
+    'FiHome',
+    'FiImage',
+    'FiInbox',
+    'FiLayers',
+    'FiLayout',
+    'FiLifeBuoy',
+    'FiList',
+    'FiLock',
+    'FiMail',
+    'FiMap',
+    'FiMessageSquare',
+    'FiMonitor',
+    'FiMusic',
+    'FiPackage',
+    'FiPaperclip',
+    'FiPieChart',
+    'FiSettings',
+    'FiShoppingBag',
+    'FiShoppingCart',
+    'FiStar',
+    'FiTag',
+    'FiTarget',
+    'FiTool',
+    'FiTrendingUp',
+    'FiTruck',
+    'FiTv',
+    'FiUser',
+    'FiUsers',
+    'FiVideo',
+    'FiZap',
+]
 
-  const filteredIcons = BOT_ICONS.filter(icon =>
-    icon.toLowerCase().includes(search.toLowerCase())
-  )
+export function IconPicker({ value, onChange, className }: IconPickerProps) {
+    const [open, setOpen] = React.useState(false)
+    const [search, setSearch] = React.useState("")
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-8 h-8 text-white hover:bg-white/20"
-        >
-          <FiIcons.FiEdit2 className="w-4 h-4" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
-        <div className="p-3 border-b border-border">
-          <Input
-            placeholder="Search icons..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-8"
-          />
-        </div>
-        <div className="grid grid-cols-6 gap-1 p-2 max-h-64 overflow-y-auto">
-          {filteredIcons.map((iconName) => {
-            const Icon = (FiIcons as any)[iconName]
-            return (
-              <button
-                key={iconName}
-                type="button"
-                onClick={() => {
-                  onChange(iconName)
-                  setOpen(false)
-                }}
-                className={`p-2 rounded hover:bg-accent transition-colors ${value === iconName ? 'bg-primary/10 text-primary' : ''
-                  }`}
-                title={iconName}
-              >
-                <Icon className="w-5 h-5 mx-auto" />
-              </button>
-            )
-          })}
-        </div>
-        {filteredIcons.length === 0 && (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            No icons found
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
-  )
+    const filteredIcons = commonIcons.filter(icon =>
+        icon.toLowerCase().includes(search.toLowerCase())
+    )
+
+    const SelectedIcon = value && (Icons as any)[value] ? (Icons as any)[value] : Icons.FiFolder
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className={cn("w-full justify-start", className)}
+                >
+                    <SelectedIcon className="w-4 h-4 mr-2" />
+                    {value || "Select icon..."}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="start">
+                <div className="p-2 border-b">
+                    <Input
+                        placeholder="Search icons..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+                <ScrollArea className="h-72">
+                    <div className="grid grid-cols-6 gap-2 p-2">
+                        {filteredIcons.map((iconName) => {
+                            const IconComponent = (Icons as any)[iconName]
+                            return (
+                                <button
+                                    key={iconName}
+                                    onClick={() => {
+                                        onChange(iconName)
+                                        setOpen(false)
+                                    }}
+                                    className={cn(
+                                        "p-3 rounded-md hover:bg-accent transition-colors flex items-center justify-center",
+                                        value === iconName && "bg-accent"
+                                    )}
+                                    title={iconName}
+                                >
+                                    <IconComponent className="w-5 h-5" />
+                                </button>
+                            )
+                        })}
+                    </div>
+                </ScrollArea>
+            </PopoverContent>
+        </Popover>
+    )
 }

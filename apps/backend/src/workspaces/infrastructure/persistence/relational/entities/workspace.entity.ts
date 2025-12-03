@@ -1,17 +1,22 @@
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   Index,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
-import { EntityRelationalHelper } from 'src/utils/relational-entity-helper';
+import { EntityRelationalHelper } from '../../../../../utils/relational-entity-helper';
 import { UserEntity } from '../../../../../users/infrastructure/persistence/relational/entities/user.entity';
-import { BotEntity } from '../../../../../bots/infrastructure/persistence/relational/entities/bot.entity';
 
+/**
+ * Workspace entity - theo schema mới
+ * Table: workspaces
+ */
 @Entity({ name: 'workspace' })
 export class WorkspaceEntity extends EntityRelationalHelper {
   @PrimaryGeneratedColumn('uuid')
@@ -24,45 +29,59 @@ export class WorkspaceEntity extends EntityRelationalHelper {
   @Column({ type: String, unique: true })
   slug: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ name: 'avatar_url', type: String, nullable: true })
+  avatarUrl?: string | null;
+
+  @Column({ type: String, default: 'free' })
+  plan: 'free' | 'starter' | 'pro' | 'enterprise';
+
+  @Column({ name: 'owner_id', type: 'uuid' })
   ownerId: string;
 
   @ManyToOne(() => UserEntity)
+  @JoinColumn({ name: 'owner_id' })
   owner?: UserEntity;
-
-  @OneToMany(() => BotEntity, (bot) => bot.workspace)
-  bots?: BotEntity[];
 
   @OneToMany(() => WorkspaceMemberEntity, (member) => member.workspace)
   members?: WorkspaceMemberEntity[];
 
-  @CreateDateColumn()
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt?: Date | null;
+
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }
 
+/**
+ * WorkspaceMember entity - theo schema mới
+ * Table: workspace_members
+ * Primary key: (workspace_id, user_id)
+ */
 @Entity({ name: 'workspace_member' })
+@Index(['workspaceId', 'userId'], { unique: true })
 export class WorkspaceMemberEntity extends EntityRelationalHelper {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ type: 'uuid' })
+  @Column({ name: 'workspace_id', type: 'uuid', primary: true })
   workspaceId: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ name: 'user_id', type: 'uuid', primary: true })
   userId: string;
 
   @Column({ type: String, default: 'member' })
-  role: string;
+  role: 'owner' | 'admin' | 'member';
 
-  @ManyToOne(() => WorkspaceEntity, (workspace) => workspace.members)
+  @ManyToOne(() => WorkspaceEntity, (workspace) => workspace.members, {
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'workspace_id' })
   workspace?: WorkspaceEntity;
 
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
   user?: UserEntity;
 
-  @CreateDateColumn()
-  createdAt: Date;
+  @CreateDateColumn({ name: 'joined_at' })
+  joinedAt: Date;
 }

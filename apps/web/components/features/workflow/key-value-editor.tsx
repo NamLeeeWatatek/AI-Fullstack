@@ -3,21 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { FiPlus, FiTrash2 } from 'react-icons/fi'
 import { Button } from '@/components/ui/button'
-
-interface KeyValuePair {
-    key: string
-    value: string
-}
-
-interface KeyValueEditorProps {
-    value: Record<string, any> | string
-    onChange: (value: Record<string, any>) => void
-    placeholder?: {
-        key?: string
-        value?: string
-    }
-    description?: string
-}
+import type { KeyValuePair, KeyValueEditorProps } from '@/lib/types'
 
 export function KeyValueEditor({ value, onChange, placeholder }: KeyValueEditorProps) {
     const [pairs, setPairs] = useState<KeyValuePair[]>([])

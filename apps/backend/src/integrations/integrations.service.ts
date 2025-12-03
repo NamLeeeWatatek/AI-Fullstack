@@ -9,7 +9,7 @@ export class IntegrationsService {
   constructor(
     @InjectRepository(ChannelCredentialEntity)
     private credentialRepository: Repository<ChannelCredentialEntity>,
-  ) { }
+  ) {}
 
   async findAll(workspaceId?: string): Promise<ChannelCredentialEntity[]> {
     const where: any = {};

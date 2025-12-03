@@ -40,13 +40,17 @@ export class ExecutionService {
     private flowExecutionRepository: Repository<FlowExecutionEntity>,
     @InjectRepository(NodeExecutionEntity)
     private nodeExecutionRepository: Repository<NodeExecutionEntity>,
-  ) { }
+  ) {}
 
-  async executeFlow(
+  executeFlow(flowId: string, flowData: any, inputData?: any): Promise<string> {
+    return Promise.resolve(this.executeFlowSync(flowId, flowData, inputData));
+  }
+
+  private executeFlowSync(
     flowId: string,
     flowData: any,
     inputData?: any,
-  ): Promise<string> {
+  ): string {
     const executionId = `exec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     const execution: FlowExecution = {

@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Body, Headers, Param, Query, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Headers,
+  Param,
+  Query,
+  Logger,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ChannelStrategy } from './channel.strategy';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -85,9 +94,12 @@ export class WebhooksController {
     const token = query['hub.verify_token'];
     const challenge = query['hub.challenge'];
 
-    const VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN || 'wataomi_verify_token';
+    const VERIFY_TOKEN =
+      process.env.FACEBOOK_VERIFY_TOKEN || 'wataomi_verify_token';
 
-    this.logger.log(`Facebook webhook verification: mode=${mode}, token=${token}`);
+    this.logger.log(
+      `Facebook webhook verification: mode=${mode}, token=${token}`,
+    );
 
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       this.logger.log('Facebook webhook verified successfully');
@@ -112,7 +124,11 @@ export class WebhooksController {
       this.logger.log('Received Facebook webhook');
 
       // Verify signature
-      const isValid = this.channelStrategy.verifyWebhook('facebook', payload, signature || '');
+      const isValid = this.channelStrategy.verifyWebhook(
+        'facebook',
+        payload,
+        signature || '',
+      );
       if (!isValid) {
         this.logger.error('Invalid Facebook webhook signature');
         return { success: false, error: 'Invalid signature' };
@@ -148,7 +164,11 @@ export class WebhooksController {
       this.logger.log('Received Instagram webhook');
 
       // Verify signature (same as Facebook)
-      const isValid = this.channelStrategy.verifyWebhook('instagram', payload, signature || '');
+      const isValid = this.channelStrategy.verifyWebhook(
+        'instagram',
+        payload,
+        signature || '',
+      );
       if (!isValid) {
         this.logger.error('Invalid Instagram webhook signature');
         return { success: false, error: 'Invalid signature' };

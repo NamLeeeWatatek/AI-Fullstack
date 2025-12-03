@@ -43,20 +43,26 @@ export class CasdoorSyncService {
       for (const casdoorUser of casdoorUsers) {
         try {
           await this.syncSingleUser(casdoorUser);
-          
-          const existingUser = await this.usersService.findByEmail(casdoorUser.email);
+
+          const existingUser = await this.usersService.findByEmail(
+            casdoorUser.email,
+          );
           if (!existingUser) {
             created++;
           } else {
             updated++;
           }
         } catch (error) {
-          this.logger.error(`Failed to sync user ${casdoorUser.email}: ${error.message}`);
+          this.logger.error(
+            `Failed to sync user ${casdoorUser.email}: ${error.message}`,
+          );
           skipped++;
         }
       }
 
-      this.logger.log(`User sync completed: ${created} created, ${updated} updated, ${skipped} skipped`);
+      this.logger.log(
+        `User sync completed: ${created} created, ${updated} updated, ${skipped} skipped`,
+      );
     } catch (error) {
       this.logger.error(`User sync failed: ${error.message}`);
     } finally {
@@ -68,8 +74,9 @@ export class CasdoorSyncService {
    * Sync single user from Casdoor to Backend
    */
   async syncSingleUser(casdoorUser: any): Promise<void> {
-    const email = casdoorUser.email || `${casdoorUser.name}@${casdoorUser.owner}.local`;
-    
+    const email =
+      casdoorUser.email || `${casdoorUser.name}@${casdoorUser.owner}.local`;
+
     // Determine role
     let isAdmin = false;
     if (casdoorUser.isAdmin === true) {
@@ -77,14 +84,18 @@ export class CasdoorSyncService {
     } else if (casdoorUser.tag) {
       const tag = casdoorUser.tag.toLowerCase();
       isAdmin = tag === 'super_admin' || tag === 'admin';
-    } else if (Array.isArray(casdoorUser.roles) && casdoorUser.roles.length > 0) {
-      const roleNames = casdoorUser.roles.map((r: any) => 
-        (typeof r === 'string' ? r : r.name).toLowerCase()
+    } else if (
+      Array.isArray(casdoorUser.roles) &&
+      casdoorUser.roles.length > 0
+    ) {
+      const roleNames = casdoorUser.roles.map((r: any) =>
+        (typeof r === 'string' ? r : r.name).toLowerCase(),
       );
-      isAdmin = roleNames.includes('admin') || roleNames.includes('super_admin');
+      isAdmin =
+        roleNames.includes('admin') || roleNames.includes('super_admin');
     }
 
-    const roleId = isAdmin ? RoleEnum.admin : RoleEnum.user;
+    const role = isAdmin ? 'admin' : 'user';
 
     // Find or create user
     let user = await this.usersService.findByEmail(email);
@@ -93,22 +104,21 @@ export class CasdoorSyncService {
       // Create new user
       user = await this.usersService.create({
         email,
-        firstName: casdoorUser.displayName || casdoorUser.name,
-        lastName: '',
+        name: casdoorUser.displayName || casdoorUser.name,
         password: undefined,
         provider: 'casdoor',
         socialId: casdoorUser.id || `${casdoorUser.owner}/${casdoorUser.name}`,
-        role: { id: roleId },
-        status: { id: 1 },
+        role,
+        isActive: true,
       });
       this.logger.log(`Created user from Casdoor: ${email}`);
     } else {
       // Update existing user if role changed
-      if (user.role?.id !== roleId) {
+      if (user.role !== role) {
         await this.usersService.update(user.id, {
-          role: { id: roleId },
+          role,
         });
-        this.logger.log(`Updated user role: ${email} -> ${isAdmin ? 'admin' : 'user'}`);
+        this.logger.log(`Updated user role: ${email} -> ${role}`);
       }
     }
   }
@@ -119,30 +129,31 @@ export class CasdoorSyncService {
    */
   async syncUserToCasdoor(user: any): Promise<void> {
     try {
-      const isAdmin = user.role?.id === RoleEnum.admin;
+      const isAdmin = user.role === 'admin';
       const tag = isAdmin ? 'admin' : 'user';
 
       // Check if user exists in Casdoor
       const casdoorUserName = user.email.split('@')[0]; // Use email prefix as username
-      
+
       try {
-        const existingUser = await this.casdoorApiClient.getUser(casdoorUserName);
-        
+        const existingUser =
+          await this.casdoorApiClient.getUser(casdoorUserName);
+
         if (existingUser) {
           // Update existing user
           await this.casdoorApiClient.updateUser(casdoorUserName, {
-            displayName: user.firstName || user.email,
+            displayName: user.name || user.email,
             email: user.email,
             tag: tag,
             isAdmin: isAdmin,
           });
           this.logger.log(`Updated user in Casdoor: ${user.email}`);
         }
-      } catch (error) {
+      } catch {
         // User doesn't exist, create new
         await this.casdoorApiClient.createUser({
           name: casdoorUserName,
-          displayName: user.firstName || user.email,
+          displayName: user.name || user.email,
           email: user.email,
           tag: tag,
         });

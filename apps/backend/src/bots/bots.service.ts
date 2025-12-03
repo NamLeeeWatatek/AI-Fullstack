@@ -1,12 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   BotEntity,
   FlowVersionEntity,
+  BotKnowledgeBaseEntity,
 } from './infrastructure/persistence/relational/entities/bot.entity';
+import { WorkspaceMemberEntity } from '../workspaces/infrastructure/persistence/relational/entities/workspace.entity';
+import { WorkspaceHelperService } from '../workspaces/workspace-helper.service';
 import { CreateBotDto } from './dto/create-bot.dto';
-import { UpdateBotDto } from './dto/update-bot.dto';
+import {
+  UpdateBotDto,
+  CreateFlowVersionDto,
+  LinkKnowledgeBaseDto,
+} from './dto/update-bot.dto';
 
 @Injectable()
 export class BotsService {
@@ -15,30 +27,54 @@ export class BotsService {
     private botRepository: Repository<BotEntity>,
     @InjectRepository(FlowVersionEntity)
     private flowVersionRepository: Repository<FlowVersionEntity>,
+    @InjectRepository(BotKnowledgeBaseEntity)
+    private botKbRepository: Repository<BotKnowledgeBaseEntity>,
+    @InjectRepository(WorkspaceMemberEntity)
+    private workspaceMemberRepository: Repository<WorkspaceMemberEntity>,
+    private workspaceHelper: WorkspaceHelperService,
   ) {}
 
-  async create(createDto: CreateBotDto) {
-    const bot = this.botRepository.create(createDto);
+  async getUserDefaultWorkspace(userId: string) {
+    return this.workspaceHelper.getUserDefaultWorkspace(userId);
+  }
+
+  async ensureUserHasWorkspace(userId: string) {
+    return this.workspaceHelper.ensureUserHasWorkspace(userId);
+  }
+
+  async create(createDto: CreateBotDto, userId: string) {
+    // Validate workspaceId is provided
+    if (!createDto.workspaceId) {
+      throw new BadRequestException('workspaceId is required');
+    }
+
+    const bot = this.botRepository.create({
+      ...createDto,
+      createdBy: userId,
+      status: createDto.status ?? 'draft',
+      defaultLanguage: createDto.defaultLanguage ?? 'en',
+      timezone: createDto.timezone ?? 'UTC',
+    });
     return this.botRepository.save(bot);
   }
 
-  async findAll(workspaceId?: string) {
-    const query = this.botRepository.createQueryBuilder('bot');
+  async findAll(workspaceId: string, options?: { status?: string }) {
+    const query = this.botRepository
+      .createQueryBuilder('bot')
+      .where('bot.workspaceId = :workspaceId', { workspaceId })
+      .andWhere('bot.deletedAt IS NULL');
 
-    if (workspaceId) {
-      // Get bots for specific workspace + global bots (workspaceId is null)
-      query.where('bot.workspaceId = :workspaceId OR bot.workspaceId IS NULL', {
-        workspaceId,
-      });
+    if (options?.status) {
+      query.andWhere('bot.status = :status', { status: options.status });
     }
 
-    return query.getMany();
+    return query.orderBy('bot.createdAt', 'DESC').getMany();
   }
 
   async findOne(id: string) {
     const bot = await this.botRepository.findOne({
       where: { id },
-      relations: ['workspace', 'flowVersions'],
+      relations: ['workspace', 'flowVersions', 'knowledgeBases'],
     });
 
     if (!bot) {
@@ -55,12 +91,30 @@ export class BotsService {
   }
 
   async remove(id: string) {
-    const bot = await this.findOne(id);
-    await this.botRepository.remove(bot);
+    await this.findOne(id); // Validate bot exists
+    // Soft delete
+    await this.botRepository.softDelete(id);
   }
 
-  async createFlowVersion(botId: string, flow: Record<string, any>) {
-    const bot = await this.findOne(botId);
+  async activate(id: string) {
+    return this.update(id, { status: 'active' });
+  }
+
+  async pause(id: string) {
+    return this.update(id, { status: 'paused' });
+  }
+
+  async archive(id: string) {
+    return this.update(id, { status: 'archived' });
+  }
+
+  // Flow Versions
+  async createFlowVersion(
+    botId: string,
+    dto: CreateFlowVersionDto,
+    userId: string,
+  ) {
+    await this.findOne(botId);
 
     const latestVersion = await this.flowVersionRepository
       .createQueryBuilder('version')
@@ -71,29 +125,225 @@ export class BotsService {
     const version = this.flowVersionRepository.create({
       botId,
       version: latestVersion ? latestVersion.version + 1 : 1,
-      flow,
+      name: dto.name,
+      description: dto.description,
+      flow: dto.flow ?? {},
+      status: 'draft',
+      createdBy: userId,
       isPublished: false,
     });
 
     return this.flowVersionRepository.save(version);
   }
 
-  async publishFlowVersion(versionId: string) {
+  async getFlowVersions(botId: string) {
+    return this.flowVersionRepository.find({
+      where: { botId },
+      order: { version: 'DESC' },
+    });
+  }
+
+  async getFlowVersion(botId: string, versionId: string) {
     const version = await this.flowVersionRepository.findOne({
-      where: { id: versionId },
+      where: { id: versionId, botId },
     });
 
     if (!version) {
       throw new NotFoundException('Flow version not found');
     }
 
+    return version;
+  }
+
+  async updateFlowVersion(
+    botId: string,
+    versionId: string,
+    dto: CreateFlowVersionDto,
+  ) {
+    const version = await this.getFlowVersion(botId, versionId);
+
+    if (version.status === 'published') {
+      throw new ForbiddenException('Cannot update published version');
+    }
+
+    if (dto.name !== undefined) version.name = dto.name;
+    if (dto.description !== undefined) version.description = dto.description;
+    if (dto.flow !== undefined) version.flow = dto.flow;
+
+    return this.flowVersionRepository.save(version);
+  }
+
+  async publishFlowVersion(botId: string, versionId: string) {
+    const version = await this.getFlowVersion(botId, versionId);
+
     // Unpublish other versions
     await this.flowVersionRepository.update(
-      { botId: version.botId, isPublished: true },
-      { isPublished: false },
+      { botId, status: 'published' },
+      { status: 'archived', isPublished: false },
     );
 
+    version.status = 'published';
     version.isPublished = true;
+    version.publishedAt = new Date();
+
     return this.flowVersionRepository.save(version);
+  }
+
+  async getPublishedVersion(botId: string) {
+    return this.flowVersionRepository.findOne({
+      where: { botId, status: 'published' },
+    });
+  }
+
+  // Knowledge Base Links
+  async linkKnowledgeBase(botId: string, dto: LinkKnowledgeBaseDto) {
+    await this.findOne(botId);
+
+    const existing = await this.botKbRepository.findOne({
+      where: { botId, knowledgeBaseId: dto.knowledgeBaseId },
+    });
+
+    if (existing) {
+      // Update existing
+      existing.priority = dto.priority ?? existing.priority;
+      existing.ragSettings = dto.ragSettings ?? existing.ragSettings;
+      return this.botKbRepository.save(existing);
+    }
+
+    const link = this.botKbRepository.create({
+      botId,
+      knowledgeBaseId: dto.knowledgeBaseId,
+      priority: dto.priority ?? 1,
+      ragSettings: dto.ragSettings,
+      isActive: true,
+    });
+
+    return this.botKbRepository.save(link);
+  }
+
+  async unlinkKnowledgeBase(botId: string, knowledgeBaseId: string) {
+    await this.botKbRepository.delete({ botId, knowledgeBaseId });
+  }
+
+  async getLinkedKnowledgeBases(botId: string) {
+    return this.botKbRepository.find({
+      where: { botId, isActive: true },
+      order: { priority: 'ASC' },
+    });
+  }
+
+  async toggleKnowledgeBase(
+    botId: string,
+    knowledgeBaseId: string,
+    isActive: boolean,
+  ) {
+    const link = await this.botKbRepository.findOne({
+      where: { botId, knowledgeBaseId },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Knowledge base link not found');
+    }
+
+    link.isActive = isActive;
+    return this.botKbRepository.save(link);
+  }
+
+  // Duplicate bot
+  async duplicate(id: string, userId: string, newName?: string) {
+    const bot = await this.findOne(id);
+
+    const newBot = this.botRepository.create({
+      ...bot,
+      id: undefined,
+      name: newName ?? `${bot.name} (Copy)`,
+      status: 'draft',
+      createdBy: userId,
+      createdAt: undefined,
+      updatedAt: undefined,
+      deletedAt: undefined,
+    });
+
+    return this.botRepository.save(newBot);
+  }
+
+  // Bot Channels Management
+  async getBotChannels(botId: string) {
+    await this.findOne(botId); // Validate bot exists
+    // Import ChannelEntity if needed
+    const { ChannelEntity } = await import(
+      '../channels/infrastructure/persistence/relational/entities/channel.entity'
+    );
+    const channelRepo = this.botRepository.manager.getRepository(ChannelEntity);
+    return channelRepo.find({
+      where: { botId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async createBotChannel(
+    botId: string,
+    dto: { type: string; name: string; config?: Record<string, any> },
+    userId: string,
+  ) {
+    await this.findOne(botId); // Validate bot exists
+    const { ChannelEntity } = await import(
+      '../channels/infrastructure/persistence/relational/entities/channel.entity'
+    );
+    const channelRepo = this.botRepository.manager.getRepository(ChannelEntity);
+
+    const channel = channelRepo.create({
+      botId,
+      type: dto.type,
+      name: dto.name,
+      config: dto.config,
+      isActive: true,
+      createdBy: userId,
+    });
+
+    return channelRepo.save(channel);
+  }
+
+  async updateBotChannel(
+    botId: string,
+    channelId: string,
+    dto: { name?: string; config?: Record<string, any>; isActive?: boolean },
+  ) {
+    const { ChannelEntity } = await import(
+      '../channels/infrastructure/persistence/relational/entities/channel.entity'
+    );
+    const channelRepo = this.botRepository.manager.getRepository(ChannelEntity);
+
+    const channel = await channelRepo.findOne({
+      where: { id: channelId, botId },
+    });
+
+    if (!channel) {
+      throw new NotFoundException('Channel not found');
+    }
+
+    Object.assign(channel, dto);
+    return channelRepo.save(channel);
+  }
+
+  async deleteBotChannel(botId: string, channelId: string) {
+    const { ChannelEntity } = await import(
+      '../channels/infrastructure/persistence/relational/entities/channel.entity'
+    );
+    const channelRepo = this.botRepository.manager.getRepository(ChannelEntity);
+
+    const channel = await channelRepo.findOne({
+      where: { id: channelId, botId },
+    });
+
+    if (!channel) {
+      throw new NotFoundException('Channel not found');
+    }
+
+    await channelRepo.remove(channel);
+  }
+
+  async toggleBotChannel(botId: string, channelId: string, isActive: boolean) {
+    return this.updateBotChannel(botId, channelId, { isActive });
   }
 }

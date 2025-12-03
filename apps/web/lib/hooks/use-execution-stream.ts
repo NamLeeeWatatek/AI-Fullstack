@@ -64,13 +64,13 @@ export function useExecutionStream(
 
         try {
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-            
+
             // Get token from NextAuth session
             const { getSession } = await import('next-auth/react')
             const session = await getSession()
             const token = session?.accessToken
 
-            console.log('🚀 Starting SSE execution:', { flowId, API_URL })
+
 
             // Use fetch with streaming instead of EventSource (for POST support)
             const response = await fetch(`${API_URL}/executions/stream`, {
@@ -85,11 +85,11 @@ export function useExecutionStream(
                 })
             })
 
-            console.log('📡 Response status:', response.status, response.statusText)
+
 
             if (!response.ok) {
                 const errorText = await response.text()
-                console.error('❌ Response error:', errorText)
+
                 throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
             }
 
@@ -101,69 +101,69 @@ export function useExecutionStream(
             }
 
             // Read stream
-            console.log('📖 Starting to read SSE stream...')
+
             let eventCount = 0
-            
+
             while (true) {
                 const { done, value } = await reader.read()
-                
+
                 if (done) {
-                    console.log('✅ Stream completed, total events:', eventCount)
+
                     break
                 }
 
                 const text = decoder.decode(value, { stream: true })
-                console.log('📨 Received chunk:', text.substring(0, 100) + '...')
-                
+
+
                 const lines = text.split('\n')
 
                 for (const line of lines) {
                     if (line.startsWith('data: ')) {
                         const jsonStr = line.slice(6) // Remove 'data: ' prefix
-                        
+
                         try {
                             const event: ExecutionEvent = JSON.parse(jsonStr)
                             eventCount++
-                            console.log(`📬 Event #${eventCount}:`, event.type, event.data)
-                            
+
+
                             switch (event.type) {
                                 case 'executionStarted':
-                                    console.log('🎬 Execution started:', event.data)
+
                                     break
 
                                 case 'nodeExecutionBefore':
-                                    console.log('⏳ Node starting:', event.data.nodeName)
+
                                     updateNodeStatus(event.data.nodeName, 'running')
                                     break
 
                                 case 'nodeExecutionAfter':
                                     if (event.data.error) {
-                                        console.log('❌ Node failed:', event.data.nodeName, event.data.error)
+
                                         updateNodeStatus(event.data.nodeName, 'error', event.data)
                                     } else {
-                                        console.log('✅ Node completed:', event.data.nodeName)
+
                                         updateNodeStatus(event.data.nodeName, 'success', event.data)
                                     }
                                     break
 
                                 case 'executionFinished':
-                                    console.log('🏁 Execution finished:', event.data)
+
                                     break
 
                                 case 'executionError':
-                                    console.log('💥 Execution error:', event.data.error)
+
                                     setError(event.data.error)
                                     break
                             }
                         } catch (e) {
-                            console.error('⚠️ Failed to parse SSE event:', line, e)
+
                         }
                     }
                 }
             }
 
         } catch (err) {
-            console.error('Execution stream error:', err)
+
             setError(err instanceof Error ? err.message : 'Unknown error')
         } finally {
             setIsExecuting(false)

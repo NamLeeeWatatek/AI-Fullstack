@@ -60,7 +60,7 @@ export default function OAuthCallbackPage() {
             } catch (err) {
                 setStatus('error')
                 setMessage('An error occurred while connecting the channel')
-                console.error(err)
+
                 notifyAndClose('error', 'An error occurred while connecting the channel')
             }
         }

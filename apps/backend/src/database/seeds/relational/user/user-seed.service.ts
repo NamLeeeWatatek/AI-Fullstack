@@ -17,9 +17,7 @@ export class UserSeedService {
   async run() {
     const countAdmin = await this.repository.count({
       where: {
-        role: {
-          id: RoleEnum.admin,
-        },
+        role: 'admin',
       },
     });
 
@@ -29,27 +27,18 @@ export class UserSeedService {
 
       await this.repository.save(
         this.repository.create({
-          firstName: 'Super',
-          lastName: 'Admin',
+          name: 'Super Admin',
           email: 'admin@example.com',
           password,
-          role: {
-            id: RoleEnum.admin,
-            name: 'Admin',
-          },
-          status: {
-            id: StatusEnum.active,
-            name: 'Active',
-          },
+          role: 'admin',
+          isActive: true,
         }),
       );
     }
 
     const countUser = await this.repository.count({
       where: {
-        role: {
-          id: RoleEnum.user,
-        },
+        role: 'user',
       },
     });
 
@@ -59,18 +48,11 @@ export class UserSeedService {
 
       await this.repository.save(
         this.repository.create({
-          firstName: 'John',
-          lastName: 'Doe',
+          name: 'John Doe',
           email: 'john.doe@example.com',
           password,
-          role: {
-            id: RoleEnum.user,
-            name: 'Admin',
-          },
-          status: {
-            id: StatusEnum.active,
-            name: 'Active',
-          },
+          role: 'user',
+          isActive: true,
         }),
       );
     }

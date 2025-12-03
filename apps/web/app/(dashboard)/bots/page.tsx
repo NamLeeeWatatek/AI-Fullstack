@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +27,7 @@ import {
 import axiosClient from '@/lib/axios-client'
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import { fetchFlows } from '@/lib/store/slices/flowsSlice'
+import { useWorkspace } from '@/lib/hooks/useWorkspace'
 import toast from '@/lib/toast'
 import * as FiIcons from 'react-icons/fi'
 import {
@@ -37,18 +38,7 @@ import {
     FiMessageSquare,
     FiActivity
 } from 'react-icons/fi'
-
-interface Bot {
-    id: string
-    name: string
-    description?: string
-    icon?: string
-    is_active: boolean
-    workspace_id: string
-    created_at: string
-    updated_at: string
-    flow_id?: string | null
-}
+import { botsApi, type Bot } from '@/lib/api/bots'
 
 interface Flow {
     id: string
@@ -64,27 +54,36 @@ export default function BotsPage() {
         name: '',
         description: '',
         icon: 'FiMessageSquare',
-        flow_id: null as string | null
+        flowId: null as string | null
     })
     const dispatch = useAppDispatch()
     const { items: flows = [] } = useAppSelector((state: any) => state.flows || {})
+    const { currentWorkspace } = useWorkspace()
 
-    useEffect(() => {
-        loadBots()
-        dispatch(fetchFlows())
-    }, [dispatch])
+    const loadBots = useCallback(async () => {
+        if (!currentWorkspace) {
+            toast.error('No workspace selected')
+            return
+        }
 
-    const loadBots = async () => {
         try {
             setLoading(true)
-            const data: any = await axiosClient.get('/bots/')
-            setBots(Array.isArray(data) ? data : data.bots || [])
-        } catch {
-            toast.error('Failed to load bots')
+            const data = await botsApi.getAll(currentWorkspace.id)
+            setBots(Array.isArray(data) ? data : [])
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || 'Failed to load bots')
         } finally {
             setLoading(false)
         }
-    }
+    }, [currentWorkspace])
+
+    useEffect(() => {
+        if (currentWorkspace) {
+            loadBots()
+            dispatch(fetchFlows())
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentWorkspace?.id])
 
     const openModal = (bot?: Bot) => {
         if (bot) {
@@ -93,11 +92,11 @@ export default function BotsPage() {
                 name: bot.name,
                 description: bot.description || '',
                 icon: bot.icon || 'FiMessageSquare',
-                flow_id: bot.flow_id || null
+                flowId: bot.flowId || null
             })
         } else {
             setEditingBot(null)
-            setFormData({ name: '', description: '', icon: 'FiMessageSquare', flow_id: null })
+            setFormData({ name: '', description: '', icon: 'FiMessageSquare', flowId: null })
         }
         setShowModal(true)
     }
@@ -105,7 +104,7 @@ export default function BotsPage() {
     const closeModal = () => {
         setShowModal(false)
         setEditingBot(null)
-        setFormData({ name: '', description: '', icon: 'FiMessageSquare', flow_id: null })
+        setFormData({ name: '', description: '', icon: 'FiMessageSquare', flowId: null })
     }
 
     const saveBot = async () => {
@@ -114,18 +113,27 @@ export default function BotsPage() {
             return
         }
 
+        if (!currentWorkspace) {
+            toast.error('No workspace selected')
+            return
+        }
+
         try {
             if (editingBot) {
-                await axiosClient.patch(`/bots/${editingBot.id}`, formData)
+                await botsApi.update(editingBot.id, formData)
                 toast.success('Bot updated')
             } else {
-                await axiosClient.post('/bots/', formData)
+                await botsApi.create({
+                    ...formData,
+                    workspaceId: currentWorkspace.id
+                })
                 toast.success('Bot created')
             }
             closeModal()
             loadBots()
-        } catch {
-            toast.error('Failed to save bot')
+        } catch (error: any) {
+            const message = error?.response?.data?.message || 'Failed to save bot'
+            toast.error(message)
         }
     }
 
@@ -139,7 +147,7 @@ export default function BotsPage() {
         if (!deleteId) return
 
         try {
-            await axiosClient.delete(`/bots/${deleteId}`)
+            await botsApi.delete(deleteId)
             toast.success('Bot deleted')
             loadBots()
         } catch {
@@ -149,12 +157,14 @@ export default function BotsPage() {
 
     const toggleStatus = async (bot: Bot) => {
         try {
-            await axiosClient.patch(`/bots/${bot.id}`, {
-                is_active: !bot.is_active
-            })
+            if (bot.status === 'active') {
+                await botsApi.pause(bot.id)
+            } else {
+                await botsApi.activate(bot.id)
+            }
             toast.success('Bot status updated')
             loadBots()
-        } catch {
+        } catch (error) {
             toast.error('Failed to update status')
         }
     }
@@ -228,8 +238,11 @@ export default function BotsPage() {
                                         </div>
                                         <div>
                                             <h3 className="font-semibold text-lg">{bot.name}</h3>
-                                            <Badge variant={bot.is_active ? 'success' : 'default'}>
-                                                {bot.is_active ? 'Active' : 'Inactive'}
+                                            <Badge
+                                                variant={bot.status === 'active' ? 'default' : 'secondary'}
+                                                className={bot.status === 'active' ? 'bg-green-500 hover:bg-green-600' : ''}
+                                            >
+                                                {bot.status === 'active' ? 'Active' : bot.status === 'paused' ? 'Paused' : 'Draft'}
                                             </Badge>
                                         </div>
                                     </div>
@@ -244,17 +257,17 @@ export default function BotsPage() {
                                         variant="outline"
                                         size="sm"
                                         className="flex-1"
-                                        onClick={() => toggleStatus(bot)}
+                                        onClick={() => window.location.href = `/bots/${bot.id}`}
                                     >
-                                        <FiActivity className="w-4 h-4 mr-2" />
-                                        {bot.is_active ? 'Deactivate' : 'Activate'}
+                                        <FiEdit2 className="w-4 h-4 mr-2" />
+                                        Configure
                                     </Button>
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => openModal(bot)}
+                                        onClick={() => toggleStatus(bot)}
                                     >
-                                        <FiEdit2 className="w-4 h-4" />
+                                        <FiActivity className="w-4 h-4" />
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -302,8 +315,8 @@ export default function BotsPage() {
                         <div className="space-y-2">
                             <Label htmlFor="flow">Flow</Label>
                             <Select
-                                value={formData.flow_id || 'none'}
-                                onValueChange={(value) => setFormData({ ...formData, flow_id: value === 'none' ? null : value })}
+                                value={formData.flowId || 'none'}
+                                onValueChange={(value) => setFormData({ ...formData, flowId: value === 'none' ? null : value })}
                             >
                                 <SelectTrigger id="flow">
                                     <SelectValue placeholder="No flow (manual responses only)" />

@@ -88,7 +88,7 @@ export function MediaUploader({ onUploadComplete, onClose, type = 'image' }: Med
             formData.append('file', file)
 
             const endpoint = type === 'image' ? '/media/upload/image' : '/media/upload/file'
-            
+
             // Simulate progress (since we can't track actual upload progress with fetchAPI)
             const progressInterval = setInterval(() => {
                 setProgress(prev => Math.min(prev + 10, 90))
@@ -109,7 +109,7 @@ export function MediaUploader({ onUploadComplete, onClose, type = 'image' }: Med
 
         } catch (e: any) {
             toast.error('Upload failed: ' + (e.message || 'Unknown error'))
-            console.error(e)
+
         } finally {
             setUploading(false)
         }
@@ -143,11 +143,10 @@ export function MediaUploader({ onUploadComplete, onClose, type = 'image' }: Med
                             onDragOver={handleDrag}
                             onDrop={handleDrop}
                             onClick={() => fileInputRef.current?.click()}
-                            className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${
-                                dragActive
+                            className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all ${dragActive
                                     ? 'border-purple-500 bg-purple-500/10'
                                     : 'border-slate-600/30 hover:border-zinc-600'
-                            }`}
+                                }`}
                         >
                             <div className="flex flex-col items-center gap-4">
                                 {type === 'image' ? (

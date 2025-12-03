@@ -73,7 +73,7 @@ export function FileUpload({
 
       onUploadComplete?.(fileUrl, result.file);
     } catch (error) {
-      console.error('Upload error:', error);
+
       onUploadError?.(error as Error);
     } finally {
       setUploading(false);
@@ -221,7 +221,7 @@ export function FileDropzone({
 
       onUploadComplete?.(fileUrl, result.file);
     } catch (error) {
-      console.error('Upload error:', error);
+
       onUploadError?.(error as Error);
     } finally {
       setUploading(false);

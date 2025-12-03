@@ -6,28 +6,23 @@ import { FiMessageCircle, FiX, FiSend, FiLoader } from 'react-icons/fi'
 import { Button } from '@/components/ui/button'
 import { fetchAPI } from '@/lib/api'
 import toast from '@/lib/toast'
-
-interface Message {
-    role: 'user' | 'assistant'
-    content: string
-}
+import type { Message } from '@/lib/types'
+import { useAIModels } from '@/lib/hooks/use-ai-models'
 
 export function AIFloatingButton() {
     const [isOpen, setIsOpen] = useState(false)
     const [message, setMessage] = useState('')
     const [messages, setMessages] = useState<Message[]>([])
     const [loading, setLoading] = useState(false)
-    const [model, setModel] = useState('gemini-2.5-flash')
+    const { getDefaultModel, loading: modelsLoading } = useAIModels()
+    const [model, setModel] = useState('')
     const router = useRouter()
 
     useEffect(() => {
-        // Fetch default model from backend
-        fetchAPI('/ai/models').then(data => {
-            const allModels = data.flatMap((provider: any) => provider.models)
-            const available = allModels.find((m: any) => m.is_available)
-            if (available) setModel(available.model_name)
-        }).catch(() => { })
-    }, [])
+        if (!modelsLoading && !model) {
+            setModel(getDefaultModel())
+        }
+    }, [modelsLoading, getDefaultModel, model])
 
     const handleOpenFullChat = () => {
         router.push('/ai-assistant')
@@ -39,7 +34,12 @@ export function AIFloatingButton() {
 
         const userMessage = message
         setMessage('')
-        setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+        setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            role: 'user',
+            content: userMessage,
+            timestamp: new Date().toISOString()
+        }])
         setLoading(true)
 
         try {
@@ -52,7 +52,12 @@ export function AIFloatingButton() {
                 })
             })
 
-            setMessages(prev => [...prev, { role: 'assistant', content: response.response }])
+            setMessages(prev => [...prev, {
+                id: (Date.now() + 1).toString(),
+                role: 'assistant',
+                content: response.response,
+                timestamp: new Date().toISOString()
+            }])
         } catch (e: any) {
             toast.error('Failed to get response: ' + e.message)
         } finally {

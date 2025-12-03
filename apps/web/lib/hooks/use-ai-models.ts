@@ -10,6 +10,8 @@ export interface AIModel {
     capabilities: string[]
     max_tokens?: number
     description?: string
+    is_default?: boolean
+    is_recommended?: boolean
 }
 
 export interface AIProvider {
@@ -25,6 +27,7 @@ export interface UseAIModelsReturn {
     getModelsByProvider: (provider: string) => AIModel[]
     getAvailableModels: () => AIModel[]
     getModelOptions: () => { value: string; label: string; description?: string }[]
+    getDefaultModel: () => string
 }
 
 /**
@@ -44,10 +47,10 @@ export function useAIModels(): UseAIModelsReturn {
         try {
             setLoading(true)
             setError(null)
-            const data = await fetchAPI('/ai/models')
+            const data = await fetchAPI('/ai-providers/models')
             setProviders(data)
         } catch (err) {
-            console.error('Failed to load AI models:', err)
+
             setError(err instanceof Error ? err.message : 'Failed to load models')
         } finally {
             setLoading(false)
@@ -76,6 +79,12 @@ export function useAIModels(): UseAIModelsReturn {
         }))
     }
 
+    const getDefaultModel = () => {
+        const allModels = providers.flatMap(p => p.models)
+        const defaultModel = allModels.find(m => m.is_default)
+        return defaultModel?.model_name || allModels[0]?.model_name || 'gemini-2.5-flash'
+    }
+
     return {
         models,
         providers,
@@ -83,6 +92,7 @@ export function useAIModels(): UseAIModelsReturn {
         error,
         getModelsByProvider,
         getAvailableModels,
-        getModelOptions
+        getModelOptions,
+        getDefaultModel
     }
 }

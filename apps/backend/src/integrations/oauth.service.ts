@@ -10,16 +10,19 @@ export class OAuthService {
    * Generate OAuth URL for Facebook
    */
   getFacebookAuthUrl(clientId: string, state?: string): string {
-    const redirectUri = this.configService.get<string>(
-      'FACEBOOK_REDIRECT_URI',
-      'http://localhost:3000/oauth/callback/facebook',
-    );
+    const redirectUri =
+      this.configService.get<string>('FACEBOOK_REDIRECT_URI', {
+        infer: true,
+      }) || 'http://localhost:3000/oauth/callback/facebook';
 
     const scopes = [
       'pages_show_list',
       'pages_messaging',
       'pages_manage_metadata',
       'pages_read_engagement',
+      'instagram_basic',
+      'instagram_manage_messages',
+      'instagram_manage_comments',
     ].join(',');
 
     const params = new URLSearchParams({
@@ -44,10 +47,10 @@ export class OAuthService {
     accessToken: string;
     expiresIn?: number;
   }> {
-    const redirectUri = this.configService.get<string>(
-      'FACEBOOK_REDIRECT_URI',
-      'http://localhost:3000/oauth/callback/facebook',
-    );
+    const redirectUri =
+      this.configService.get<string>('FACEBOOK_REDIRECT_URI', {
+        infer: true,
+      }) || 'http://localhost:3000/oauth/callback/facebook';
 
     const params = new URLSearchParams({
       client_id: clientId,
@@ -84,10 +87,9 @@ export class OAuthService {
    * Generate OAuth URL for Google
    */
   getGoogleAuthUrl(clientId: string, state?: string): string {
-    const redirectUri = this.configService.get<string>(
-      'GOOGLE_REDIRECT_URI',
-      'http://localhost:3000/oauth/callback/google',
-    );
+    const redirectUri =
+      this.configService.get<string>('GOOGLE_REDIRECT_URI', { infer: true }) ||
+      'http://localhost:3000/oauth/callback/google';
 
     const scopes = ['https://www.googleapis.com/auth/business.manage'].join(
       ' ',
@@ -118,10 +120,9 @@ export class OAuthService {
     refreshToken?: string;
     expiresIn?: number;
   }> {
-    const redirectUri = this.configService.get<string>(
-      'GOOGLE_REDIRECT_URI',
-      'http://localhost:3000/oauth/callback/google',
-    );
+    const redirectUri =
+      this.configService.get<string>('GOOGLE_REDIRECT_URI', { infer: true }) ||
+      'http://localhost:3000/oauth/callback/google';
 
     const response = await axios.post('https://oauth2.googleapis.com/token', {
       client_id: clientId,

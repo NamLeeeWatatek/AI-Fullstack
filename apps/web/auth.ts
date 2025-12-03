@@ -12,25 +12,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         state: { label: "State", type: "text" },
       },
       async authorize(credentials) {
-        console.log("🔐 [NextAuth] authorize() called");
-        console.log("📦 [NextAuth] credentials:", credentials);
-        
+
+
         try {
           if (!credentials?.code) {
-            console.error("❌ [NextAuth] No code provided");
+
             return null;
           }
 
-          console.log("✅ [NextAuth] Code received:", String(credentials.code).substring(0, 10) + "...");
+
 
           // Gọi API backend để lấy token từ Casdoor
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-          console.log("🔍 [NextAuth] NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
-          console.log("🔍 [NextAuth] apiUrl:", apiUrl);
+
           const backendUrl = `${apiUrl}/auth/casdoor/callback`;
-          
-          console.log("🌐 [NextAuth] Calling backend:", backendUrl);
-          console.log("📤 [NextAuth] Request body:", { code: credentials.code, state: credentials.state });
+
+
 
           const response = await fetch(backendUrl, {
             method: "POST",
@@ -43,36 +40,38 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             }),
           });
 
-          console.log("📥 [NextAuth] Backend response status:", response.status);
+
 
           if (!response.ok) {
             const errorText = await response.text();
-            console.error("❌ [NextAuth] Backend error:", errorText);
+
             return null;
           }
 
           const data = await response.json();
-          console.log("✅ [NextAuth] Backend response data:", data);
-          console.log("👤 [NextAuth] User email:", data.user?.email);
-          console.log("🔑 [NextAuth] Token:", data.token ? `${data.token.substring(0, 20)}...` : 'NO TOKEN');
 
-          // Backend trả về { token, refreshToken, user }
+
+
+          // Backend trả về { token, refreshToken, user, workspace, workspaces }
+          // Priority: name > firstName > email
+          const userName = data.user.name || data.user.firstName || data.user.email;
+
           const user = {
             id: String(data.user.id),
             email: data.user.email,
-            name: data.user.firstName || data.user.email,
+            name: userName,
             accessToken: data.token, // Backend trả về 'token' chứ không phải 'access_token'
             refreshToken: data.refreshToken,
+            workspace: data.workspace, // Current workspace
+            workspaces: data.workspaces, // All workspaces
           };
-          
-          console.log("✅ [NextAuth] Returning user:", user);
-          console.log("🔑 [NextAuth] User accessToken:", user.accessToken ? `${user.accessToken.substring(0, 20)}...` : 'NO TOKEN');
+
+
           return user;
         } catch (error) {
-          console.error("❌ [NextAuth] Auth error:", error);
+
           if (error instanceof Error) {
-            console.error("❌ [NextAuth] Error message:", error.message);
-            console.error("❌ [NextAuth] Error stack:", error.stack);
+
           }
           return null;
         }
@@ -86,6 +85,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.accessToken = (user as any).accessToken;
         token.refreshToken = (user as any).refreshToken;
         token.id = user.id;
+        token.workspace = (user as any).workspace;
+        token.workspaces = (user as any).workspaces;
       }
       return token;
     },
@@ -96,6 +97,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       (session as any).accessToken = token.accessToken as string;
       (session as any).refreshToken = token.refreshToken as string;
+      (session as any).workspace = token.workspace;
+      (session as any).workspaces = token.workspaces;
       return session;
     },
   },
@@ -111,9 +114,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: true,
 });
 
-// Debug log
-if (!process.env.NEXTAUTH_SECRET) {
-  console.error("⚠️ NEXTAUTH_SECRET is not set!");
-} else {
-  console.log("✅ NEXTAUTH_SECRET is set (length:", process.env.NEXTAUTH_SECRET.length, ")");
-}
+

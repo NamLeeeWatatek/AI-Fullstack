@@ -18,9 +18,7 @@ export class TelegramService {
   /**
    * Send message via Telegram
    */
-  async sendMessage(
-    options: SendMessageOptions,
-  ): Promise<SendMessageResult> {
+  async sendMessage(options: SendMessageOptions): Promise<SendMessageResult> {
     try {
       const { recipientId, message, channelId } = options;
 
@@ -59,9 +57,7 @@ export class TelegramService {
       const data = await response.json();
 
       if (!data.ok) {
-        this.logger.error(
-          `Telegram API error: ${JSON.stringify(data)}`,
-        );
+        this.logger.error(`Telegram API error: ${JSON.stringify(data)}`);
         return {
           success: false,
           error: data.description || 'Failed to send message',

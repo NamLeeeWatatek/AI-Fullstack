@@ -1,21 +1,25 @@
 import { Exclude, Expose } from 'class-transformer';
-import { Role } from '../../roles/domain/role';
-import { Status } from '../../statuses/domain/status';
-import { FileType } from '../../files/domain/file';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+/**
+ * User domain entity - theo schema mới
+ * Table: users
+ * Fields: id, email, name, avatar_url, password_hash, provider, provider_id,
+ *         email_verified_at, is_active, deleted_at, created_at, updated_at
+ */
 export class User {
-  @ApiProperty({
-    type: String,
-  })
+  @ApiProperty({ type: String })
   id: string;
 
-  @ApiProperty({
-    type: String,
-    example: 'john.doe@example.com',
-  })
+  @ApiProperty({ type: String, example: 'john.doe@example.com' })
   @Expose({ groups: ['me', 'admin'] })
   email: string | null;
+
+  @ApiProperty({ type: String, example: 'John Doe' })
+  name: string | null;
+
+  @ApiPropertyOptional({ type: String, description: 'Avatar URL' })
+  avatarUrl?: string | null;
 
   @Exclude({ toPlainOnly: true })
   password?: string;
@@ -23,89 +27,56 @@ export class User {
   @Exclude({ toPlainOnly: true })
   previousPassword?: string;
 
-  @ApiProperty({
-    type: String,
-    example: 'email',
-  })
+  @ApiProperty({ type: String, example: 'email' })
   @Expose({ groups: ['me', 'admin'] })
   provider: string;
 
-  @ApiPropertyOptional({
-    type: String,
-    example: '1234567890',
-  })
+  @ApiPropertyOptional({ type: String, example: '1234567890' })
   @Expose({ groups: ['me', 'admin'] })
+  providerId?: string | null;
+
+  @ApiPropertyOptional({ type: Date, description: 'Email verified timestamp' })
+  @Expose({ groups: ['me', 'admin'] })
+  emailVerifiedAt?: Date | null;
+
+  @ApiProperty({ type: Boolean, default: true })
+  isActive: boolean;
+
+  @ApiProperty({
+    type: String,
+    enum: ['admin', 'user'],
+    default: 'user',
+    description: 'User role',
+  })
+  role: 'admin' | 'user';
+
+  // Legacy fields - giữ lại để backward compatibility
+  @ApiPropertyOptional({ type: String, deprecated: true })
+  firstName?: string | null;
+
+  @ApiPropertyOptional({ type: String, deprecated: true })
+  lastName?: string | null;
+
+  @ApiPropertyOptional({ type: String, deprecated: true })
   socialId?: string | null;
 
-  @ApiProperty({
-    type: String,
-    example: 'John',
-  })
-  firstName: string | null;
-
-  @ApiProperty({
-    type: String,
-    example: 'Doe',
-  })
-  lastName: string | null;
-
-  @ApiPropertyOptional({
-    type: () => FileType,
-  })
-  photo?: FileType | null;
-
-  @ApiProperty({
-    type: () => Role,
-  })
-  role?: Role | null;
-
-  @ApiProperty({
-    type: () => Status,
-  })
-  status?: Status;
-
   // WataOmi specific fields
-  @ApiPropertyOptional({
-    type: String,
-    description: 'Casdoor external ID',
-  })
+  @ApiPropertyOptional({ type: String, description: 'Casdoor external ID' })
   externalId?: string | null;
 
-  @ApiPropertyOptional({
-    type: String,
-    description: 'Casdoor user ID',
-  })
+  @ApiPropertyOptional({ type: String, description: 'Casdoor user ID' })
   casdoorId?: string | null;
 
-  @ApiPropertyOptional({
-    type: String,
-    description: 'User avatar URL',
-  })
-  avatar?: string | null;
-
-  @ApiPropertyOptional({
-    type: Object,
-    description: 'Custom permissions',
-  })
+  @ApiPropertyOptional({ type: Object, description: 'Custom permissions' })
   permissions?: Record<string, any>;
 
-  @ApiPropertyOptional({
-    type: Date,
-    description: 'Last login timestamp',
-  })
+  @ApiPropertyOptional({ type: Date, description: 'Last login timestamp' })
   lastLogin?: Date | null;
 
-  @ApiPropertyOptional({
-    type: Number,
-    description: 'Failed login attempts count',
-    default: 0,
-  })
+  @ApiPropertyOptional({ type: Number, default: 0 })
   failedLoginAttempts?: number;
 
-  @ApiPropertyOptional({
-    type: Date,
-    description: 'Account locked until timestamp',
-  })
+  @ApiPropertyOptional({ type: Date })
   lockedUntil?: Date | null;
 
   @ApiProperty()
@@ -114,6 +85,6 @@ export class User {
   @ApiProperty()
   updatedAt: Date;
 
-  @ApiProperty()
-  deletedAt: Date;
+  @ApiPropertyOptional()
+  deletedAt?: Date | null;
 }

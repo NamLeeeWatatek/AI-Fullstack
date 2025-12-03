@@ -14,6 +14,9 @@ interface ModelConfig {
     is_available: boolean;
     capabilities: string[];
     max_tokens: number;
+    is_recommended?: boolean;
+    is_default?: boolean;
+    description?: string;
 }
 
 interface ProviderModels {
@@ -29,10 +32,10 @@ export default function AIModelsPage() {
     useEffect(() => {
         const loadModels = async () => {
             try {
-                const data = await fetchAPI('/ai/models');
+                const data = await fetchAPI('/ai-providers/models');
                 setProviders(data);
             } catch (err) {
-                console.error("Failed to load models:", err);
+
                 setError("Failed to load model configurations.");
             } finally {
                 setLoading(false);
@@ -94,50 +97,50 @@ export default function AIModelsPage() {
 
                             <div className="divide-y divide-border/40">
                                 {(providerGroup.models || []).map((model) => (
-                                <div key={model.model_name} className="p-6 hover:bg-muted/30 transition-colors group">
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div>
-                                            <div className="flex items-center gap-3 mb-1">
-                                                <h4 className="text-base font-medium group-hover:text-primary transition-colors">
-                                                    {model.display_name}
-                                                </h4>
-                                                {(model.model_name === 'gemini-2.5-flash' || model.model_name === 'gemini-2.5-pro') && (
-                                                    <Badge variant="default" className="text-[10px] font-bold bg-blue-500/10 text-blue-500 border-blue-500/20">
-                                                        RECOMMENDED
-                                                    </Badge>
-                                                )}
+                                    <div key={model.model_name} className="p-6 hover:bg-muted/30 transition-colors group">
+                                        <div className="flex items-start justify-between mb-4">
+                                            <div>
+                                                <div className="flex items-center gap-3 mb-1">
+                                                    <h4 className="text-base font-medium group-hover:text-primary transition-colors">
+                                                        {model.display_name}
+                                                    </h4>
+                                                    {model.is_recommended && (
+                                                        <Badge variant="default" className="text-[10px] font-bold bg-blue-500/10 text-blue-500 border-blue-500/20">
+                                                            RECOMMENDED
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <code className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                                    {model.model_name}
+                                                </code>
                                             </div>
-                                            <code className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                                {model.model_name}
-                                            </code>
-                                        </div>
-                                        <Badge variant={model.is_available ? 'success' : 'default'}>
-                                            {model.is_available ? 'Active' : 'Not Configured'}
-                                        </Badge>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2 mt-4">
-                                        {(model.capabilities || []).map((cap) => (
-                                            <Badge key={cap} variant="outline" className="text-xs">
-                                                {cap}
+                                            <Badge variant={model.is_available ? 'default' : 'secondary'} className={model.is_available ? 'bg-green-500 hover:bg-green-600' : ''}>
+                                                {model.is_available ? 'Active' : 'Not Configured'}
                                             </Badge>
-                                        ))}
-                                        <Badge variant="outline" className="text-xs">
-                                            {(model.max_tokens || 0).toLocaleString()} tokens
-                                        </Badge>
-                                    </div>
-                                    
-                                    {!model.is_available && (
-                                        <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                                            <p className="text-xs text-amber-600 dark:text-amber-400">
-                                                <strong>Setup Required:</strong> Configure {providerGroup.provider.toUpperCase()}_API_KEY in environment variables
-                                            </p>
                                         </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </Card>
+
+                                        <div className="flex flex-wrap gap-2 mt-4">
+                                            {(model.capabilities || []).map((cap) => (
+                                                <Badge key={cap} variant="outline" className="text-xs">
+                                                    {cap}
+                                                </Badge>
+                                            ))}
+                                            <Badge variant="outline" className="text-xs">
+                                                {(model.max_tokens || 0).toLocaleString()} tokens
+                                            </Badge>
+                                        </div>
+
+                                        {!model.is_available && (
+                                            <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                                    <strong>Setup Required:</strong> Configure {providerGroup.provider.toUpperCase()}_API_KEY in environment variables
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
                     ))
                 )}
             </div>
@@ -151,44 +154,30 @@ export default function AIModelsPage() {
                             <span className="text-sm text-muted-foreground">Platform</span>
                             <span className="text-sm font-medium">WataOmi - One AI. Every Channel. Zero Code.</span>
                         </div>
-                        <div className="flex justify-between items-center py-2 border-b border-border/40">
-                            <span className="text-sm text-muted-foreground">Version</span>
-                            <Badge variant="default">v1.0.0</Badge>
-                        </div>
-                        <div className="flex justify-between items-center py-2 border-b border-border/40">
-                            <span className="text-sm text-muted-foreground">API Status</span>
-                            <Badge variant="success">Connected</Badge>
-                        </div>
-                        <div className="flex justify-between items-center py-2">
-                            <span className="text-sm text-muted-foreground">Active Models</span>
-                            <Badge variant="default">
-                                {providers.reduce((acc, p) => acc + (p.models?.filter(m => m.is_available).length || 0), 0)} Available
-                            </Badge>
-                        </div>
                     </div>
                 </Card>
 
                 <Card className="p-6">
                     <h2 className="text-xl font-semibold mb-4">Quick Links</h2>
                     <div className="grid gap-3">
-                        <a 
-                            href="/api/docs" 
+                        <a
+                            href="/api/docs"
                             target="_blank"
                             className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"
                         >
                             <span className="text-sm font-medium group-hover:text-primary">API Documentation</span>
                             <span className="text-xs text-muted-foreground">→</span>
                         </a>
-                        <a 
-                            href="https://github.com/wataomi/wataomi" 
+                        <a
+                            href="https://github.com/wataomi/wataomi"
                             target="_blank"
                             className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"
                         >
                             <span className="text-sm font-medium group-hover:text-primary">GitHub Repository</span>
                             <span className="text-xs text-muted-foreground">→</span>
                         </a>
-                        <a 
-                            href="/knowledge-base" 
+                        <a
+                            href="/knowledge-base"
                             className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"
                         >
                             <span className="text-sm font-medium group-hover:text-primary">Knowledge Base</span>

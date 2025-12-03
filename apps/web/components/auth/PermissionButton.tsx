@@ -6,31 +6,7 @@
 
 import { ReactNode } from 'react'
 import { usePermissions } from '@/lib/hooks/usePermissions'
-import type { ResourceType } from '@/lib/types/permissions'
-
-interface PermissionButtonProps {
-  children: ReactNode
-  onClick?: () => void
-  className?: string
-  
-  // Permission checks
-  permission?: string
-  permissions?: string[]
-  requireAll?: boolean
-  
-  // Resource checks
-  resource?: ResourceType
-  action?: 'create' | 'read' | 'update' | 'delete'
-  
-  // Behavior
-  hideIfNoPermission?: boolean // Hide button instead of disabling
-  disabledMessage?: string
-  
-  // Button props
-  disabled?: boolean
-  type?: 'button' | 'submit' | 'reset'
-  variant?: 'default' | 'destructive' | 'outline' | 'ghost'
-}
+import type { ResourceType, PermissionButtonProps } from '@/lib/types'
 
 export function PermissionButton({
   children,

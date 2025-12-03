@@ -15,7 +15,7 @@ export class SessionRelationalRepository implements SessionRepository {
   constructor(
     @InjectRepository(SessionEntity)
     private readonly sessionRepository: Repository<SessionEntity>,
-  ) { }
+  ) {}
 
   async findById(id: Session['id']): Promise<NullableType<Session>> {
     const entity = await this.sessionRepository.findOne({

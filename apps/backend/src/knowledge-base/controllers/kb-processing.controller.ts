@@ -1,0 +1,50 @@
+import { Controller, Get, Param, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import { KBProcessingQueueService } from '../services/kb-processing-queue.service';
+
+@ApiTags('Knowledge Base - Processing')
+@ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'))
+@Controller({ path: 'knowledge-bases', version: '1' })
+export class KBProcessingController {
+  constructor(private readonly processingQueue: KBProcessingQueueService) {}
+
+  @Get(':id/processing-status')
+  @ApiOperation({ summary: 'Get processing status for knowledge base' })
+  async getProcessingStatus(@Param('id') id: string, @Request() req) {
+    const jobs = this.processingQueue.getJobsByKnowledgeBase(id);
+    return {
+      jobs: jobs.map((job) => ({
+        jobId: job.id,
+        documentId: job.documentId,
+        documentName: (job as any).documentName,
+        knowledgeBaseId: job.knowledgeBaseId,
+        status: job.status,
+        progress: job.progress,
+        totalChunks: job.totalChunks,
+        processedChunks: job.processedChunks,
+        error: job.error,
+      })),
+    };
+  }
+
+  @Get('processing/active')
+  @ApiOperation({ summary: 'Get all active processing jobs' })
+  async getActiveJobs(@Request() req) {
+    const jobs = this.processingQueue.getActiveJobs();
+    return {
+      jobs: jobs.map((job) => ({
+        jobId: job.id,
+        documentId: job.documentId,
+        documentName: (job as any).documentName,
+        knowledgeBaseId: job.knowledgeBaseId,
+        status: job.status,
+        progress: job.progress,
+        totalChunks: job.totalChunks,
+        processedChunks: job.processedChunks,
+        error: job.error,
+      })),
+    };
+  }
+}

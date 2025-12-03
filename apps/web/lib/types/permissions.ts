@@ -3,7 +3,7 @@
  * Matches backend RBAC system
  */
 
-export type Role = 
+export type Role =
   | 'super_admin'
   | 'admin'
   | 'manager'
@@ -11,7 +11,7 @@ export type Role =
   | 'viewer'
   | 'user'
 
-export type ResourceType = 
+export type ResourceType =
   | 'user'
   | 'flow'
   | 'template'
@@ -92,4 +92,62 @@ export interface ResourcePermissions {
   can_update: boolean
   can_delete: boolean
   can_list: boolean
+}
+
+// Permission Components
+export interface RoleBadgeProps {
+  role?: Role
+  className?: string
+  variant?: 'default' | 'outline'
+}
+
+export interface PermissionGateProps {
+  children: React.ReactNode
+  fallback?: React.ReactNode
+
+  // Permission checks
+  permission?: string
+  permissions?: string[]
+  requireAll?: boolean
+
+  // Resource checks
+  resource?: ResourceType
+  action?: 'create' | 'read' | 'update' | 'delete'
+
+  // Widget checks
+  widget?: string
+
+  // Feature checks
+  feature?: string
+
+  // Role checks
+  requireAdmin?: boolean
+  requireSuperAdmin?: boolean
+
+  // Loading state
+  showLoadingFallback?: boolean
+}
+
+export interface PermissionButtonProps {
+  children: React.ReactNode
+  onClick?: () => void
+  className?: string
+
+  // Permission checks
+  permission?: string
+  permissions?: string[]
+  requireAll?: boolean
+
+  // Resource checks
+  resource?: ResourceType
+  action?: 'create' | 'read' | 'update' | 'delete'
+
+  // Behavior
+  hideIfNoPermission?: boolean
+  disabledMessage?: string
+
+  // Button props
+  disabled?: boolean
+  type?: 'button' | 'submit' | 'reset'
+  variant?: 'default' | 'destructive' | 'outline' | 'ghost'
 }

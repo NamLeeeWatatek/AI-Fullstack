@@ -70,7 +70,7 @@ export default function LoginPage() {
 
             window.location.href = casdoorLoginUrl
         } catch (error) {
-            console.error('Login error:', error)
+
             setConfigError('Failed to initialize Casdoor login. Please check the console for details.')
             setShowSetupGuide(true)
         }

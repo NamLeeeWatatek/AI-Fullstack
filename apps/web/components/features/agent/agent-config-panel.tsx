@@ -48,15 +48,21 @@ export function AgentConfigPanel({ flowId, onClose, onSave }: AgentConfigPanelPr
         system_prompt: 'You are a helpful AI assistant.',
         temperature: 0.7,
         max_tokens: 150,
-        model: 'gemini-2.5-flash'
+        model: ''
     })
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-    const { getModelOptions } = useAIModels()
+    const { getModelOptions, getDefaultModel, loading: modelsLoading } = useAIModels()
 
     useEffect(() => {
         loadConfig()
     }, [flowId])
+
+    useEffect(() => {
+        if (!modelsLoading && !config.model) {
+            setConfig(prev => ({ ...prev, model: getDefaultModel() }))
+        }
+    }, [modelsLoading, config.model, getDefaultModel])
 
     const loadConfig = async () => {
         try {
@@ -65,7 +71,7 @@ export function AgentConfigPanel({ flowId, onClose, onSave }: AgentConfigPanelPr
             setConfig(data)
         } catch (e: any) {
             // Config doesn't exist yet, use defaults
-            console.log('No existing config, using defaults')
+
         } finally {
             setLoading(false)
         }
@@ -94,7 +100,7 @@ export function AgentConfigPanel({ flowId, onClose, onSave }: AgentConfigPanelPr
             onClose()
         } catch (e: any) {
             toast.error('Failed to save configuration')
-            console.error(e)
+
         } finally {
             setSaving(false)
         }

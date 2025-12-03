@@ -3,21 +3,7 @@
 import { useState } from 'react'
 import { FiChevronRight, FiChevronDown } from 'react-icons/fi'
 import { cn } from '@/lib/utils'
-
-interface TreeNode {
-  id: string
-  label: React.ReactNode
-  children?: TreeNode[]
-  actions?: React.ReactNode
-  icon?: React.ReactNode
-  badge?: React.ReactNode
-  isExpanded?: boolean
-}
-
-interface TreeTableProps {
-  data: TreeNode[]
-  className?: string
-}
+import type { TreeNode, TreeTableProps } from '@/lib/types'
 
 export function TreeTable({ data, className }: TreeTableProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set())

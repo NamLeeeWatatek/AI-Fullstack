@@ -1,6 +1,4 @@
-/**
- * Hook for real-time execution updates via WebSocket
- */
+
 import { useEffect, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { useSession } from 'next-auth/react'
@@ -30,7 +28,7 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
   const [connected, setConnected] = useState(false)
   const [executions, setExecutions] = useState<Map<string, ExecutionUpdate>>(new Map())
 
-  // Initialize socket connection
+
   useEffect(() => {
     if (!session?.accessToken) return
 
@@ -48,39 +46,35 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
     })
 
     newSocket.on('connect', () => {
-      console.log('✅ WebSocket connected')
+
       setConnected(true)
 
-      // Subscribe to flow executions if flowId provided
+
       if (flowId) {
         newSocket.emit('subscribe:flow', flowId)
       }
 
-      // Subscribe to specific execution if executionId provided
+
       if (executionId) {
         newSocket.emit('subscribe:execution', executionId)
       }
     })
 
     newSocket.on('disconnect', () => {
-      console.log('❌ WebSocket disconnected')
+
       setConnected(false)
     })
 
     newSocket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error)
+
       setConnected(false)
     })
 
-    // Listen for execution start
-    newSocket.on('execution:start', (data: any) => {
-      console.log('▶️ Execution started:', data)
-    })
 
-    // Listen for execution progress
+
+
+
     newSocket.on('execution:progress', (data: any) => {
-      console.log('📊 Execution progress:', data)
-      
       const update: ExecutionUpdate = {
         executionId: data.executionId,
         flowId: data.flowId,
@@ -98,10 +92,9 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
       onUpdate?.(update)
     })
 
-    // Listen for execution complete
+
+
     newSocket.on('execution:complete', (data: any) => {
-      console.log('✅ Execution completed:', data)
-      
       const update: ExecutionUpdate = {
         executionId: data.executionId,
         flowId: data.flowId || '',
@@ -119,10 +112,9 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
       onComplete?.(data.result)
     })
 
-    // Listen for execution error
+
+
     newSocket.on('execution:error', (data: any) => {
-      console.log('❌ Execution error:', data)
-      
       const update: ExecutionUpdate = {
         executionId: data.executionId,
         flowId: data.flowId || '',
@@ -140,18 +132,11 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
       onError?.(data.error)
     })
 
-    // Listen for node execution updates
-    newSocket.on('execution:node:start', (data: any) => {
-      console.log('🔵 Node started:', data)
-    })
 
-    newSocket.on('execution:node:complete', (data: any) => {
-      console.log('✅ Node completed:', data)
-    })
 
-    newSocket.on('execution:node:error', (data: any) => {
-      console.log('❌ Node error:', data)
-    })
+
+
+
 
     setSocket(newSocket)
 
@@ -160,7 +145,7 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
     }
   }, [session?.accessToken, flowId, executionId])
 
-  // Subscribe to a flow's executions
+
   const subscribeToFlow = useCallback(
     (flowId: string) => {
       if (socket && connected) {
@@ -170,7 +155,7 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
     [socket, connected]
   )
 
-  // Subscribe to a specific execution
+
   const subscribeToExecution = useCallback(
     (executionId: string) => {
       if (socket && connected) {
@@ -180,7 +165,7 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
     [socket, connected]
   )
 
-  // Unsubscribe from a flow
+
   const unsubscribeFromFlow = useCallback(
     (flowId: string) => {
       if (socket && connected) {
@@ -190,7 +175,7 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
     [socket, connected]
   )
 
-  // Get execution status
+
   const getExecution = useCallback(
     (executionId: string) => {
       return executions.get(executionId)

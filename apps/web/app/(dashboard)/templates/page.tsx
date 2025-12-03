@@ -74,7 +74,7 @@ export default function TemplatesPage() {
     const [showCreateDialog, setShowCreateDialog] = useState(false)
     const [editingTemplate, setEditingTemplate] = useState<Template | null>(null)
     const [deleteId, setDeleteId] = useState<number | null>(null)
-    
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -88,7 +88,7 @@ export default function TemplatesPage() {
     useEffect(() => {
         // Filter templates based on search
         if (searchQuery.trim()) {
-            const filtered = templates.filter(t => 
+            const filtered = templates.filter(t =>
                 t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 t.category?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -105,7 +105,7 @@ export default function TemplatesPage() {
             const data = await axiosClient.get('/templates/')
             setTemplates(Array.isArray(data) ? data : [])
         } catch (error: any) {
-            console.error('Failed to load templates:', error)
+
             toast.error('Failed to load templates')
             setTemplates([])
         } finally {
@@ -126,12 +126,12 @@ export default function TemplatesPage() {
                 nodes: template.nodes || [],
                 edges: template.edges || []
             }))
-            
+
             // Navigate to editor (editor will auto-load from Redux)
             router.push('/flows/new/edit')
             toast.success('Template loaded! Customize and save your workflow.')
         } catch (error) {
-            console.error('Failed to load template:', error)
+
             toast.error('Failed to load template')
         }
     }
@@ -157,7 +157,7 @@ export default function TemplatesPage() {
                 await axiosClient.put(`/templates/${editingTemplate.id}`, formData)
                 toast.success('Template updated!')
             }
-            
+
             setShowCreateDialog(false)
             setEditingTemplate(null)
             setFormData({ name: '', description: '', category: 'general' })

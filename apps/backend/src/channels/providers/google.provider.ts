@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios from 'axios';
 import {
   ChannelProvider,
   ChannelMessage,
@@ -17,10 +16,10 @@ export class GoogleProvider implements ChannelProvider {
   private readonly serviceAccountKey: string;
 
   constructor(private configService: ConfigService) {
-    this.serviceAccountKey = this.configService.get<string>(
-      'GOOGLE_SERVICE_ACCOUNT_KEY',
-      '',
-    );
+    this.serviceAccountKey =
+      this.configService.get<string>('GOOGLE_SERVICE_ACCOUNT_KEY', {
+        infer: true,
+      }) || '';
   }
 
   async sendMessage(message: ChannelMessage): Promise<ChannelMessageResponse> {
@@ -39,7 +38,7 @@ export class GoogleProvider implements ChannelProvider {
     }
   }
 
-  verifyWebhook(payload: any, signature: string): boolean {
+  verifyWebhook(): boolean {
     // TODO: Implement Google webhook verification
     return true;
   }

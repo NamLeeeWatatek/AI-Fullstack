@@ -62,8 +62,8 @@ export function useExecutionWebSocket(
 
             // Connect to Socket.IO first
             wsService.connect(namespace, async () => {
-                console.log('🔌 Connected to Socket.IO')
-                
+
+
                 // Now trigger execution via HTTP API
                 try {
                     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
@@ -81,9 +81,9 @@ export function useExecutionWebSocket(
                     }
 
                     const result = await response.json()
-                    console.log('✅ Execution started:', result.executionId)
+
                 } catch (error) {
-                    console.error('❌ Failed to start execution:', error)
+
                     setError('Failed to start execution')
                     setIsExecuting(false)
                     wsService.disconnect(namespace)
@@ -93,28 +93,28 @@ export function useExecutionWebSocket(
 
             // Subscribe to events (match backend event types exactly)
             const unsubscribeStart = wsService.on(namespace, 'execution:start', (data) => {
-                console.log('🎬 Execution started:', data)
+
             })
 
             const unsubscribeNodeStart = wsService.on(namespace, 'execution:node:start', (data) => {
-                console.log('⏳ Node starting:', data.nodeId)
+
                 updateNodeStatus(data.nodeId, 'running')
             })
 
             const unsubscribeNodeComplete = wsService.on(namespace, 'execution:node:complete', (data) => {
-                console.log('✅ Node completed:', data.nodeId)
+
                 updateNodeStatus(data.nodeId, 'success', data)
             })
 
             const unsubscribeNodeError = wsService.on(namespace, 'execution:node:error', (data) => {
-                console.log('❌ Node failed:', data.nodeId, data.error)
+
                 updateNodeStatus(data.nodeId, 'error', data)
             })
 
             const unsubscribeComplete = wsService.on(namespace, 'execution:complete', (data) => {
-                console.log('🏁 Execution finished:', data)
+
                 setIsExecuting(false)
-                
+
                 // Cleanup
                 unsubscribeStart()
                 unsubscribeNodeStart()
@@ -122,16 +122,16 @@ export function useExecutionWebSocket(
                 unsubscribeNodeError()
                 unsubscribeComplete()
                 unsubscribeError()
-                
+
                 wsService.disconnect(namespace)
                 resolve()
             })
 
             const unsubscribeError = wsService.on(namespace, 'execution:error', (data) => {
-                console.log('💥 Execution error:', data.error)
+
                 setError(data.error)
                 setIsExecuting(false)
-                
+
                 // Cleanup
                 unsubscribeStart()
                 unsubscribeNodeStart()
@@ -139,14 +139,14 @@ export function useExecutionWebSocket(
                 unsubscribeNodeError()
                 unsubscribeComplete()
                 unsubscribeError()
-                
+
                 wsService.disconnect(namespace)
                 reject(new Error(data.error))
             })
 
             // Handle connection errors
             wsService.onError(namespace, (error) => {
-                console.error('❌ Socket.IO connection error:', error)
+
                 setError('Socket.IO connection error')
                 setIsExecuting(false)
                 reject(new Error('Socket.IO connection error'))

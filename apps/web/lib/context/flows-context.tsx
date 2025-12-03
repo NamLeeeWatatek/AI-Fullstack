@@ -1,17 +1,17 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react'
-import { 
-  Flow, 
+import {
+  Flow,
   FlowCreateData,
   FlowUpdateData,
-  fetchFlows, 
-  fetchFlow, 
-  createFlow, 
-  updateFlow, 
-  deleteFlow, 
-  duplicateFlow, 
-  archiveFlow 
+  fetchFlows,
+  fetchFlow,
+  createFlow,
+  updateFlow,
+  deleteFlow,
+  duplicateFlow,
+  archiveFlow
 } from '@/lib/api/flows'
 import toast from '@/lib/toast'
 
@@ -19,13 +19,13 @@ interface FlowsContextType {
   flows: Flow[]
   loading: boolean
   error: string | null
-  
+
   // Read operations
   getFlow: (id: number) => Flow | undefined
   getFlowsByStatus: (status: string) => Flow[]
   refreshFlows: () => Promise<void>
   refreshSingleFlow: (id: number) => Promise<Flow>
-  
+
   // Write operations
   createNewFlow: (data: FlowCreateData) => Promise<Flow>
   updateExistingFlow: (id: number, data: FlowUpdateData) => Promise<Flow>
@@ -49,7 +49,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
       const data = await fetchFlows()
       setFlows(data)
     } catch (err: any) {
-      console.error('Failed to load flows:', err)
+
       setError(err.message || 'Failed to load flows')
       throw err
     } finally {
@@ -81,7 +81,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
       })
       return updated
     } catch (err: any) {
-      console.error(`Failed to refresh flow ${id}:`, err)
+
       throw err
     }
   }, [])
@@ -94,7 +94,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
       toast.success('Workflow created successfully')
       return newFlow
     } catch (err: any) {
-      console.error('Failed to create flow:', err)
+
       toast.error(err.message || 'Failed to create workflow')
       throw err
     }
@@ -114,7 +114,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       // Rollback on error
       setFlows(previousFlows)
-      console.error('Failed to update flow:', err)
+
       toast.error(err.message || 'Failed to update workflow')
       throw err
     }
@@ -132,7 +132,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       // Rollback on error
       setFlows(previousFlows)
-      console.error('Failed to delete flow:', err)
+
       toast.error(err.message || 'Failed to delete workflow')
       throw err
     }
@@ -146,7 +146,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
       toast.success('Workflow duplicated successfully')
       return duplicated
     } catch (err: any) {
-      console.error('Failed to duplicate flow:', err)
+
       toast.error(err.message || 'Failed to duplicate workflow')
       throw err
     }
@@ -160,7 +160,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
       toast.success('Workflow archived successfully')
       return archived
     } catch (err: any) {
-      console.error('Failed to archive flow:', err)
+
       toast.error(err.message || 'Failed to archive workflow')
       throw err
     }

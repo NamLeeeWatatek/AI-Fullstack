@@ -31,9 +31,7 @@ export class MessengerService {
   /**
    * Send message via Facebook Messenger
    */
-  async sendMessage(
-    options: SendMessageOptions,
-  ): Promise<SendMessageResult> {
+  async sendMessage(options: SendMessageOptions): Promise<SendMessageResult> {
     try {
       const { recipientId, message, channelId } = options;
 
@@ -72,9 +70,7 @@ export class MessengerService {
       const data = await response.json();
 
       if (!response.ok) {
-        this.logger.error(
-          `Facebook API error: ${JSON.stringify(data)}`,
-        );
+        this.logger.error(`Facebook API error: ${JSON.stringify(data)}`);
         return {
           success: false,
           error: data.error?.message || 'Failed to send message',

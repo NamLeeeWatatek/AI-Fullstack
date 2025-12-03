@@ -26,25 +26,7 @@ import {
 } from 'react-icons/fi'
 import { FaWhatsapp, FaTelegram, FaFacebookMessenger, FaTiktok, FaDiscord, FaShopify, FaGoogle, FaLine, FaViber, FaWeixin } from 'react-icons/fa'
 import { SiZalo, SiNotion, SiAirtable, SiZapier, SiHubspot, SiSalesforce, SiMailchimp, SiIntercom } from 'react-icons/si'
-
-interface Channel {
-    id: number
-    name: string
-    type: string
-    icon?: string
-    status: string
-    connected_at: string
-}
-
-interface IntegrationConfig {
-    id: number
-    name?: string
-    provider: string
-    client_id: string
-    client_secret: string
-    scopes?: string
-    is_active: boolean
-}
+import type { Channel, IntegrationConfig } from '@/lib/types'
 
 export default function ChannelsPage() {
     const [channels, setChannels] = useState<Channel[]>([])
@@ -78,7 +60,7 @@ export default function ChannelsPage() {
             setConfigs(configsData)
 
         } catch (error) {
-            console.error(error)
+
         } finally {
             setLoading(false)
         }
@@ -98,7 +80,24 @@ export default function ChannelsPage() {
 
             // Get OAuth URL
             const configParam = configId ? `?configId=${configId}` : ''
-            const { url } = await fetchAPI(`/oauth/login/${provider}${configParam}`)
+            const response = await fetchAPI(`/oauth/login/${provider}${configParam}`)
+
+            // Check for error response
+            if (response.error) {
+                toast.error(response.error)
+                setConnecting(null)
+                return
+            }
+
+            const { url } = response
+
+            if (!url) {
+                toast.error('Failed to get OAuth URL')
+                setConnecting(null)
+                return
+            }
+
+
 
             // Open popup
             const width = 600
@@ -112,17 +111,29 @@ export default function ChannelsPage() {
                 `width=${width},height=${height},left=${left},top=${top}`
             )
 
+            if (!popup) {
+                toast.error('Popup blocked! Please allow popups for this site.')
+                setConnecting(null)
+                return
+            }
+
             // Listen for message from popup
             const messageHandler = (event: MessageEvent) => {
                 if (event.data?.status === 'success') {
                     toast.success(`Connected to ${event.data.channel}`)
-                    loadData()
                     popup?.close()
                     window.removeEventListener('message', messageHandler)
+
+                    // Delay reload to allow backend to create all channels (FB, Messenger, Instagram)
+                    setTimeout(() => {
+                        loadData()
+                        setConnecting(null)
+                    }, 1000)
                 } else if (event.data?.status === 'error') {
                     toast.error(`Connection failed: ${event.data.message}`)
                     popup?.close()
                     window.removeEventListener('message', messageHandler)
+                    setConnecting(null)
                 }
             }
 
@@ -201,6 +212,22 @@ export default function ChannelsPage() {
             loadData()
         } catch {
             toast.error('Failed to save configuration')
+        }
+    }
+
+    const [deleteConfigId, setDeleteConfigId] = useState<number | null>(null)
+
+    const handleDeleteConfig = async () => {
+        if (!deleteConfigId) return
+
+        try {
+            await fetchAPI(`/integrations/${deleteConfigId}`, { method: 'DELETE' })
+            toast.success('Configuration deleted')
+            loadData()
+        } catch {
+            toast.error('Failed to delete configuration')
+        } finally {
+            setDeleteConfigId(null)
         }
     }
 
@@ -625,6 +652,13 @@ export default function ChannelsPage() {
                                                         >
                                                             <FiSettings className="w-4 h-4" />
                                                         </button>
+                                                        <button
+                                                            onClick={() => setDeleteConfigId(config.id)}
+                                                            className="p-2 rounded-lg hover:bg-red-500/10 transition-colors text-muted-foreground hover:text-red-500"
+                                                            title="Delete Configuration"
+                                                        >
+                                                            <FiTrash2 className="w-4 h-4" />
+                                                        </button>
                                                     </div>
                                                 </div>
                                                 <h3 className="font-semibold text-xl mb-1.5">{config.name || channelInfo?.name || provider}</h3>
@@ -853,6 +887,18 @@ export default function ChannelsPage() {
                 confirmText="Disconnect"
                 cancelText="Cancel"
                 onConfirm={confirmDisconnect}
+                variant="destructive"
+            />
+
+            {/* Delete Config Confirmation Dialog */}
+            <AlertDialogConfirm
+                open={deleteConfigId !== null}
+                onOpenChange={(open) => !open && setDeleteConfigId(null)}
+                title="Delete Configuration"
+                description="Are you sure you want to delete this configuration? All connected channels using this config will be disconnected."
+                confirmText="Delete"
+                cancelText="Cancel"
+                onConfirm={handleDeleteConfig}
                 variant="destructive"
             />
         </div>

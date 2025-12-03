@@ -1,12 +1,17 @@
 import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateUserDto } from './create-user.dto';
-
-import { Transform, Type } from 'class-transformer';
-import { IsEmail, IsOptional, MinLength } from 'class-validator';
-import { FileDto } from '../../files/dto/file.dto';
-import { RoleDto } from '../../roles/dto/role.dto';
-import { StatusDto } from '../../statuses/dto/status.dto';
+import { Transform } from 'class-transformer';
+import {
+  IsEmail,
+  IsOptional,
+  MinLength,
+  IsBoolean,
+  IsEnum,
+  IsString,
+  IsDate,
+} from 'class-validator';
 import { lowerCaseTransformer } from '../../utils/transformers/lower-case.transformer';
+import { Type } from 'class-transformer';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
   @ApiPropertyOptional({ example: 'test1@example.com', type: String })
@@ -15,34 +20,60 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsEmail()
   email?: string | null;
 
+  @ApiPropertyOptional({ example: 'John Doe', type: String })
+  @IsOptional()
+  @IsString()
+  name?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg' })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @MinLength(6)
   password?: string;
 
+  @ApiPropertyOptional({ example: 'email' })
+  @IsOptional()
+  @IsString()
   provider?: string;
 
-  socialId?: string | null;
-
-  @ApiPropertyOptional({ example: 'John', type: String })
+  @ApiPropertyOptional({ example: '1234567890' })
   @IsOptional()
+  @IsString()
+  providerId?: string | null;
+
+  @ApiPropertyOptional({ type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiPropertyOptional({ enum: ['admin', 'user'] })
+  @IsOptional()
+  @IsEnum(['admin', 'user'])
+  role?: 'admin' | 'user';
+
+  @ApiPropertyOptional({ type: Date })
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate()
+  emailVerifiedAt?: Date | null;
+
+  // Legacy fields - backward compatibility
+  @ApiPropertyOptional({ example: 'John', deprecated: true })
+  @IsOptional()
+  @IsString()
   firstName?: string | null;
 
-  @ApiPropertyOptional({ example: 'Doe', type: String })
+  @ApiPropertyOptional({ example: 'Doe', deprecated: true })
   @IsOptional()
+  @IsString()
   lastName?: string | null;
 
-  @ApiPropertyOptional({ type: () => FileDto })
+  @ApiPropertyOptional({ deprecated: true })
   @IsOptional()
-  photo?: FileDto | null;
-
-  @ApiPropertyOptional({ type: () => RoleDto })
-  @IsOptional()
-  @Type(() => RoleDto)
-  role?: RoleDto | null;
-
-  @ApiPropertyOptional({ type: () => StatusDto })
-  @IsOptional()
-  @Type(() => StatusDto)
-  status?: StatusDto;
+  @IsString()
+  socialId?: string | null;
 }

@@ -2,22 +2,7 @@ import React, { useState } from 'react'
 import { FiX, FiUpload, FiPlay, FiCheck, FiFile } from 'react-icons/fi'
 import toast from '@/lib/toast'
 import { Button } from '@/components/ui/button'
-
-interface InputField {
-    id: string
-    label: string
-    key: string
-    type: 'text' | 'number' | 'boolean' | 'file'
-    required: boolean
-}
-
-interface WorkflowRunModalProps {
-    isOpen: boolean
-    onClose: () => void
-    onSubmit: (data: Record<string, any>) => void
-    inputFields: InputField[]
-    workflowName: string
-}
+import type { InputField, WorkflowRunModalProps } from '@/lib/types'
 
 export function WorkflowRunModal({ isOpen, onClose, onSubmit, inputFields, workflowName }: WorkflowRunModalProps) {
     const [formData, setFormData] = useState<Record<string, any>>({})

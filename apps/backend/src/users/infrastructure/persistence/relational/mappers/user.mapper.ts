@@ -1,7 +1,3 @@
-import { FileEntity } from '../../../../../files/infrastructure/persistence/relational/entities/file.entity';
-import { FileMapper } from '../../../../../files/infrastructure/persistence/relational/mappers/file.mapper';
-import { RoleEntity } from '../../../../../roles/infrastructure/persistence/relational/entities/role.entity';
-import { StatusEntity } from '../../../../../statuses/infrastructure/persistence/relational/entities/status.entity';
 import { User } from '../../../../domain/user';
 import { UserEntity } from '../entities/user.entity';
 
@@ -10,63 +6,76 @@ export class UserMapper {
     const domainEntity = new User();
     domainEntity.id = raw.id;
     domainEntity.email = raw.email;
+    domainEntity.name = raw.name;
+    domainEntity.avatarUrl = raw.avatarUrl;
     domainEntity.password = raw.password;
     domainEntity.provider = raw.provider;
-    domainEntity.socialId = raw.socialId;
+    domainEntity.providerId = raw.providerId;
+    domainEntity.emailVerifiedAt = raw.emailVerifiedAt;
+    domainEntity.isActive = raw.isActive;
+    domainEntity.role = raw.role;
+
+    // Legacy fields
     domainEntity.firstName = raw.firstName;
     domainEntity.lastName = raw.lastName;
-    if (raw.photo) {
-      domainEntity.photo = FileMapper.toDomain(raw.photo);
-    }
-    domainEntity.role = raw.role;
-    domainEntity.status = raw.status;
+    domainEntity.socialId = raw.socialId;
+
+    // WataOmi specific
+    domainEntity.externalId = raw.externalId;
+    domainEntity.casdoorId = raw.casdoorId;
+    domainEntity.permissions = raw.permissions;
+    domainEntity.lastLogin = raw.lastLogin;
+    domainEntity.failedLoginAttempts = raw.failedLoginAttempts;
+    domainEntity.lockedUntil = raw.lockedUntil;
+
     domainEntity.createdAt = raw.createdAt;
     domainEntity.updatedAt = raw.updatedAt;
     domainEntity.deletedAt = raw.deletedAt;
+
     return domainEntity;
   }
 
   static toPersistence(domainEntity: User): UserEntity {
-    let role: RoleEntity | undefined = undefined;
-
-    if (domainEntity.role) {
-      role = new RoleEntity();
-      role.id = Number(domainEntity.role.id);
-    }
-
-    let photo: FileEntity | undefined | null = undefined;
-
-    if (domainEntity.photo) {
-      photo = new FileEntity();
-      photo.id = domainEntity.photo.id;
-      photo.path = domainEntity.photo.path;
-    } else if (domainEntity.photo === null) {
-      photo = null;
-    }
-
-    let status: StatusEntity | undefined = undefined;
-
-    if (domainEntity.status) {
-      status = new StatusEntity();
-      status.id = Number(domainEntity.status.id);
-    }
-
     const persistenceEntity = new UserEntity();
-    if (domainEntity.id && typeof domainEntity.id === 'number') {
+
+    if (domainEntity.id) {
       persistenceEntity.id = domainEntity.id;
     }
+
     persistenceEntity.email = domainEntity.email;
+    persistenceEntity.name = domainEntity.name;
+    persistenceEntity.avatarUrl = domainEntity.avatarUrl;
     persistenceEntity.password = domainEntity.password;
     persistenceEntity.provider = domainEntity.provider;
-    persistenceEntity.socialId = domainEntity.socialId;
+    persistenceEntity.providerId = domainEntity.providerId;
+    persistenceEntity.emailVerifiedAt = domainEntity.emailVerifiedAt;
+    persistenceEntity.isActive = domainEntity.isActive ?? true;
+    persistenceEntity.role = domainEntity.role ?? 'user';
+
+    // Legacy fields
     persistenceEntity.firstName = domainEntity.firstName;
     persistenceEntity.lastName = domainEntity.lastName;
-    persistenceEntity.photo = photo;
-    persistenceEntity.role = role;
-    persistenceEntity.status = status;
-    persistenceEntity.createdAt = domainEntity.createdAt;
-    persistenceEntity.updatedAt = domainEntity.updatedAt;
-    persistenceEntity.deletedAt = domainEntity.deletedAt;
+    persistenceEntity.socialId = domainEntity.socialId;
+
+    // WataOmi specific
+    persistenceEntity.externalId = domainEntity.externalId;
+    persistenceEntity.casdoorId = domainEntity.casdoorId;
+    persistenceEntity.permissions = domainEntity.permissions;
+    persistenceEntity.lastLogin = domainEntity.lastLogin;
+    persistenceEntity.failedLoginAttempts =
+      domainEntity.failedLoginAttempts ?? 0;
+    persistenceEntity.lockedUntil = domainEntity.lockedUntil;
+
+    if (domainEntity.createdAt) {
+      persistenceEntity.createdAt = domainEntity.createdAt;
+    }
+    if (domainEntity.updatedAt) {
+      persistenceEntity.updatedAt = domainEntity.updatedAt;
+    }
+    if (domainEntity.deletedAt) {
+      persistenceEntity.deletedAt = domainEntity.deletedAt;
+    }
+
     return persistenceEntity;
   }
 }

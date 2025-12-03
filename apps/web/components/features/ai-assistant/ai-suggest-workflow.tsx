@@ -24,7 +24,7 @@ export function AISuggestWorkflow({ onSuggest }: AISuggestProps) {
 
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
-            
+
             // Get token from NextAuth session
             const { getSession } = await import('next-auth/react')
             const session = await getSession()
@@ -49,7 +49,7 @@ export function AISuggestWorkflow({ onSuggest }: AISuggestProps) {
             onSuggest(data)
             setDescription('')
         } catch (err) {
-            console.error('Error suggesting workflow:', err)
+
             setError('Failed to generate suggestion. Please try again.')
         } finally {
             setIsLoading(false)

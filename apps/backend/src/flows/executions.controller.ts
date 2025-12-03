@@ -5,7 +5,7 @@ import { ExecutionService } from './execution.service';
 @ApiTags('Executions')
 @Controller({ path: 'executions' })
 export class ExecutionsController {
-  constructor(private readonly executionService: ExecutionService) { }
+  constructor(private readonly executionService: ExecutionService) {}
 
   @Get()
   @ApiOperation({ summary: 'Get all executions' })

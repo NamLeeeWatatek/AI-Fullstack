@@ -19,9 +19,7 @@ export class InstagramService {
   /**
    * Send message via Instagram
    */
-  async sendMessage(
-    options: SendMessageOptions,
-  ): Promise<SendMessageResult> {
+  async sendMessage(options: SendMessageOptions): Promise<SendMessageResult> {
     try {
       const { recipientId, message, channelId } = options;
 
@@ -62,9 +60,7 @@ export class InstagramService {
       const data = await response.json();
 
       if (!response.ok) {
-        this.logger.error(
-          `Instagram API error: ${JSON.stringify(data)}`,
-        );
+        this.logger.error(`Instagram API error: ${JSON.stringify(data)}`);
         return {
           success: false,
           error: data.error?.message || 'Failed to send message',
