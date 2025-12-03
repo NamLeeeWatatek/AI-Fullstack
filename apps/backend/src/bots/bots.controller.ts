@@ -35,6 +35,10 @@ import { CreateBotFunctionDto } from './dto/create-bot-function.dto';
 import { UpdateBotFunctionDto } from './dto/update-bot-function.dto';
 import { ExecuteBotFunctionDto } from './dto/execute-bot-function.dto';
 import { Bot, FlowVersion, BotKnowledgeBase } from './domain/bot';
+import {
+  UpdateAppearanceDto,
+  AppearanceResponseDto,
+} from './dto/update-appearance.dto';
 
 @ApiTags('Bots')
 @ApiBearerAuth()
@@ -359,5 +363,26 @@ export class BotsController {
     @Body() body: { isActive: boolean },
   ) {
     return this.botsService.toggleBotChannel(id, channelId, body.isActive);
+  }
+
+  // Widget Appearance endpoints
+  @Get(':id/widget/appearance')
+  @ApiOperation({ summary: 'Get widget appearance settings' })
+  @ApiOkResponse({ type: AppearanceResponseDto })
+  @ApiParam({ name: 'id', type: String })
+  getAppearance(@Param('id') id: string) {
+    return this.botsService.getAppearance(id);
+  }
+
+  @Patch(':id/widget/appearance')
+  @ApiOperation({ summary: 'Update widget appearance settings' })
+  @ApiOkResponse({ description: 'Appearance updated successfully' })
+  @ApiParam({ name: 'id', type: String })
+  updateAppearance(
+    @Param('id') id: string,
+    @Body() dto: UpdateAppearanceDto,
+    @Request() req,
+  ) {
+    return this.botsService.updateAppearance(id, dto, req.user.id);
   }
 }

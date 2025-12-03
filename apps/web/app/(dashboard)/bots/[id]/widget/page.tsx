@@ -1,23 +1,66 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, History, Code } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, History, Code, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WidgetVersionsList } from '@/components/widget/widget-versions-list';
 import { WidgetDeploymentHistory } from '@/components/widget/widget-deployment-history';
 import { WidgetEmbedCode } from '@/components/widget/widget-embed-code';
+import { WidgetAppearanceSettings } from '@/components/widget/widget-appearance-settings';
 import { CreateVersionDialog } from '@/components/widget/create-version-dialog';
 import { useWidgetVersions, useWidgetDeployments } from '@/lib/hooks/use-widget-versions';
+import axiosClient from '@/lib/axios-client';
 
 export default function WidgetPage({ params }: { params: { id: string } }) {
     const [showCreateDialog, setShowCreateDialog] = useState(false);
+    const [botSettings, setBotSettings] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState('appearance');
 
     const { versions, isLoading: versionsLoading, mutate: mutateVersions } = useWidgetVersions(params.id);
     const { deployments, isLoading: deploymentsLoading } = useWidgetDeployments(params.id);
 
     // Get active version
     const activeVersion = versions?.find(v => v.isActive && v.status === 'published');
+
+    // Load appearance settings when component mounts or when switching to appearance tab
+    useEffect(() => {
+        if (activeTab === 'appearance') {
+            loadAppearanceSettings();
+        }
+    }, [params.id, activeTab]);
+
+    const loadAppearanceSettings = async () => {
+        try {
+            console.log('[Widget Page] Loading appearance settings...');
+            // Use new appearance API that reads from active widget version
+            const response = await axiosClient.get(`/bots/${params.id}/widget/appearance`);
+            console.log('[Widget Page] Appearance settings loaded:', response.data);
+            setBotSettings(response.data);
+        } catch (error) {
+            console.error('[Widget Page] Failed to load appearance settings:', error);
+        }
+    };
+
+    const handleSaveAppearance = async (settings: any) => {
+        // Use new appearance API that updates active widget version
+        await axiosClient.patch(`/bots/${params.id}/widget/appearance`, {
+            primaryColor: settings.primaryColor,
+            backgroundColor: settings.backgroundColor,
+            botMessageColor: settings.botMessageColor,
+            botMessageTextColor: settings.botMessageTextColor,
+            fontFamily: settings.fontFamily,
+            position: settings.widgetPosition,
+            buttonSize: settings.widgetButtonSize,
+            welcomeMessage: settings.welcomeMessage,
+            placeholderText: settings.placeholderText,
+            showAvatar: settings.showAvatar,
+            showTimestamp: settings.showTimestamp,
+        });
+        await loadAppearanceSettings();
+        // Refresh versions list to show new version
+        mutateVersions();
+    };
 
     return (
         <div className="container mx-auto p-6 max-w-7xl">
@@ -36,8 +79,12 @@ export default function WidgetPage({ params }: { params: { id: string } }) {
             </div>
 
             {/* Tabs */}
-            <Tabs defaultValue="embed" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList>
+                    <TabsTrigger value="appearance">
+                        <Palette className="w-4 h-4 mr-2" />
+                        Appearance
+                    </TabsTrigger>
                     <TabsTrigger value="embed">
                         <Code className="w-4 h-4 mr-2" />
                         Embed Code
@@ -48,6 +95,44 @@ export default function WidgetPage({ params }: { params: { id: string } }) {
                         Deployment History
                     </TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="appearance" className="space-y-4">
+                    {activeVersion && (
+                        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <p className="text-sm text-blue-900 dark:text-blue-100">
+                                <strong>Active Version:</strong> {activeVersion.version}
+                                {' • '}
+                                Updating appearance will create a new version automatically.
+                            </p>
+                        </div>
+                    )}
+                    {!botSettings ? (
+                        <div className="flex items-center justify-center p-8">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                                <p className="text-sm text-muted-foreground">Loading appearance settings...</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <WidgetAppearanceSettings
+                            botId={params.id}
+                            currentSettings={{
+                                primaryColor: botSettings.primaryColor,
+                                backgroundColor: botSettings.backgroundColor,
+                                botMessageColor: botSettings.botMessageColor,
+                                botMessageTextColor: botSettings.botMessageTextColor,
+                                fontFamily: botSettings.fontFamily,
+                                widgetPosition: botSettings.position,
+                                widgetButtonSize: botSettings.buttonSize,
+                                welcomeMessage: botSettings.welcomeMessage,
+                                placeholderText: botSettings.placeholderText,
+                                showAvatar: botSettings.showAvatar,
+                                showTimestamp: botSettings.showTimestamp,
+                            }}
+                            onSave={handleSaveAppearance}
+                        />
+                    )}
+                </TabsContent>
 
                 <TabsContent value="embed" className="space-y-4">
                     <WidgetEmbedCode

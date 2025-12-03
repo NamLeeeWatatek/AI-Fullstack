@@ -18,55 +18,38 @@ interface Props {
 
 export function WidgetEmbedCode({ botId, activeVersion }: Props) {
     const [copiedScript, setCopiedScript] = useState(false);
-    const [copiedReact, setCopiedReact] = useState(false);
+    const [copiedIframe, setCopiedIframe] = useState(false);
 
+    // Get URLs from environment variables
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const widgetUrl = `${baseUrl}/widget/${botId}`;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+    const widgetUrl = `${apiUrl}/public/widget/${botId}`;
 
-    // Script embed code
-    const scriptCode = `<!-- Chat Widget -->
-<script>
-  (function(w,d,s,o,f,js,fjs){
-    w['ChatWidget']=o;w[o] = w[o] || function () { (w[o].q = w[o].q || []).push(arguments) };
-    js = d.createElement(s), fjs = d.getElementsByTagName(s)[0];
-    js.id = o; js.src = f; js.async = 1; fjs.parentNode.insertBefore(js, fjs);
-  }(window, document, 'script', 'cw', '${widgetUrl}/widget.js'));
-  cw('init', { botId: '${botId}' });
-</script>`;
-
-    // React component code
-    const reactCode = `import { ChatWidget } from '@your-package/chat-widget';
-
-function App() {
-  return (
-    <div>
-      <ChatWidget 
-        botId="${botId}"
-        position="bottom-right"
-      />
-    </div>
-  );
-}`;
-
-    // iframe embed code
+    // Script embed code (versioned) - Uses backend URL
+    const scriptCode = `<script 
+    src="${widgetUrl}/loader.js"
+    data-bot-id="${botId}"
+    data-api-url="${apiUrl}"
+    async
+></script>`;
+    const publicBotUrl = `${baseUrl}/public/bots/${botId}`;
     const iframeCode = `<iframe
-  src="${widgetUrl}"
-  width="400"
-  height="600"
+  src="${publicBotUrl}"
+  width="100%"
+  height="100%"
   frameborder="0"
-  allow="microphone"
-  style="border: none; border-radius: 8px;"
+  style="border: none; min-height: 600px;"
 ></iframe>`;
 
-    const copyToClipboard = async (text: string, type: 'script' | 'react' | 'iframe') => {
+    const copyToClipboard = async (text: string, type: 'script' | 'iframe') => {
         try {
             await navigator.clipboard.writeText(text);
             if (type === 'script') {
                 setCopiedScript(true);
                 setTimeout(() => setCopiedScript(false), 2000);
-            } else if (type === 'react') {
-                setCopiedReact(true);
-                setTimeout(() => setCopiedReact(false), 2000);
+            } else if (type === 'iframe') {
+                setCopiedIframe(true);
+                setTimeout(() => setCopiedIframe(false), 2000);
             }
             toast.success('Copied to clipboard!');
         } catch (err) {
@@ -104,9 +87,8 @@ function App() {
 
             {/* Embed Options */}
             <Tabs defaultValue="script" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="script">Script Tag</TabsTrigger>
-                    <TabsTrigger value="react">React Component</TabsTrigger>
                     <TabsTrigger value="iframe">iFrame</TabsTrigger>
                 </TabsList>
 
@@ -114,7 +96,7 @@ function App() {
                 <TabsContent value="script" className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">HTML Script Tag</CardTitle>
+                            <CardTitle className="text-lg">HTML Script Tag (Recommended)</CardTitle>
                             <CardDescription>
                                 Add this code before the closing &lt;/body&gt; tag of your website
                             </CardDescription>
@@ -137,47 +119,6 @@ function App() {
                                     )}
                                 </Button>
                             </div>
-                            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-                                <p className="text-sm text-blue-900 dark:text-blue-100">
-                                    <strong>Note:</strong> The widget will appear as a floating chat button on the bottom-right corner of your website.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* React Component */}
-                <TabsContent value="react" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-lg">React Component</CardTitle>
-                            <CardDescription>
-                                Use this if you're building a React application
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="relative">
-                                <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-                                    <code>{reactCode}</code>
-                                </pre>
-                                <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="absolute top-2 right-2"
-                                    onClick={() => copyToClipboard(reactCode, 'react')}
-                                >
-                                    {copiedReact ? (
-                                        <Check className="w-4 h-4" />
-                                    ) : (
-                                        <Copy className="w-4 h-4" />
-                                    )}
-                                </Button>
-                            </div>
-                            <div className="bg-amber-50 dark:bg-amber-950 p-4 rounded-lg">
-                                <p className="text-sm text-amber-900 dark:text-amber-100">
-                                    <strong>Coming Soon:</strong> React package is under development. Use the Script Tag method for now.
-                                </p>
-                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -188,7 +129,7 @@ function App() {
                         <CardHeader>
                             <CardTitle className="text-lg">iFrame Embed</CardTitle>
                             <CardDescription>
-                                Embed the chat widget as an iframe in your page
+                                Same widget UI as Script Tag, but embedded as an iframe
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -202,13 +143,12 @@ function App() {
                                     className="absolute top-2 right-2"
                                     onClick={() => copyToClipboard(iframeCode, 'iframe')}
                                 >
-                                    <Copy className="w-4 h-4" />
+                                    {copiedIframe ? (
+                                        <Check className="w-4 h-4" />
+                                    ) : (
+                                        <Copy className="w-4 h-4" />
+                                    )}
                                 </Button>
-                            </div>
-                            <div className="bg-muted p-4 rounded-lg">
-                                <p className="text-sm text-muted-foreground">
-                                    <strong>Note:</strong> You can customize the width, height, and styling of the iframe to fit your needs.
-                                </p>
                             </div>
                         </CardContent>
                     </Card>
@@ -220,17 +160,46 @@ function App() {
                 <CardHeader>
                     <CardTitle className="text-lg">Test Your Widget</CardTitle>
                     <CardDescription>
-                        Open the widget in a new tab to test it
+                        Test the widget in different ways
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <Button
-                        variant="outline"
-                        onClick={() => window.open(widgetUrl, '_blank')}
-                    >
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Open Widget Preview
-                    </Button>
+                <CardContent className="space-y-3">
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => window.open(publicBotUrl, '_blank')}
+                        >
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Open Full Page Preview
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                const testHtml = `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Test</title>
+</head>
+<body>
+    <h1>Widget Test Page</h1>
+    <p>The widget should appear in the bottom-right corner.</p>
+    ${scriptCode}
+</body>
+</html>`;
+                                const blob = new Blob([testHtml], { type: 'text/html' });
+                                const url = URL.createObjectURL(blob);
+                                window.open(url, '_blank');
+                            }}
+                        >
+                            <Code className="w-4 h-4 mr-2" />
+                            Test Embed Code
+                        </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                        Active version: <span className="font-mono font-semibold">{activeVersion.version}</span>
+                    </div>
                 </CardContent>
             </Card>
         </div>

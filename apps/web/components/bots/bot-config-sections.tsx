@@ -173,19 +173,7 @@ Always ask clarifying questions to understand the issue better.`,
                         <span>{systemPrompt.length} characters</span>
                         <span>Recommended: 100-500 characters</span>
                     </div>
-                </div>
-
-                <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
-                    <h4 className="font-medium text-sm mb-2 text-blue-900 dark:text-blue-100">
-                        💡 Tips for writing effective prompts:
-                    </h4>
-                    <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-                        <li>• Be specific about the bot's role and responsibilities</li>
-                        <li>• Define the tone and personality (friendly, professional, etc.)</li>
-                        <li>• Include guidelines for handling edge cases</li>
-                        <li>• Specify when to escalate to human agents</li>
-                    </ul>
-                </div>
+                </div> 
             </CardContent>
         </Card>
     );

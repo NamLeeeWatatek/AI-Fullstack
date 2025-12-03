@@ -15,6 +15,7 @@ import {
 import { BotsService } from './bots.service';
 import { BotsController } from './bots.controller';
 import { PublicBotController } from './controllers/public-bot.controller';
+import { PublicWidgetController } from './controllers/public-widget.controller';
 import { WidgetVersionController } from './controllers/widget-version.controller';
 import { WidgetDeploymentController } from './controllers/widget-deployment.controller';
 import { PublicBotService } from './services/public-bot.service';
@@ -46,7 +47,7 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
     forwardRef(() => KnowledgeBaseModule),
     MessagingModule,
   ],
-  controllers: [BotsController, PublicBotController, WidgetVersionController, WidgetDeploymentController],
+  controllers: [BotsController, PublicBotController, PublicWidgetController, WidgetVersionController, WidgetDeploymentController],
   providers: [
     BotsService,
     PublicBotService,

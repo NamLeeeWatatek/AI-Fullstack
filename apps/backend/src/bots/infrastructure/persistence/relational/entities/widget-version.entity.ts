@@ -35,6 +35,10 @@ export class WidgetVersionEntity extends EntityRelationalHelper {
     config: {
         theme: {
             primaryColor: string;
+            backgroundColor?: string;
+            botMessageColor?: string;
+            botMessageTextColor?: string;
+            fontFamily?: string;
             position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
             buttonSize: 'small' | 'medium' | 'large';
             showAvatar: boolean;

@@ -73,10 +73,13 @@ export default function KnowledgeBaseCollectionsPage() {
     const loadKnowledgeBases = async () => {
         try {
             setLoading(true)
-            const data = await getKnowledgeBases(currentWorkspace?.id)
+            const response = await getKnowledgeBases(currentWorkspace?.id)
+            // Handle both direct array and response.data
+            const data = response?.data || response
             setKnowledgeBases(Array.isArray(data) ? data : [])
+            console.log('Loaded knowledge bases:', data)
         } catch (error) {
-
+            console.error('Failed to load knowledge bases:', error)
             toast.error('Failed to load knowledge bases')
         } finally {
             setLoading(false)

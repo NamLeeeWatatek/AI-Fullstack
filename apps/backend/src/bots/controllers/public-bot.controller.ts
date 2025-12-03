@@ -4,6 +4,7 @@ import {
     Post,
     Body,
     Param,
+    Query,
     Headers,
     HttpCode,
     HttpStatus,
@@ -12,6 +13,7 @@ import {
     ApiTags,
     ApiOperation,
     ApiParam,
+    ApiQuery,
     ApiResponse,
     ApiHeader,
 } from '@nestjs/swagger';
@@ -41,13 +43,26 @@ export class PublicBotController {
     @ApiOperation({
         summary: 'Get bot widget configuration',
         description:
-            'Retrieve bot configuration for embedding widget. No authentication required.',
+            'Retrieve bot configuration for embedding widget. No authentication required. Optionally specify version.',
     })
     @ApiParam({
         name: 'botId',
         type: 'string',
         description: 'Bot ID',
         example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @ApiQuery({
+        name: 'version',
+        type: 'string',
+        description: 'Widget version (optional, defaults to active version)',
+        required: false,
+        example: '1.0.0',
+    })
+    @ApiQuery({
+        name: 'versionId',
+        type: 'string',
+        description: 'Widget version ID (optional, takes precedence over version)',
+        required: false,
     })
     @ApiHeader({
         name: 'Origin',
@@ -70,8 +85,15 @@ export class PublicBotController {
     async getBotConfig(
         @Param('botId') botId: string,
         @Headers('origin') origin?: string,
+        @Query('version') version?: string,
+        @Query('versionId') versionId?: string,
     ): Promise<BotConfigResponseDto> {
-        return this.publicBotService.getBotConfig(botId, origin);
+        return this.publicBotService.getBotConfig(
+            botId,
+            origin,
+            version,
+            versionId,
+        );
     }
 
     /**
@@ -160,13 +182,25 @@ export class PublicBotController {
     @ApiOperation({
         summary: 'Get conversation messages',
         description:
-            'Retrieve all messages in a conversation. No authentication required.',
+            'Retrieve messages in a conversation with pagination support. No authentication required.',
     })
     @ApiParam({
         name: 'conversationId',
         type: 'string',
         description: 'Conversation ID',
         example: '123e4567-e89b-12d3-a456-426614174000',
+    })
+    @ApiQuery({
+        name: 'limit',
+        required: false,
+        type: Number,
+        description: 'Number of messages to retrieve (default: 50)',
+    })
+    @ApiQuery({
+        name: 'before',
+        required: false,
+        type: String,
+        description: 'Message ID to get messages before (for pagination)',
     })
     @ApiResponse({
         status: 200,
@@ -179,7 +213,12 @@ export class PublicBotController {
     })
     async getMessages(
         @Param('conversationId') conversationId: string,
+        @Query('limit') limit?: number,
+        @Query('before') before?: string,
     ): Promise<ConversationMessagesResponseDto> {
-        return this.publicBotService.getMessages(conversationId);
+        return this.publicBotService.getMessages(conversationId, {
+            limit: limit ? Number(limit) : 50,
+            before,
+        });
     }
 }

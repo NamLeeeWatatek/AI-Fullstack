@@ -8,6 +8,7 @@ import {
   IsBoolean,
   IsObject,
   IsUUID,
+  Matches,
 } from 'class-validator';
 
 export class CreateBotDto {
@@ -99,6 +100,64 @@ export class CreateBotDto {
   @IsOptional()
   @IsBoolean()
   enableAutoLearn?: boolean;
+
+  // Widget Appearance Settings (for initial version creation)
+  @ApiPropertyOptional({
+    example: '#667eea',
+    description: 'Primary color in hex format',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9A-F]{6}$/i, {
+    message: 'Invalid color format. Use hex format like #667eea',
+  })
+  primaryColor?: string | null;
+
+  @ApiPropertyOptional({
+    enum: ['bottom-right', 'bottom-left', 'top-right', 'top-left'],
+    example: 'bottom-right',
+  })
+  @IsOptional()
+  @IsEnum(['bottom-right', 'bottom-left', 'top-right', 'top-left'])
+  widgetPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+
+  @ApiPropertyOptional({
+    enum: ['small', 'medium', 'large'],
+    example: 'medium',
+  })
+  @IsOptional()
+  @IsEnum(['small', 'medium', 'large'])
+  widgetButtonSize?: 'small' | 'medium' | 'large';
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  showAvatar?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  showTimestamp?: boolean;
+
+  @ApiPropertyOptional({ example: 'Xin chào! Tôi có thể giúp gì cho bạn?' })
+  @IsOptional()
+  @IsString()
+  welcomeMessage?: string | null;
+
+  @ApiPropertyOptional({ example: 'Nhập tin nhắn...' })
+  @IsOptional()
+  @IsString()
+  placeholderText?: string | null;
+
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['*'],
+    description: 'Allowed origins for CORS',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowedOrigins?: string[] | null;
 
   // Legacy fields
   @ApiPropertyOptional({ deprecated: true })

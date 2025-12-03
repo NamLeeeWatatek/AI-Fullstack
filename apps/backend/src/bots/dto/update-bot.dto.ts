@@ -82,6 +82,53 @@ export class UpdateBotDto extends PartialType(CreateBotDto) {
   @IsOptional()
   @IsBoolean()
   enableAutoLearn?: boolean;
+
+  // Widget Appearance Settings
+  @ApiPropertyOptional({ example: '#667eea' })
+  @IsOptional()
+  @IsString()
+  primaryColor?: string | null;
+
+  @ApiPropertyOptional({ enum: ['bottom-right', 'bottom-left', 'top-right', 'top-left'] })
+  @IsOptional()
+  @IsEnum(['bottom-right', 'bottom-left', 'top-right', 'top-left'])
+  widgetPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+
+  @ApiPropertyOptional({ enum: ['small', 'medium', 'large'] })
+  @IsOptional()
+  @IsEnum(['small', 'medium', 'large'])
+  widgetButtonSize?: 'small' | 'medium' | 'large';
+
+  @ApiPropertyOptional({ example: 'Xin chào! Tôi có thể giúp gì cho bạn?' })
+  @IsOptional()
+  @IsString()
+  welcomeMessage?: string | null;
+
+  @ApiPropertyOptional({ example: 'Nhập tin nhắn...' })
+  @IsOptional()
+  @IsString()
+  placeholderText?: string | null;
+
+  @ApiPropertyOptional({ type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  showAvatar?: boolean;
+
+  @ApiPropertyOptional({ type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  showTimestamp?: boolean;
+
+  @ApiPropertyOptional({ type: Boolean })
+  @IsOptional()
+  @IsBoolean()
+  widgetEnabled?: boolean;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowedOrigins?: string[] | null;
 }
 
 export class CreateFlowVersionDto {

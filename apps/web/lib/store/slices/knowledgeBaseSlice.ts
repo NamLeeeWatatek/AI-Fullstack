@@ -77,12 +77,19 @@ const initialState: KnowledgeBaseState = {
 export const loadKnowledgeBase = createAsyncThunk(
   'knowledgeBase/load',
   async ({ kbId, folderId }: { kbId: string; folderId?: string | null }) => {
-    const [kb, stats, folders, documents] = await Promise.all([
+    const [kbRes, statsRes, foldersRes, documentsRes] = await Promise.all([
       getKnowledgeBase(kbId),
       getKnowledgeBaseStats(kbId),
       getKBFolders(kbId),
       getKBDocuments(kbId, folderId || undefined),
     ])
+    
+    // Handle both response.data and direct response
+    const kb = (kbRes as any)?.data || kbRes
+    const stats = (statsRes as any)?.data || statsRes
+    const folders = Array.isArray(foldersRes) ? foldersRes : ((foldersRes as any)?.data || [])
+    const documents = Array.isArray(documentsRes) ? documentsRes : ((documentsRes as any)?.data || [])
+    
     return { kb, stats, folders, documents, folderId: folderId || null }
   }
 )
@@ -90,11 +97,17 @@ export const loadKnowledgeBase = createAsyncThunk(
 export const refreshData = createAsyncThunk(
   'knowledgeBase/refresh',
   async ({ kbId, folderId }: { kbId: string; folderId?: string | null }) => {
-    const [stats, folders, documents] = await Promise.all([
+    const [statsRes, foldersRes, documentsRes] = await Promise.all([
       getKnowledgeBaseStats(kbId),
       getKBFolders(kbId),
       getKBDocuments(kbId, folderId || undefined),
     ])
+    
+    // Handle both response.data and direct response
+    const stats = (statsRes as any)?.data || statsRes
+    const folders = Array.isArray(foldersRes) ? foldersRes : ((foldersRes as any)?.data || [])
+    const documents = Array.isArray(documentsRes) ? documentsRes : ((documentsRes as any)?.data || [])
+    
     return { stats, folders, documents }
   }
 )
@@ -270,19 +283,23 @@ const knowledgeBaseSlice = createSlice({
         state.stats = action.payload.stats
         state.currentFolderId = action.payload.folderId
         
+        // Ensure folders is an array
+        const folders = Array.isArray(action.payload.folders) ? action.payload.folders : []
+        
         // Filter folders based on current location
         // Show only folders that belong to current parent
         if (action.payload.folderId === null) {
           // Root level - show folders without parent
-          state.folders = action.payload.folders.filter(f => !f.parentId && !f.parentFolderId)
+          state.folders = folders.filter(f => !f.parentId && !f.parentFolderId)
         } else {
           // Inside a folder - show folders with this parent
-          state.folders = action.payload.folders.filter(
+          state.folders = folders.filter(
             f => f.parentId === action.payload.folderId || f.parentFolderId === action.payload.folderId
           )
         }
         
-        state.documents = action.payload.documents
+        // Ensure documents is an array
+        state.documents = Array.isArray(action.payload.documents) ? action.payload.documents : []
       })
       .addCase(loadKnowledgeBase.rejected, (state, action) => {
         state.loading = false
@@ -294,18 +311,22 @@ const knowledgeBaseSlice = createSlice({
       .addCase(refreshData.fulfilled, (state, action) => {
         state.stats = action.payload.stats
         
+        // Ensure folders is an array
+        const folders = Array.isArray(action.payload.folders) ? action.payload.folders : []
+        
         // Filter folders based on current location
         if (state.currentFolderId === null) {
           // Root level - show folders without parent
-          state.folders = action.payload.folders.filter(f => !f.parentId && !f.parentFolderId)
+          state.folders = folders.filter(f => !f.parentId && !f.parentFolderId)
         } else {
           // Inside a folder - show folders with this parent
-          state.folders = action.payload.folders.filter(
+          state.folders = folders.filter(
             f => f.parentId === state.currentFolderId || f.parentFolderId === state.currentFolderId
           )
         }
         
-        state.documents = action.payload.documents
+        // Ensure documents is an array
+        state.documents = Array.isArray(action.payload.documents) ? action.payload.documents : []
       })
     
     // Create Folder

@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -13,6 +15,7 @@ import {
 } from './infrastructure/persistence/relational/entities/bot.entity';
 import { WorkspaceMemberEntity } from '../workspaces/infrastructure/persistence/relational/entities/workspace.entity';
 import { WorkspaceHelperService } from '../workspaces/workspace-helper.service';
+import { WidgetVersionService } from './services/widget-version.service';
 import { CreateBotDto } from './dto/create-bot.dto';
 import {
   UpdateBotDto,
@@ -32,6 +35,7 @@ export class BotsService {
     @InjectRepository(WorkspaceMemberEntity)
     private workspaceMemberRepository: Repository<WorkspaceMemberEntity>,
     private workspaceHelper: WorkspaceHelperService,
+    private widgetVersionService: WidgetVersionService,
   ) {}
 
   async getUserDefaultWorkspace(userId: string) {
@@ -55,7 +59,65 @@ export class BotsService {
       defaultLanguage: createDto.defaultLanguage ?? 'en',
       timezone: createDto.timezone ?? 'UTC',
     });
-    return this.botRepository.save(bot);
+    const savedBot = await this.botRepository.save(bot);
+
+    // Create default widget version 1.0.0
+    try {
+      const defaultVersion = await this.widgetVersionService.createVersion(
+        savedBot.id,
+        {
+          version: '1.0.0',
+          config: {
+            theme: {
+              primaryColor: createDto.primaryColor || '#667eea',
+              position: createDto.widgetPosition || 'bottom-right',
+              buttonSize: createDto.widgetButtonSize || 'medium',
+              showAvatar: createDto.showAvatar ?? true,
+              showTimestamp: createDto.showTimestamp ?? true,
+            },
+            messages: {
+              welcome:
+                createDto.welcomeMessage ||
+                'Xin chào! Tôi có thể giúp gì cho bạn?',
+              placeholder: createDto.placeholderText || 'Nhập tin nhắn...',
+              offline: 'Chúng tôi hiện không trực tuyến',
+              errorMessage: 'Đã có lỗi xảy ra',
+            },
+            behavior: {
+              autoOpen: false,
+              autoOpenDelay: 3000,
+              greetingDelay: 1000,
+            },
+            features: {
+              fileUpload: true,
+              voiceInput: false,
+              markdown: true,
+              quickReplies: true,
+            },
+            branding: {
+              showPoweredBy: true,
+            },
+            security: {
+              allowedOrigins: createDto.allowedOrigins || ['*'],
+            },
+          },
+          changelog: 'Initial version',
+        },
+        userId,
+      );
+
+      // Auto-publish version 1.0.0
+      await this.widgetVersionService.publishVersion(
+        savedBot.id,
+        defaultVersion.id,
+        userId,
+      );
+    } catch (error) {
+      // If widget version creation fails, log but don't fail bot creation
+      console.error('Failed to create default widget version:', error);
+    }
+
+    return savedBot;
   }
 
   async findAll(workspaceId: string, options?: { status?: string }) {
@@ -345,5 +407,112 @@ export class BotsService {
 
   async toggleBotChannel(botId: string, channelId: string, isActive: boolean) {
     return this.updateBotChannel(botId, channelId, { isActive });
+  }
+
+  // Widget Appearance Management
+  /**
+   * Update widget appearance settings
+   * This updates the active widget version config
+   */
+  async updateAppearance(
+    botId: string,
+    appearance: {
+      primaryColor?: string;
+      backgroundColor?: string;
+      botMessageColor?: string;
+      botMessageTextColor?: string;
+      fontFamily?: string;
+      position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+      buttonSize?: 'small' | 'medium' | 'large';
+      showAvatar?: boolean;
+      showTimestamp?: boolean;
+      welcomeMessage?: string;
+      placeholderText?: string;
+    },
+    userId: string,
+  ) {
+    await this.findOne(botId); // Validate bot exists
+
+    // Update active version config
+    const configUpdate: any = {};
+
+    if (
+      appearance.primaryColor ||
+      appearance.backgroundColor ||
+      appearance.botMessageColor ||
+      appearance.botMessageTextColor ||
+      appearance.fontFamily ||
+      appearance.position ||
+      appearance.buttonSize ||
+      appearance.showAvatar !== undefined ||
+      appearance.showTimestamp !== undefined
+    ) {
+      configUpdate.theme = {};
+      if (appearance.primaryColor)
+        configUpdate.theme.primaryColor = appearance.primaryColor;
+      if (appearance.backgroundColor)
+        configUpdate.theme.backgroundColor = appearance.backgroundColor;
+      if (appearance.botMessageColor)
+        configUpdate.theme.botMessageColor = appearance.botMessageColor;
+      if (appearance.botMessageTextColor)
+        configUpdate.theme.botMessageTextColor = appearance.botMessageTextColor;
+      if (appearance.fontFamily)
+        configUpdate.theme.fontFamily = appearance.fontFamily;
+      if (appearance.position) configUpdate.theme.position = appearance.position;
+      if (appearance.buttonSize)
+        configUpdate.theme.buttonSize = appearance.buttonSize;
+      if (appearance.showAvatar !== undefined)
+        configUpdate.theme.showAvatar = appearance.showAvatar;
+      if (appearance.showTimestamp !== undefined)
+        configUpdate.theme.showTimestamp = appearance.showTimestamp;
+    }
+
+    if (appearance.welcomeMessage || appearance.placeholderText) {
+      configUpdate.messages = {};
+      if (appearance.welcomeMessage)
+        configUpdate.messages.welcome = appearance.welcomeMessage;
+      if (appearance.placeholderText)
+        configUpdate.messages.placeholder = appearance.placeholderText;
+    }
+
+    const changelog = 'Updated appearance settings';
+
+    return this.widgetVersionService.updateActiveVersionConfig(
+      botId,
+      configUpdate,
+      userId,
+      changelog,
+    );
+  }
+
+  /**
+   * Get current appearance settings from active version
+   */
+  async getAppearance(botId: string) {
+    await this.findOne(botId); // Validate bot exists
+
+    const activeVersion =
+      await this.widgetVersionService.getActiveVersion(botId);
+
+    if (!activeVersion) {
+      throw new NotFoundException('No active widget version found');
+    }
+
+    return {
+      primaryColor: activeVersion.config.theme?.primaryColor || '#667eea',
+      backgroundColor: activeVersion.config.theme?.backgroundColor || '#ffffff',
+      botMessageColor: activeVersion.config.theme?.botMessageColor || '#f9fafb',
+      botMessageTextColor: activeVersion.config.theme?.botMessageTextColor || '#1f2937',
+      fontFamily: activeVersion.config.theme?.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto',
+      position: activeVersion.config.theme?.position || 'bottom-right',
+      buttonSize: activeVersion.config.theme?.buttonSize || 'medium',
+      showAvatar: activeVersion.config.theme?.showAvatar ?? true,
+      showTimestamp: activeVersion.config.theme?.showTimestamp ?? true,
+      welcomeMessage:
+        activeVersion.config.messages?.welcome ||
+        'Xin chào! Tôi có thể giúp gì cho bạn?',
+      placeholderText:
+        activeVersion.config.messages?.placeholder || 'Nhập tin nhắn...',
+    };
   }
 }

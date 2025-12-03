@@ -257,4 +257,58 @@ export class WidgetVersionController {
         );
     }
 
+    /**
+     * Get embed code for specific version
+     */
+    @Get(':versionId/embed-code')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Get embed code for version',
+        description: 'Get script tag and iframe code for a specific widget version',
+    })
+    @ApiParam({ name: 'botId', type: 'string' })
+    @ApiParam({ name: 'versionId', type: 'string' })
+    @ApiResponse({
+        status: 200,
+        description: 'Embed code retrieved successfully',
+    })
+    async getEmbedCode(
+        @Param('botId') botId: string,
+        @Param('versionId') versionId: string,
+        @Request() req,
+    ) {
+        return this.widgetVersionService.getEmbedCode(
+            botId,
+            versionId,
+            req.user.id,
+        );
+    }
+
+    /**
+     * Get preview URL for specific version
+     */
+    @Get(':versionId/preview-url')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Get preview URL for version',
+        description: 'Get test URL to preview a specific widget version',
+    })
+    @ApiParam({ name: 'botId', type: 'string' })
+    @ApiParam({ name: 'versionId', type: 'string' })
+    @ApiResponse({
+        status: 200,
+        description: 'Preview URL retrieved successfully',
+    })
+    async getPreviewUrl(
+        @Param('botId') botId: string,
+        @Param('versionId') versionId: string,
+        @Request() req,
+    ) {
+        return this.widgetVersionService.getPreviewUrl(
+            botId,
+            versionId,
+            req.user.id,
+        );
+    }
+
 }
