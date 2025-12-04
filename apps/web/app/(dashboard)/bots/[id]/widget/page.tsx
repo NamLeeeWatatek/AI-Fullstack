@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, History, Code, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WidgetVersionsList } from '@/components/widget/widget-versions-list';
 import { WidgetDeploymentHistory } from '@/components/widget/widget-deployment-history';
@@ -109,7 +110,7 @@ export default function WidgetPage({ params }: { params: { id: string } }) {
                     {!botSettings ? (
                         <div className="flex items-center justify-center p-8">
                             <div className="text-center">
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                                <Spinner className="w-8 h-8 mx-auto mb-4" />
                                 <p className="text-sm text-muted-foreground">Loading appearance settings...</p>
                             </div>
                         </div>

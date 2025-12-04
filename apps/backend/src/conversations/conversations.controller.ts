@@ -8,6 +8,7 @@ import {
   Param,
   UseGuards,
   Query,
+  Request,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -59,7 +60,14 @@ export class ConversationsController {
   @ApiQuery({ name: 'endDate', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ 
+    name: 'source', 
+    required: false, 
+    enum: ['all', 'channel', 'widget'],
+    description: 'Filter by conversation source: all, channel (Facebook, WhatsApp, etc.), or widget (AI chat)'
+  })
   findAll(
+    @Request() req,
     @Query('botId') botId?: string,
     @Query('channelType') channelType?: string,
     @Query('status') status?: string,
@@ -67,7 +75,19 @@ export class ConversationsController {
     @Query('endDate') endDate?: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('source') source?: 'all' | 'channel' | 'widget',
   ) {
+    const workspaceId = req.user?.workspaceId || req.user?.id;
+    
+    // Determine onlyChannelConversations based on source filter
+    let onlyChannelConversations: boolean | undefined;
+    if (source === 'channel') {
+      onlyChannelConversations = true; // Only channel conversations
+    } else if (source === 'widget') {
+      onlyChannelConversations = false; // Only widget conversations (no channel_id)
+    }
+    // If source === 'all' or undefined, don't filter by channel
+    
     return this.conversationsService.findAll({
       botId,
       channelType,
@@ -76,6 +96,8 @@ export class ConversationsController {
       endDate: endDate ? new Date(endDate) : undefined,
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
+      workspaceId,
+      onlyChannelConversations,
     });
   }
 

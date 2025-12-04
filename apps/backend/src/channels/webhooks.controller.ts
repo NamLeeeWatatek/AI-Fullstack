@@ -10,9 +10,14 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ChannelStrategy } from './channel.strategy';
+import { ChannelsService } from './channels.service';
+import { FacebookOAuthService } from './facebook-oauth.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ConversationEntity } from '../conversations/infrastructure/persistence/relational/entities/conversation.entity';
+import { 
+  ConversationEntity,
+  MessageEntity 
+} from '../conversations/infrastructure/persistence/relational/entities/conversation.entity';
 import { BotExecutionService } from '../bots/bot-execution.service';
 
 /**
@@ -25,8 +30,12 @@ export class WebhooksController {
 
   constructor(
     private readonly channelStrategy: ChannelStrategy,
+    private readonly channelsService: ChannelsService,
+    private readonly facebookOAuthService: FacebookOAuthService,
     @InjectRepository(ConversationEntity)
     private conversationRepository: Repository<ConversationEntity>,
+    @InjectRepository(MessageEntity)
+    private messageRepository: Repository<MessageEntity>,
     private readonly botExecutionService: BotExecutionService,
   ) {}
 
@@ -221,38 +230,109 @@ export class WebhooksController {
 
     if (!message) return;
 
-    this.logger.log(`Processing Facebook message from ${senderId}`);
+    this.logger.log(`Processing Facebook message from ${senderId} to page ${pageId}`);
 
-    // Save to conversations
-    const conversation = this.conversationRepository.create({
-      externalId: senderId,
-      status: 'active',
-      metadata: {
-        channel: 'facebook',
-        pageId,
-        senderId,
-        recipientId,
-        messageId: message.mid,
-        lastMessage: message.text || '[Media]',
-        lastMessageAt: new Date().toISOString(),
-      },
-    });
+    try {
+      // Find channel by pageId
+      const channel = await this.channelsService.findByExternalId(pageId);
+      
+      if (!channel) {
+        this.logger.warn(`No channel found for Facebook page ${pageId}`);
+        return;
+      }
 
-    await this.conversationRepository.save(conversation);
+      // Get botId from channel metadata
+      const botId = channel.metadata?.botId as string | undefined;
+      
+      if (!botId) {
+        this.logger.warn(`No botId found for channel ${channel.id}`);
+        return;
+      }
 
-    // Trigger bot execution
-    if (message.text) {
-      await this.botExecutionService.processMessage({
-        channel: 'facebook',
-        senderId,
-        message: message.text,
-        conversationId: conversation.id,
-        metadata: {
-          pageId,
-          recipientId,
-          messageId: message.mid,
+      // Get user info from Facebook
+      let contactName = 'Facebook User';
+      let contactAvatar: string | undefined;
+      
+      if (channel.accessToken) {
+        try {
+          const userInfo = await this.facebookOAuthService.getUserInfo(
+            senderId,
+            channel.accessToken,
+          );
+          contactName = userInfo.name || contactName;
+          contactAvatar = userInfo.profile_pic;
+        } catch (error) {
+          this.logger.warn(`Failed to get user info for ${senderId}: ${error.message}`);
+        }
+      }
+
+      // Find or create conversation
+      let conversation = await this.conversationRepository.findOne({
+        where: {
+          externalId: senderId,
+          channelId: channel.id,
         },
       });
+
+      if (!conversation) {
+        // Create new conversation
+        conversation = this.conversationRepository.create({
+          botId,
+          channelId: channel.id,
+          channelType: 'facebook',
+          externalId: senderId,
+          contactName,
+          contactAvatar,
+          status: 'active',
+          lastMessageAt: new Date(),
+          metadata: {
+            pageId,
+            recipientId,
+          },
+        });
+      } else {
+        // Update existing conversation
+        conversation.contactName = contactName;
+        conversation.contactAvatar = contactAvatar;
+        conversation.lastMessageAt = new Date();
+        conversation.status = 'active';
+      }
+
+      await this.conversationRepository.save(conversation);
+
+      // Save incoming message to database
+      if (message.text) {
+        const userMessage = this.messageRepository.create({
+          conversationId: conversation.id,
+          role: 'user',
+          content: message.text,
+          metadata: {
+            externalId: message.mid,
+            senderId,
+            pageId,
+            recipientId,
+            channelType: 'facebook',
+          },
+        });
+        await this.messageRepository.save(userMessage);
+
+        // Trigger bot execution
+        await this.botExecutionService.processMessage({
+          channel: 'facebook',
+          senderId,
+          message: message.text,
+          conversationId: conversation.id,
+          metadata: {
+            pageId,
+            recipientId,
+            messageId: message.mid,
+            channelId: channel.id,
+            botId,
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.error(`Error processing Facebook message: ${error.message}`);
     }
   }
 

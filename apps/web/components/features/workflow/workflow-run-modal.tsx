@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { FiX, FiUpload, FiPlay, FiCheck, FiFile } from 'react-icons/fi'
 import toast from '@/lib/toast'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import type { InputField, WorkflowRunModalProps } from '@/lib/types'
 
 export function WorkflowRunModal({ isOpen, onClose, onSubmit, inputFields, workflowName }: WorkflowRunModalProps) {
@@ -127,7 +128,7 @@ export function WorkflowRunModal({ isOpen, onClose, onSubmit, inputFields, workf
                                                 }`}
                                         >
                                             {uploading[field.key] ? (
-                                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                <Spinner className="w-4 h-4" />
                                             ) : formData[field.key] ? (
                                                 <>
                                                     <FiCheck className="w-4 h-4" />

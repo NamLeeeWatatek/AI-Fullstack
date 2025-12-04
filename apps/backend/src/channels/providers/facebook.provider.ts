@@ -17,7 +17,7 @@ export class FacebookProvider implements ChannelProvider {
   readonly channelType = 'facebook';
   private pageAccessToken: string;
   private appSecret: string;
-  private readonly apiVersion = 'v18.0';
+  private readonly apiVersion = 'v24.0';
 
   constructor(private configService: ConfigService) {
     // Default to environment variables

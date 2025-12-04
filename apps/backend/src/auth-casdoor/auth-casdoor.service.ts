@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import crypto from 'crypto';
 import ms from 'ms';
+import axios from 'axios';
 import { AuthService } from '../auth/auth.service';
 import { CasdoorCallbackDto } from './dto/casdoor-callback.dto';
 import { LoginResponseDto } from '../auth/dto/login-response.dto';
@@ -32,8 +33,31 @@ export class AuthCasdoorService {
       process.env.CASDOOR_ENDPOINT || 'http://localhost:8030';
     this.clientId = process.env.CASDOOR_CLIENT_ID || '';
     this.clientSecret = process.env.CASDOOR_CLIENT_SECRET || '';
-    this.appName = process.env.CASDOOR_APP_NAME || 'wataomi-app';
-    this.orgName = process.env.CASDOOR_ORG_NAME || 'wataomi';
+    this.appName = process.env.CASDOOR_APP_NAME || 'app-built-in';
+    this.orgName = process.env.CASDOOR_ORG_NAME || 'built-in';
+  }
+
+  /**
+   * Generate Casdoor login URL
+   */
+  async getLoginUrl(): Promise<{ loginUrl: string }> {
+    const frontendUrl = process.env.FRONTEND_DOMAIN || 'http://localhost:3000';
+    const redirectUri = `${frontendUrl}/auth/callback`;
+    const state = crypto.randomBytes(16).toString('hex');
+
+    const params = new URLSearchParams({
+      client_id: this.clientId,
+      response_type: 'code',
+      redirect_uri: redirectUri,
+      scope: 'openid profile email',
+      state,
+    });
+
+    const loginUrl = `${this.casdoorEndpoint}/login/oauth/authorize?${params.toString()}`;
+
+    this.logger.log(`Generated Casdoor login URL with redirect: ${redirectUri}`);
+
+    return { loginUrl };
   }
 
   async handleCallback(
@@ -144,41 +168,48 @@ export class AuthCasdoorService {
       code: code,
     });
 
-    const response = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString(),
-    });
+    this.logger.log(`Calling token URL: ${tokenUrl}`);
+    this.logger.log(`Client ID: ${this.clientId}`);
+    this.logger.log(`Code: ${code.substring(0, 10)}...`);
 
-    if (!response.ok) {
-      const error = await response.text();
-      this.logger.error(`Token exchange failed: ${error}`);
+    try {
+      const response = await axios.post(tokenUrl, params.toString(), {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        httpsAgent: new (require('https').Agent)({
+          rejectUnauthorized: false, // Disable SSL verification for development
+        }),
+      });
+
+      this.logger.log(`Token exchange successful`);
+      return response.data;
+    } catch (error) {
+      this.logger.error(`Token exchange error: ${error.message}`);
+      if (error.response) {
+        this.logger.error(`Response status: ${error.response.status}`);
+        this.logger.error(`Response data: ${JSON.stringify(error.response.data)}`);
+      }
       throw new UnauthorizedException('Failed to exchange code for token');
     }
-
-    return response.json();
   }
 
   private async getCasdoorUserInfo(accessToken: string): Promise<any> {
     // First, get basic user info from /api/userinfo
     const userInfoUrl = `${this.casdoorEndpoint}/api/userinfo`;
 
-    const userInfoResponse = await fetch(userInfoUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    try {
+      const userInfoResponse = await axios.get(userInfoUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        httpsAgent: new (require('https').Agent)({
+          rejectUnauthorized: false,
+        }),
+      });
 
-    if (!userInfoResponse.ok) {
-      const error = await userInfoResponse.text();
-      this.logger.error(`Get user info failed: ${error}`);
-      throw new UnauthorizedException('Failed to get user info');
-    }
-
-    const userInfo = await userInfoResponse.json();
-    this.logger.log(`Basic userinfo: ${JSON.stringify(userInfo)}`);
+      const userInfo = userInfoResponse.data;
+      this.logger.log(`Basic userinfo: ${JSON.stringify(userInfo)}`);
 
     // Now get the full user object with all fields including isAdmin, tag, type, roles
     // The userinfo returns 'name' field which is the username, and 'preferred_username' which is owner/name
@@ -205,32 +236,32 @@ export class AuthCasdoorService {
       this.logger.log(`Using owner=${this.orgName}, userId=${userInfo.sub}`);
     }
 
-    const fullUserResponse = await fetch(getUserUrl, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+      const fullUserResponse = await axios.get(getUserUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        httpsAgent: new (require('https').Agent)({
+          rejectUnauthorized: false,
+        }),
+      });
 
-    if (!fullUserResponse.ok) {
-      const error = await fullUserResponse.text();
-      this.logger.error(`Get full user failed: ${error}`);
-      // Fallback to basic userinfo if full user fetch fails
-      return userInfo;
+      const fullUserResult = fullUserResponse.data;
+      this.logger.log(`Full user response: ${JSON.stringify(fullUserResult)}`);
+
+      // Casdoor wraps response in {status, msg, data}
+      if (fullUserResult.status === 'ok' && fullUserResult.data) {
+        return fullUserResult.data;
+      } else if (fullUserResult.status === 'error') {
+        this.logger.error(`Casdoor API error: ${fullUserResult.msg}`);
+        // Fallback to basic userinfo
+        return userInfo;
+      }
+
+      return fullUserResult;
+    } catch (error) {
+      this.logger.error(`Get user info error: ${error.message}`);
+      throw new UnauthorizedException('Failed to get user info');
     }
-
-    const fullUserResult = await fullUserResponse.json();
-    this.logger.log(`Full user response: ${JSON.stringify(fullUserResult)}`);
-
-    // Casdoor wraps response in {status, msg, data}
-    if (fullUserResult.status === 'ok' && fullUserResult.data) {
-      return fullUserResult.data;
-    } else if (fullUserResult.status === 'error') {
-      this.logger.error(`Casdoor API error: ${fullUserResult.msg}`);
-      // Fallback to basic userinfo
-      return userInfo;
-    }
-
-    return fullUserResult;
   }
 
   private async syncUser(casdoorUser: any): Promise<any> {

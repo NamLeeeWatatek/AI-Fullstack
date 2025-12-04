@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
 import { fetchAPI } from '@/lib/api'
 import toast from '@/lib/toast'
@@ -151,7 +152,7 @@ export function TemplateSelector({ onSelect, onClose }: TemplateSelectorProps) {
                 <div className="p-6 overflow-y-auto flex-1 bg-muted/5">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-                            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+                            <Spinner className="w-8 h-8 mb-4" />
                             <p>Loading templates...</p>
                         </div>
                     ) : templates.length === 0 ? (

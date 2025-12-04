@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
+import { useWorkspace } from '@/lib/hooks/useWorkspace'
 import { fetchAPI } from '@/lib/api'
 import toast from '@/lib/toast'
 import {
@@ -29,10 +31,20 @@ import { SiZalo, SiNotion, SiAirtable, SiZapier, SiHubspot, SiSalesforce, SiMail
 import type { Channel, IntegrationConfig } from '@/lib/types'
 
 export default function ChannelsPage() {
+    const { data: session } = useSession()
+    const { currentWorkspace } = useWorkspace()
     const [channels, setChannels] = useState<Channel[]>([])
     const [configs, setConfigs] = useState<IntegrationConfig[]>([])
     const [loading, setLoading] = useState(true)
     const [connecting, setConnecting] = useState<string | null>(null)
+    
+    // Facebook pages selector
+    const [facebookPages, setFacebookPages] = useState<any[]>([])
+    const [facebookTempToken, setFacebookTempToken] = useState('')
+    const [connectingPage, setConnectingPage] = useState(false)
+    const [bots, setBots] = useState<any[]>([])
+    const [selectedBotId, setSelectedBotId] = useState<string>('')
+    const [loadingBots, setLoadingBots] = useState(false)
 
 
     // Config Form State
@@ -42,7 +54,8 @@ export default function ChannelsPage() {
         name: '',
         client_id: '',
         client_secret: '',
-        scopes: ''
+        scopes: '',
+        verify_token: '' // For Facebook webhook
     })
 
     useEffect(() => {
@@ -66,38 +79,87 @@ export default function ChannelsPage() {
         }
     }
 
-    const handleConnect = async (provider: string, configId?: number) => {
-        // Check if configured
-        const config = configId ? configs.find(c => c.id === configId) : configs.find(c => c.provider === provider)
-        if (!config) {
-            toast.error(`Please configure ${provider} settings first`)
-            openConfig(undefined, provider)
-            return
+    const loadBots = async () => {
+        setLoadingBots(true)
+        try {
+            if (!currentWorkspace) {
+                console.warn('No workspace selected')
+                toast.error('No workspace selected. Please refresh the page.')
+                return
+            }
+            
+            console.log('Fetching bots for workspace:', currentWorkspace.id)
+            const response = await fetchAPI(`/bots?workspaceId=${currentWorkspace.id}`)
+            console.log('Bots API response:', response)
+            
+            // Handle different response formats
+            let botsList = []
+            if (Array.isArray(response)) {
+                botsList = response
+            } else if (response?.items && Array.isArray(response.items)) {
+                botsList = response.items
+            } else if (response?.data && Array.isArray(response.data)) {
+                botsList = response.data
+            }
+            
+            console.log('Parsed bots list:', botsList, 'length:', botsList.length)
+            setBots(botsList)
+            
+            // Auto-select first bot
+            if (botsList.length > 0) {
+                setSelectedBotId(botsList[0].id)
+                console.log('Auto-selected bot:', botsList[0].id, botsList[0].name)
+            } else {
+                console.warn('No bots found for workspace:', currentWorkspace?.id)
+            }
+        } catch (error) {
+            console.error('Failed to load bots:', error)
+            toast.error('Failed to load bots')
+        } finally {
+            setLoadingBots(false)
         }
+    }
 
+    const handleConnect = async (provider: string, configId?: number) => {
         try {
             setConnecting(provider)
 
-            // Get OAuth URL
-            const configParam = configId ? `?configId=${configId}` : ''
-            const response = await fetchAPI(`/oauth/login/${provider}${configParam}`)
+            let oauthUrl: string
 
-            // Check for error response
-            if (response.error) {
-                toast.error(response.error)
-                setConnecting(null)
-                return
+            // For Facebook, use new backend API
+            if (provider === 'facebook' || provider === 'messenger' || provider === 'instagram') {
+                const response = await fetchAPI('/channels/facebook/oauth/url')
+                
+                if (!response.url) {
+                    toast.error('Please configure Facebook App settings first')
+                    openConfig(undefined, 'facebook')
+                    setConnecting(null)
+                    return
+                }
+                
+                oauthUrl = response.url
+            } else {
+                // For other providers, check if configured
+                const config = configId ? configs.find(c => c.id === configId) : configs.find(c => c.provider === provider)
+                if (!config) {
+                    toast.error(`Please configure ${provider} settings first`)
+                    openConfig(undefined, provider)
+                    setConnecting(null)
+                    return
+                }
+
+                // Get OAuth URL from old API
+                const configParam = configId ? `?configId=${configId}` : ''
+                const response = await fetchAPI(`/oauth/login/${provider}${configParam}`)
+
+                if (response.error || !response.url) {
+                    toast.error(response.error || 'Failed to get OAuth URL')
+                    setConnecting(null)
+                    return
+                }
+
+                oauthUrl = response.url
             }
-
-            const { url } = response
-
-            if (!url) {
-                toast.error('Failed to get OAuth URL')
-                setConnecting(null)
-                return
-            }
-
-
 
             // Open popup
             const width = 600
@@ -106,7 +168,7 @@ export default function ChannelsPage() {
             const top = window.screen.height / 2 - height / 2
 
             const popup = window.open(
-                url,
+                oauthUrl,
                 `Connect ${provider}`,
                 `width=${width},height=${height},left=${left},top=${top}`
             )
@@ -120,15 +182,29 @@ export default function ChannelsPage() {
             // Listen for message from popup
             const messageHandler = (event: MessageEvent) => {
                 if (event.data?.status === 'success') {
-                    toast.success(`Connected to ${event.data.channel}`)
-                    popup?.close()
-                    window.removeEventListener('message', messageHandler)
-
-                    // Delay reload to allow backend to create all channels (FB, Messenger, Instagram)
-                    setTimeout(() => {
-                        loadData()
+                    // For Facebook, show page selector
+                    if ((provider === 'facebook' || provider === 'messenger' || provider === 'instagram') && event.data.pages) {
+                        setFacebookPages(event.data.pages)
+                        setFacebookTempToken(event.data.tempToken)
+                        toast.success(`Found ${event.data.pages.length} Facebook page(s)`)
+                        
+                        // Load bots for selection
+                        loadBots()
+                        popup?.close()
+                        window.removeEventListener('message', messageHandler)
                         setConnecting(null)
-                    }, 1000)
+                    } else {
+                        // For other providers
+                        toast.success(`Connected to ${event.data.channel || provider}`)
+                        popup?.close()
+                        window.removeEventListener('message', messageHandler)
+
+                        // Delay reload to allow backend to create all channels
+                        setTimeout(() => {
+                            loadData()
+                            setConnecting(null)
+                        }, 1000)
+                    }
                 } else if (event.data?.status === 'error') {
                     toast.error(`Connection failed: ${event.data.message}`)
                     popup?.close()
@@ -181,9 +257,9 @@ export default function ChannelsPage() {
             name: existing?.name || '',
             client_id: existing?.client_id || '',
             client_secret: existing?.client_secret || '',
-            scopes: existing?.scopes || ''
+            scopes: existing?.scopes || '',
+            verify_token: 'wataomi_verify_token'
         })
-
     }
 
     const saveConfig = async () => {
@@ -192,26 +268,81 @@ export default function ChannelsPage() {
             return
         }
 
-        try {
-            const method = configForm.id ? 'PATCH' : 'POST'
-            const url = configForm.id ? `/integrations/${configForm.id}` : '/integrations/'
+        if (!configForm.client_id || !configForm.client_secret) {
+            toast.error('App ID and App Secret are required')
+            return
+        }
 
-            await fetchAPI(url, {
-                method,
+        try {
+            // For Facebook, use new backend API
+            if (configForm.provider === 'facebook' || configForm.provider === 'messenger' || configForm.provider === 'instagram') {
+                await fetchAPI('/channels/facebook/setup', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        appId: configForm.client_id,
+                        appSecret: configForm.client_secret,
+                        verifyToken: configForm.verify_token || 'wataomi_verify_token'
+                    })
+                })
+            } else {
+                // For other providers, use old API
+                const method = configForm.id ? 'PATCH' : 'POST'
+                const url = configForm.id ? `/integrations/${configForm.id}` : '/integrations/'
+
+                await fetchAPI(url, {
+                    method,
+                    body: JSON.stringify({
+                        provider: configForm.provider,
+                        name: configForm.name,
+                        clientId: configForm.client_id,
+                        clientSecret: configForm.client_secret,
+                        scopes: configForm.scopes,
+                        isActive: true
+                    })
+                })
+            }
+            
+            toast.success('Configuration saved successfully!')
+            setConfigForm(prev => ({ ...prev, provider: '' })) // Close modal
+            loadData()
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Failed to save configuration'
+            toast.error(message)
+        }
+    }
+
+    const handleConnectFacebookPage = async (page: any) => {
+        if (!selectedBotId) {
+            toast.error('Please select a bot first')
+            return
+        }
+
+        setConnectingPage(true)
+        
+        try {
+            await fetchAPI('/channels/facebook/connect', {
+                method: 'POST',
                 body: JSON.stringify({
-                    provider: configForm.provider,
-                    name: configForm.name,
-                    clientId: configForm.client_id,
-                    clientSecret: configForm.client_secret,
-                    scopes: configForm.scopes,
-                    isActive: true
+                    pageId: page.id,
+                    pageName: page.name,
+                    userAccessToken: facebookTempToken,
+                    category: page.category,
+                    botId: selectedBotId,
                 })
             })
-            toast.success('Configuration saved')
-
-            loadData()
-        } catch {
-            toast.error('Failed to save configuration')
+            
+            const selectedBot = bots.find(b => b.id === selectedBotId)
+            toast.success(`Connected ${page.name} to bot "${selectedBot?.name}"`)
+            
+            // Remove connected page from list
+            setFacebookPages(prev => prev.filter(p => p.id !== page.id))
+            
+            // Reload connections
+            await loadData()
+        } catch (error: any) {
+            toast.error(error.message || 'Failed to connect page')
+        } finally {
+            setConnectingPage(false)
         }
     }
 
@@ -841,18 +972,52 @@ export default function ChannelsPage() {
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium mb-2 text-foreground/90">
-                                        Scopes <span className="text-muted-foreground font-normal">(Optional)</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={configForm.scopes}
-                                        onChange={(e) => setConfigForm({ ...configForm, scopes: e.target.value })}
-                                        className="w-full bg-white/5 rounded-xl px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
-                                        placeholder="email, public_profile"
-                                    />
-                                </div>
+                                {/* Verify Token for Facebook */}
+                                {(configForm.provider === 'facebook' || configForm.provider === 'messenger' || configForm.provider === 'instagram') && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-foreground/90">
+                                            Webhook Verify Token
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={configForm.verify_token}
+                                            onChange={(e) => setConfigForm({ ...configForm, verify_token: e.target.value })}
+                                            className="w-full bg-white/5 rounded-xl px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                                            placeholder="wataomi_verify_token"
+                                        />
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Use this token when setting up webhook in Facebook App
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Scopes for other providers */}
+                                {configForm.provider !== 'facebook' && configForm.provider !== 'messenger' && configForm.provider !== 'instagram' && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2 text-foreground/90">
+                                            Scopes <span className="text-muted-foreground font-normal">(Optional)</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={configForm.scopes}
+                                            onChange={(e) => setConfigForm({ ...configForm, scopes: e.target.value })}
+                                            className="w-full bg-white/5 rounded-xl px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-muted-foreground/50"
+                                            placeholder="email, public_profile"
+                                        />
+                                    </div>
+                                )}
+
+                                {/* Webhook URL for Facebook */}
+                                {(configForm.provider === 'facebook' || configForm.provider === 'messenger' || configForm.provider === 'instagram') && (
+                                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                                        <p className="text-xs text-blue-200/80 mb-2">
+                                            <strong>Webhook URL:</strong>
+                                        </p>
+                                        <code className="text-xs text-blue-200 break-all">
+                                            {process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/api/v1/webhooks/facebook
+                                        </code>
+                                    </div>
+                                )}
 
                                 <div className="flex justify-end gap-3 mt-8 pt-2">
                                     <Button
@@ -873,6 +1038,114 @@ export default function ChannelsPage() {
                                     </Button>
                                 </div>
                             </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* Facebook Pages Selector Modal */}
+            {facebookPages.length > 0 && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-[#0B0F19] border border-white/10 rounded-2xl p-6 w-full max-w-2xl shadow-2xl relative overflow-hidden max-h-[80vh] overflow-y-auto"
+                    >
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 className="text-xl font-bold">Connect Facebook Pages</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Select a bot and choose which pages to connect
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setFacebookPages([])
+                                    setFacebookTempToken('')
+                                    setBots([])
+                                    setSelectedBotId('')
+                                }}
+                                className="p-2 rounded-full hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                                <FiX className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Bot Selector */}
+                        <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                            <label className="block text-sm font-medium mb-3">
+                                Select Bot <span className="text-red-400">*</span>
+                            </label>
+                            {loadingBots ? (
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Spinner className="w-4 h-4" />
+                                    <span>Loading bots...</span>
+                                </div>
+                            ) : bots.length === 0 ? (
+                                <div className="text-sm text-muted-foreground">
+                                    <p className="mb-2">No bots found. Please create a bot first.</p>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => window.open('/bots', '_blank')}
+                                    >
+                                        Create Bot
+                                    </Button>
+                                </div>
+                            ) : (
+                                <select
+                                    value={selectedBotId}
+                                    onChange={(e) => setSelectedBotId(e.target.value)}
+                                    className="w-full bg-white/5 rounded-xl px-4 py-3 border border-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                                >
+                                    {bots.map((bot) => (
+                                        <option key={bot.id} value={bot.id} className="bg-[#0B0F19]">
+                                            {bot.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            )}
+                            <p className="text-xs text-blue-200/60 mt-2">
+                                Messages from these pages will be handled by the selected bot
+                            </p>
+                        </div>
+
+                        {/* Pages List */}
+                        <div className="space-y-3">
+                            <h4 className="text-sm font-medium text-muted-foreground">Available Pages ({facebookPages.length})</h4>
+                            {facebookPages.map((page) => (
+                                <div
+                                    key={page.id}
+                                    className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 hover:bg-white/10 transition-all"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                            <FiFacebook className="w-5 h-5 text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold">{page.name}</h4>
+                                            <p className="text-xs text-muted-foreground">{page.category}</p>
+                                            {page.tasks && page.tasks.length > 0 && (
+                                                <div className="flex gap-1 mt-1">
+                                                    {page.tasks.slice(0, 3).map((task: string) => (
+                                                        <span key={task} className="text-[10px] px-1.5 py-0.5 bg-white/5 rounded border border-white/5">
+                                                            {task}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        onClick={() => handleConnectFacebookPage(page)}
+                                        disabled={connectingPage || !selectedBotId || bots.length === 0}
+                                        className="rounded-xl"
+                                    >
+                                        {connectingPage ? 'Connecting...' : 'Connect'}
+                                    </Button>
+                                </div>
+                            ))}
                         </div>
                     </motion.div>
                 </div>

@@ -37,6 +37,18 @@ export class ChannelsService {
     });
   }
 
+  async findByExternalId(externalId: string): Promise<ChannelConnectionEntity | null> {
+    // Find channel by pageId in metadata
+    const channels = await this.connectionRepository.find({
+      where: { status: 'active' },
+      relations: ['credential'],
+    });
+    
+    return channels.find(channel => 
+      channel.metadata?.pageId === externalId
+    ) || null;
+  }
+
   async findByType(
     type: string,
     workspaceId?: string,

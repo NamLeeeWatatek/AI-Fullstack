@@ -43,10 +43,32 @@ export class ConversationsService {
     endDate?: Date;
     page?: number;
     limit?: number;
+    workspaceId?: string;
+    onlyChannelConversations?: boolean;
   }) {
     const query = this.conversationRepository
       .createQueryBuilder('conversation')
+      .leftJoinAndSelect('conversation.bot', 'bot')
+      .leftJoin('channel_connection', 'channel', 'channel.id = conversation.channelId')
+      .addSelect(['channel.name', 'channel.type', 'channel.metadata'])
       .where('conversation.deletedAt IS NULL');
+
+    // Filter by conversation source
+    if (options.onlyChannelConversations === true) {
+      // Only channel conversations (Facebook, WhatsApp, etc.)
+      query.andWhere('conversation.channelId IS NOT NULL');
+    } else if (options.onlyChannelConversations === false) {
+      // Only widget conversations (AI chat from website)
+      query.andWhere('conversation.channelId IS NULL');
+    }
+    // If undefined, show all conversations
+
+    // Filter by workspace through bot
+    if (options.workspaceId) {
+      query.andWhere('bot.workspaceId = :workspaceId', { 
+        workspaceId: options.workspaceId 
+      });
+    }
 
     if (options.botId) {
       query.andWhere('conversation.botId = :botId', { botId: options.botId });
@@ -86,8 +108,56 @@ export class ConversationsService {
 
     const [items, total] = await query.getManyAndCount();
 
+    // Format items with channel info and last message
+    const formattedItems = await Promise.all(
+      items.map(async (item) => {
+        // Get channel info if channelId exists
+        let channelName = item.channelType || 'Unknown';
+        let channelMetadata = {};
+        
+        if (item.channelId) {
+          try {
+            const channel = await this.conversationRepository.manager
+              .getRepository('channel_connection')
+              .findOne({ 
+                where: { id: item.channelId },
+                select: ['name', 'type', 'metadata']
+              });
+            
+            if (channel) {
+              channelName = (channel as any).name || channelName;
+              channelMetadata = (channel as any).metadata || {};
+            }
+          } catch (error) {
+            // Ignore channel fetch errors
+          }
+        }
+
+        // Get last message
+        let lastMessage = 'No messages yet';
+        try {
+          const lastMsg = await this.messageRepository.findOne({
+            where: { conversationId: item.id },
+            order: { sentAt: 'DESC' },
+          });
+          if (lastMsg) {
+            lastMessage = lastMsg.content;
+          }
+        } catch (error) {
+          // Ignore message fetch errors
+        }
+
+        return {
+          ...item,
+          channelName,
+          channelMetadata,
+          lastMessage,
+        };
+      })
+    );
+
     return {
-      items,
+      items: formattedItems,
       total,
       page,
       limit,

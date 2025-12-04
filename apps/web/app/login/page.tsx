@@ -1,6 +1,5 @@
 'use client'
 
-import { casdoorSdk } from '@/lib/casdoor'
 import { Button } from '@/components/ui/button'
 import { MdAutoAwesome, MdWarning, MdInfo, MdCheckCircle } from 'react-icons/md'
 import { useState, useEffect } from 'react'
@@ -58,11 +57,20 @@ export default function LoginPage() {
         )
     }
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         try {
-            const casdoorLoginUrl = casdoorSdk.getSigninUrl()
+            // Get login URL from backend instead of using Casdoor SDK
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+            const response = await fetch(`${apiUrl}/auth/casdoor/login-url`);
+            
+            if (!response.ok) {
+                throw new Error('Failed to get login URL from backend');
+            }
 
-            if (!casdoorLoginUrl || casdoorLoginUrl === 'undefined' || casdoorLoginUrl.includes('client_id=&')) {
+            const data = await response.json();
+            const casdoorLoginUrl = data.loginUrl;
+
+            if (!casdoorLoginUrl || casdoorLoginUrl === 'undefined') {
                 setConfigError('Casdoor is not properly configured. Please check your environment variables.')
                 setShowSetupGuide(true)
                 return
@@ -70,7 +78,7 @@ export default function LoginPage() {
 
             window.location.href = casdoorLoginUrl
         } catch (error) {
-
+            console.error('Login error:', error);
             setConfigError('Failed to initialize Casdoor login. Please check the console for details.')
             setShowSetupGuide(true)
         }
@@ -115,27 +123,6 @@ export default function LoginPage() {
                                 <div className="flex-1">
                                     <h3 className="font-semibold text-destructive mb-1">Configuration Error</h3>
                                     <p className="text-sm text-destructive/80">{configError}</p>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* Setup Guide */}
-                    {showSetupGuide && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20"
-                        >
-                            <div className="flex items-start gap-3">
-                                <MdInfo className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-blue-400 mb-2">Setup Instructions</h3>
-                                    <ol className="text-sm text-blue-300/80 space-y-2 list-decimal list-inside">
-                                        <li>Create <code className="px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-200">.env.local</code></li>
-                                        <li>Add required Casdoor variables</li>
-                                        <li>Restart server</li>
-                                    </ol>
                                 </div>
                             </div>
                         </motion.div>

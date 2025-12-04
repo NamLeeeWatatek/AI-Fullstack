@@ -12,18 +12,26 @@ import { AppModule } from './app.module';
 import validationOptions from './utils/validation-options';
 import { AllConfigType } from './config/config.type';
 import { ResolvePromisesInterceptor } from './utils/serializer.interceptor';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    cors: {
-      origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps, curl, Postman, or file://)
-        if (!origin) return callback(null, true);
-        // Allow all origins in development
-        return callback(null, true);
-      },
-      credentials: true,
-    },
+    cors: true,
+  });
+
+  // Cấu hình helmet để cho phép nhúng widget vào các trang web khác
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // Tắt CSP nếu cần
+      frameguard: false, // Tắt X-Frame-Options mặc định để tự cấu hình
+    }),
+  );
+
+  // Cho phép nhúng từ mọi domain (ALLOWALL)
+  // Nếu muốn giới hạn domain cụ thể, thay đổi middleware này
+  app.use((_req: any, res: any, next: any) => {
+    res.removeHeader('X-Frame-Options');
+    next();
   });
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
   const configService = app.get(ConfigService<AllConfigType>);

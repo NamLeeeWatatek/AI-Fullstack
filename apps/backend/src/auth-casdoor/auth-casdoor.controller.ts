@@ -1,5 +1,6 @@
-import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Public } from '../utils/public.decorator';
 import { AuthCasdoorService } from './auth-casdoor.service';
 import { CasdoorCallbackDto } from './dto/casdoor-callback.dto';
 import { LoginResponseDto } from '../auth/dto/login-response.dto';
@@ -11,6 +12,14 @@ import { LoginResponseDto } from '../auth/dto/login-response.dto';
 })
 export class AuthCasdoorController {
   constructor(private readonly authCasdoorService: AuthCasdoorService) {}
+
+  @Get('login-url')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get Casdoor login URL' })
+  async getLoginUrl(): Promise<{ loginUrl: string }> {
+    return this.authCasdoorService.getLoginUrl();
+  }
 
   @Post('callback')
   @HttpCode(HttpStatus.OK)

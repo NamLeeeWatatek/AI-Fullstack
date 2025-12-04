@@ -6,30 +6,39 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   basePath: "/api/auth",
   providers: [
     Credentials({
-      name: "Casdoor",
+      id: "credentials",
+      name: "Credentials",
       credentials: {
-        code: { label: "Code", type: "text" },
-        state: { label: "State", type: "text" },
+        code: { type: "text" },
+        state: { type: "text" },
+        backendData: { type: "text" },
       },
       async authorize(credentials) {
-
-
         try {
-          if (!credentials?.code) {
-
-            return null;
+          // If we have backendData, it means callback already exchanged the code
+          if (credentials?.backendData) {
+            const data = JSON.parse(credentials.backendData as string)
+            
+            const userName = data.user.name || data.user.firstName || data.user.email
+            
+            return {
+              id: String(data.user.id),
+              email: data.user.email,
+              name: userName,
+              accessToken: data.token,
+              refreshToken: data.refreshToken,
+              workspace: data.workspace,
+              workspaces: data.workspaces,
+            }
           }
 
+          // Otherwise, exchange code with backend
+          if (!credentials?.code) {
+            return null
+          }
 
-
-          // Gọi API backend để lấy token từ Casdoor
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
-          const backendUrl = `${apiUrl}/auth/casdoor/callback`;
-
-
-
-          const response = await fetch(backendUrl, {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+          const response = await fetch(`${apiUrl}/auth/casdoor/callback`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -38,42 +47,27 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               code: credentials.code,
               state: credentials.state,
             }),
-          });
-
-
+          })
 
           if (!response.ok) {
-            const errorText = await response.text();
-
-            return null;
+            return null
           }
 
-          const data = await response.json();
+          const data = await response.json()
+          const userName = data.user.name || data.user.firstName || data.user.email
 
-
-
-          // Backend trả về { token, refreshToken, user, workspace, workspaces }
-          // Priority: name > firstName > email
-          const userName = data.user.name || data.user.firstName || data.user.email;
-
-          const user = {
+          return {
             id: String(data.user.id),
             email: data.user.email,
             name: userName,
-            accessToken: data.token, // Backend trả về 'token' chứ không phải 'access_token'
+            accessToken: data.token,
             refreshToken: data.refreshToken,
-            workspace: data.workspace, // Current workspace
-            workspaces: data.workspaces, // All workspaces
-          };
-
-
-          return user;
-        } catch (error) {
-
-          if (error instanceof Error) {
-
+            workspace: data.workspace,
+            workspaces: data.workspaces,
           }
-          return null;
+        } catch (error) {
+          console.error('Authorize error:', error)
+          return null
         }
       },
     }),

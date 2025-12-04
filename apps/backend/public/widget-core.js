@@ -127,12 +127,12 @@
             if (!this.container || !this.config.botConfig) return;
 
             const theme = this.config.botConfig.theme || {};
-            const primaryColor = theme.primaryColor || '#667eea';
-            const backgroundColor = theme.backgroundColor || '#ffffff';
-            const botMessageColor = theme.botMessageColor || '#f9fafb';
-            const botMessageTextColor = theme.botMessageTextColor || '#1f2937';
-            const fontFamily = theme.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-            const position = theme.position || this.config.position || 'bottom-right';
+            const primaryColor = theme.primaryColor;
+            const backgroundColor = theme.backgroundColor;
+            const botMessageColor = theme.botMessageColor;
+            const botMessageTextColor = theme.botMessageTextColor;
+            const fontFamily = theme.fontFamily;
+            const position = theme.position || this.config.position;
             const buttonSize = theme.buttonSize === 'large' ? '64px' : 
                               theme.buttonSize === 'small' ? '48px' : '56px';
 
@@ -236,7 +236,7 @@
                         flex: 1;
                         overflow-y: auto;
                         padding: 16px;
-                        background: ${backgroundColor};
+                        background: ${backgroundColor === 'transparent' ? '#ffffff' : backgroundColor};
                         display: flex;
                         flex-direction: column;
                         gap: 12px;
@@ -272,7 +272,7 @@
                     }
                     .wataomi-message.assistant .wataomi-message-content {
                         background: ${botMessageColor};
-                        border: 1px solid #e5e7eb;
+                        border: 1px solid ${botMessageColor === '#f3f4f6' ? '#e5e7eb' : 'rgba(0,0,0,0.1)'};
                         color: ${botMessageTextColor};
                         border-radius: 12px 12px 12px 4px;
                     }

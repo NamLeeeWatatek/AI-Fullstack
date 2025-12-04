@@ -7,11 +7,16 @@ import { FacebookProvider } from './providers/facebook.provider';
 import { GoogleProvider } from './providers/google.provider';
 import { OmiProvider } from './providers/omi.provider';
 import { WebhooksController } from './webhooks.controller';
+import { FacebookOAuthController } from './facebook-oauth.controller';
+import { FacebookOAuthService } from './facebook-oauth.service';
 import {
   ChannelConnectionEntity,
   ChannelCredentialEntity,
 } from '../integrations/infrastructure/persistence/relational/entities';
-import { ConversationEntity } from '../conversations/infrastructure/persistence/relational/entities/conversation.entity';
+import { 
+  ConversationEntity,
+  MessageEntity 
+} from '../conversations/infrastructure/persistence/relational/entities/conversation.entity';
 import { BotsModule } from '../bots/bots.module';
 
 @Module({
@@ -20,18 +25,20 @@ import { BotsModule } from '../bots/bots.module';
       ChannelConnectionEntity,
       ChannelCredentialEntity,
       ConversationEntity,
+      MessageEntity,
     ]),
     forwardRef(() => BotsModule),
   ],
-  controllers: [ChannelsController, WebhooksController],
+  controllers: [ChannelsController, WebhooksController, FacebookOAuthController],
   providers: [
     ChannelsService,
     ChannelStrategy,
     FacebookProvider,
     GoogleProvider,
     OmiProvider,
+    FacebookOAuthService,
   ],
-  exports: [ChannelStrategy, ChannelsService],
+  exports: [ChannelStrategy, ChannelsService, FacebookOAuthService],
 })
 export class ChannelsModule implements OnModuleInit {
   constructor(

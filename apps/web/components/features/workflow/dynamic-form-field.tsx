@@ -4,6 +4,7 @@ import { useState, useEffect, memo } from 'react'
 import { KeyValueEditor } from './key-value-editor'
 import { FiUpload, FiX } from 'react-icons/fi'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Spinner } from '@/components/ui/spinner'
 import { fetchAPI } from '@/lib/api'
 import {
     DropdownMenu,
@@ -329,7 +330,7 @@ export const DynamicFormField = memo(function DynamicFormField({ field, value, o
                             >
                                 {uploadingFiles ? (
                                     <div className="flex flex-col items-center">
-                                        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-2" />
+                                        <Spinner className="w-8 h-8 mb-2" />
                                         <span className="text-sm text-muted-foreground">Uploading...</span>
                                     </div>
                                 ) : (
