@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { RoleSeedService } from './role-seed.service';
@@ -11,3 +11,4 @@ import { PermissionEntity } from '../../../../permissions/infrastructure/persist
   exports: [RoleSeedService],
 })
 export class RoleSeedModule {}
+

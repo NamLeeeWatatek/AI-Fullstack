@@ -1,4 +1,4 @@
-import {
+﻿import {
   CreateDateColumn,
   Entity,
   Index,
@@ -37,3 +37,4 @@ export class SessionEntity extends EntityRelationalHelper {
   @DeleteDateColumn()
   deletedAt: Date;
 }
+

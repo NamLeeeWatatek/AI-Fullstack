@@ -1,4 +1,4 @@
-
+﻿
 import axiosClient from '@/lib/axios-client'
 import type {
   GetKnowledgeBasesResponse,
@@ -39,10 +39,9 @@ import type {
  * @param workspaceId - Optional workspace ID to filter knowledge bases
  */
 export async function getKnowledgeBases(workspaceId?: string): Promise<GetKnowledgeBasesResponse> {
-  const response = await axiosClient.get('/knowledge-bases', {
+  return axiosClient.get('/knowledge-bases', {
     params: workspaceId ? { workspaceId } : undefined
   })
-  return response.data
 }
 
 /**
@@ -263,3 +262,4 @@ export async function unassignAgentFromKB(kbId: string, agentId: string): Promis
 export async function getKBAgentAssignments(kbId: string): Promise<GetAgentAssignmentsResponse> {
   return axiosClient.get(`/knowledge-bases/${kbId}/agents`)
 }
+

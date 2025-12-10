@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   WorkspaceEntity,
@@ -27,3 +27,4 @@ import { WorkspaceContextMiddleware } from './middleware/workspace-context.middl
   ],
 })
 export class WorkspacesModule {}
+

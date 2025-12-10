@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNumber,
   IsOptional,
@@ -89,3 +89,4 @@ export class QueryUserDto {
   @Type(() => SortUserDto)
   sort?: SortUserDto[] | null;
 }
+

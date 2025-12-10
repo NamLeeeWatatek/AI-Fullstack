@@ -1,4 +1,4 @@
-export type AppConfig = {
+﻿export type AppConfig = {
   nodeEnv: string;
   name: string;
   workingDirectory: string;
@@ -9,3 +9,4 @@ export type AppConfig = {
   fallbackLanguage: string;
   headerLanguage: string;
 };
+

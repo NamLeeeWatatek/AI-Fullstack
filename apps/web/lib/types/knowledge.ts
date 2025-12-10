@@ -1,4 +1,4 @@
-
+﻿
 export interface KnowledgeDocument {
   id: string
   title: string
@@ -27,3 +27,4 @@ export interface KnowledgeTag {
   color?: string
   count?: number
 }
+

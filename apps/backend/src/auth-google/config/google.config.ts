@@ -1,4 +1,4 @@
-import { registerAs } from '@nestjs/config';
+﻿import { registerAs } from '@nestjs/config';
 
 import { IsOptional, IsString } from 'class-validator';
 import validateConfig from '../../utils/validate-config';
@@ -22,3 +22,4 @@ export default registerAs<GoogleConfig>('google', () => {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   };
 });
+

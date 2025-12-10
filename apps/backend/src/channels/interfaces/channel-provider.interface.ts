@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Message payload for sending messages through a channel
  */
 export interface ChannelMessage {
@@ -40,3 +40,4 @@ export interface ChannelProvider {
 
   parseIncomingMessage(payload: any): IncomingMessage;
 }
+

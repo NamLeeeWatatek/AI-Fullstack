@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Centralized WebSocket Service
  * Uses Socket.IO for real-time communication
  */
@@ -173,3 +173,4 @@ if (typeof window !== 'undefined') {
         wsService.disconnectAll()
     })
 }
+

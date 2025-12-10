@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
+﻿import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -90,7 +90,7 @@ export class FacebookOAuthService extends BaseOAuthService {
 
       this.logger.error('Token exchange failed:', errorData || error.message);
 
-      // ✅ FIX: Better error message for used authorization code
+      // âœ… FIX: Better error message for used authorization code
       if (errorCode === 100 && errorSubcode === 36009) {
         throw new HttpException(
           'This authorization code has already been used. Please try connecting again from the beginning.',
@@ -124,7 +124,10 @@ export class FacebookOAuthService extends BaseOAuthService {
       const data: FacebookUserPages = response.data;
       return data.data || [];
     } catch (error: any) {
-      this.logger.error('Get pages failed:', error.response?.data || error.message);
+      this.logger.error(
+        'Get pages failed:',
+        error.response?.data || error.message,
+      );
       throw new HttpException(
         error.response?.data?.error?.message || 'Failed to get Facebook pages',
         HttpStatus.BAD_REQUEST,
@@ -132,7 +135,10 @@ export class FacebookOAuthService extends BaseOAuthService {
     }
   }
 
-  async getUserInfo(userId: string, pageAccessToken: string): Promise<{
+  async getUserInfo(
+    userId: string,
+    pageAccessToken: string,
+  ): Promise<{
     name?: string;
     profile_pic?: string;
     first_name?: string;
@@ -151,7 +157,10 @@ export class FacebookOAuthService extends BaseOAuthService {
 
       return response.data;
     } catch (error: any) {
-      this.logger.warn(`Get user info failed for ${userId}:`, error.response?.data || error.message);
+      this.logger.warn(
+        `Get user info failed for ${userId}:`,
+        error.response?.data || error.message,
+      );
       return {};
     }
   }
@@ -225,15 +234,15 @@ export class FacebookOAuthService extends BaseOAuthService {
     metadata?: Record<string, any>,
   ): Promise<ChannelCredentialEntity> {
     const verifyToken = metadata?.verifyToken as string | undefined;
-    
-    // ✅ FIX: Require verify token, no hardcode fallback
+
+    // âœ… FIX: Require verify token, no hardcode fallback
     if (!verifyToken) {
       throw new HttpException(
         'Verify token is required for Facebook webhook setup',
         HttpStatus.BAD_REQUEST,
       );
     }
-    
+
     return super.updateCredential(workspaceId, appId, appSecret, {
       verifyToken,
       apiVersion: this.apiVersion,
@@ -262,8 +271,12 @@ export class FacebookOAuthService extends BaseOAuthService {
       this.logger.log(`Subscribed to webhooks for page ${pageId}:`, data);
       return data.success === true;
     } catch (error: any) {
-      this.logger.error('Subscribe webhooks error:', error.response?.data || error.message);
+      this.logger.error(
+        'Subscribe webhooks error:',
+        error.response?.data || error.message,
+      );
       return false;
     }
   }
 }
+

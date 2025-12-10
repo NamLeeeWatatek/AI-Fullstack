@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
+﻿import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThanOrEqual } from 'typeorm';
 import {
@@ -34,17 +40,23 @@ export class ConversationsService {
     private channelStrategy: ChannelStrategy,
     @Inject(forwardRef(() => ChannelsService))
     private channelsService: ChannelsService,
-  ) { }
+  ) {}
 
   async create(createDto: CreateConversationDto) {
-    // ✅ FIX: Validate channel exists if channelId is provided
+    // âœ… FIX: Validate channel exists if channelId is provided
     if (createDto.channelId) {
       const channel = await this.channelsService.findOne(createDto.channelId);
       if (!channel) {
-        this.logger.error(`❌ Cannot create conversation: Channel ${createDto.channelId} not found`);
-        throw new Error(`Channel ${createDto.channelId} not found. Please reconnect the channel.`);
+        this.logger.error(
+          `âŒ Cannot create conversation: Channel ${createDto.channelId} not found`,
+        );
+        throw new Error(
+          `Channel ${createDto.channelId} not found. Please reconnect the channel.`,
+        );
       }
-      this.logger.log(`✅ Channel ${createDto.channelId} validated for new conversation`);
+      this.logger.log(
+        `âœ… Channel ${createDto.channelId} validated for new conversation`,
+      );
     }
 
     const conversation = this.conversationRepository.create({
@@ -67,36 +79,43 @@ export class ConversationsService {
     workspaceId?: string;
     onlyChannelConversations?: boolean;
   }) {
-    // 🔍 DEBUG: Log filter options
+    // ðŸ” DEBUG: Log filter options
     this.logger.log('========== FIND ALL CHANNEL CONVERSATIONS ==========');
     this.logger.log('Options:', JSON.stringify(options, null, 2));
 
-    // ✅ PROFESSIONAL: This service ONLY handles CHANNEL conversations
+    // âœ… PROFESSIONAL: This service ONLY handles CHANNEL conversations
     // AI chat conversations are handled by AiConversationsService
     const query = this.conversationRepository
       .createQueryBuilder('conversation')
       .where('conversation.deletedAt IS NULL')
-      .andWhere('conversation.channelId IS NOT NULL'); // ✅ ALWAYS filter for channel conversations
+      .andWhere('conversation.channelId IS NOT NULL'); // âœ… ALWAYS filter for channel conversations
 
     // If filtering by workspace, use INNER JOIN to ensure bot exists and belongs to workspace
     // Otherwise use LEFT JOIN to include conversations without bots
     if (options.workspaceId) {
-      this.logger.log(`✅ Filter: workspaceId = ${options.workspaceId}`);
-      query.innerJoinAndSelect('conversation.bot', 'bot', 'bot.workspaceId = :workspaceId', {
-        workspaceId: options.workspaceId
-      });
+      this.logger.log(`âœ… Filter: workspaceId = ${options.workspaceId}`);
+      query.innerJoinAndSelect(
+        'conversation.bot',
+        'bot',
+        'bot.workspaceId = :workspaceId',
+        {
+          workspaceId: options.workspaceId,
+        },
+      );
     } else {
-      this.logger.warn('⚠️ NO workspaceId filter - will return all workspaces!');
+      this.logger.warn(
+        'âš ï¸ NO workspaceId filter - will return all workspaces!',
+      );
       query.leftJoinAndSelect('conversation.bot', 'bot');
     }
 
     if (options.botId) {
-      this.logger.log(`✅ Filter: botId = ${options.botId}`);
+      this.logger.log(`âœ… Filter: botId = ${options.botId}`);
       query.andWhere('conversation.botId = :botId', { botId: options.botId });
     }
 
     if (options.channelType) {
-      this.logger.log(`✅ Filter: channelType = ${options.channelType}`);
+      this.logger.log(`âœ… Filter: channelType = ${options.channelType}`);
       query.andWhere('conversation.channelType = :channelType', {
         channelType: options.channelType,
       });
@@ -128,14 +147,14 @@ export class ConversationsService {
       .skip((page - 1) * limit)
       .take(limit);
 
-    // 🔍 DEBUG: Log SQL query
+    // ðŸ” DEBUG: Log SQL query
     const sql = query.getSql();
-    this.logger.log('📝 Generated SQL:', sql);
-    this.logger.log('📝 Parameters:', JSON.stringify(query.getParameters()));
+    this.logger.log('ðŸ“ Generated SQL:', sql);
+    this.logger.log('ðŸ“ Parameters:', JSON.stringify(query.getParameters()));
 
     const [items, total] = await query.getManyAndCount();
 
-    this.logger.log(`📊 Query result: ${items.length} items, ${total} total`);
+    this.logger.log(`ðŸ“Š Query result: ${items.length} items, ${total} total`);
     if (items.length > 0) {
       this.logger.log('Sample result:', {
         id: items[0].id,
@@ -144,7 +163,7 @@ export class ConversationsService {
         channelType: items[0].channelType,
       });
     } else {
-      this.logger.warn('❌ NO RESULTS! Check filters above.');
+      this.logger.warn('âŒ NO RESULTS! Check filters above.');
     }
 
     const formattedItems = await Promise.all(
@@ -160,7 +179,9 @@ export class ConversationsService {
               channelMetadata = channel.metadata || {};
             }
           } catch (error) {
-            this.logger.warn(`Failed to fetch channel info for ${item.channelId}: ${error.message}`);
+            this.logger.warn(
+              `Failed to fetch channel info for ${item.channelId}: ${error.message}`,
+            );
           }
         }
 
@@ -173,8 +194,7 @@ export class ConversationsService {
           if (lastMsg) {
             lastMessage = lastMsg.content;
           }
-        } catch (error) {
-        }
+        } catch (error) {}
 
         return {
           ...item,
@@ -182,7 +202,7 @@ export class ConversationsService {
           channelMetadata,
           lastMessage,
         };
-      })
+      }),
     );
 
     return {
@@ -239,9 +259,11 @@ export class ConversationsService {
     const updated = await this.conversationRepository.save(conversation);
 
     // Emit event for real-time updates
-    this.conversationsGateway.server.to(id).emit('conversation:updated', updated);
+    this.conversationsGateway.server
+      .to(id)
+      .emit('conversation:updated', updated);
 
-    this.logger.log(`👤 Agent ${agentId} took over conversation ${id}`);
+    this.logger.log(`ðŸ‘¤ Agent ${agentId} took over conversation ${id}`);
 
     return updated;
   }
@@ -262,9 +284,11 @@ export class ConversationsService {
     const updated = await this.conversationRepository.save(conversation);
 
     // Emit event for real-time updates
-    this.conversationsGateway.server.to(id).emit('conversation:updated', updated);
+    this.conversationsGateway.server
+      .to(id)
+      .emit('conversation:updated', updated);
 
-    this.logger.log(`🤖 Conversation ${id} handed back to bot`);
+    this.logger.log(`ðŸ¤– Conversation ${id} handed back to bot`);
 
     return updated;
   }
@@ -304,13 +328,24 @@ export class ConversationsService {
     await this.conversationRepository.save(conversation);
 
     // Try to send to external channel if it's an assistant message
-    if (createDto.role === 'assistant' && conversation.externalId && conversation.channelType) {
+    if (
+      createDto.role === 'assistant' &&
+      conversation.externalId &&
+      conversation.channelType
+    ) {
       try {
-        await this.sendMessageToExternalChannel(conversation, createDto.content);
+        await this.sendMessageToExternalChannel(
+          conversation,
+          createDto.content,
+        );
       } catch (error) {
         // Log error but don't fail the request - message is already saved
-        this.logger.error(`Failed to send message to external channel: ${error.message}`);
-        this.logger.warn(`💡 Message saved to database but not sent to ${conversation.channelType}`);
+        this.logger.error(
+          `Failed to send message to external channel: ${error.message}`,
+        );
+        this.logger.warn(
+          `ðŸ’¡ Message saved to database but not sent to ${conversation.channelType}`,
+        );
       }
     }
 
@@ -323,7 +358,7 @@ export class ConversationsService {
   ): Promise<void> {
     try {
       this.logger.log(
-        `🔄 Sending message to ${conversation.channelType} channel for conversation ${conversation.id}`,
+        `ðŸ”„ Sending message to ${conversation.channelType} channel for conversation ${conversation.id}`,
       );
 
       // Debug: Log conversation details
@@ -340,7 +375,7 @@ export class ConversationsService {
       // Get channel connection to get access token
       if (!conversation.channelId) {
         this.logger.warn(
-          `⚠️  No channelId for conversation ${conversation.id}. Channel may have been disconnected. Skipping external message send.`,
+          `âš ï¸  No channelId for conversation ${conversation.id}. Channel may have been disconnected. Skipping external message send.`,
         );
         return; // Gracefully skip if channel was disconnected
       }
@@ -354,19 +389,29 @@ export class ConversationsService {
       );
 
       if (!channel) {
-        this.logger.warn(`⚠️ Channel ${conversation.channelId} not found - conversation may be orphaned`);
-        this.logger.warn(`💡 Message saved to database but not sent to external channel`);
+        this.logger.warn(
+          `âš ï¸ Channel ${conversation.channelId} not found - conversation may be orphaned`,
+        );
+        this.logger.warn(
+          `ðŸ’¡ Message saved to database but not sent to external channel`,
+        );
         // Don't throw error - message is already saved, just can't send to external channel
         return;
       }
 
-      this.logger.log(`✅ Found channel: ${channel.name} (${channel.id}, workspace: ${channel.workspaceId})`);
+      this.logger.log(
+        `âœ… Found channel: ${channel.name} (${channel.id}, workspace: ${channel.workspaceId})`,
+      );
 
       // Get provider for this channel type
-      const provider = this.channelStrategy.getProvider(conversation.channelType);
+      const provider = this.channelStrategy.getProvider(
+        conversation.channelType,
+      );
 
       if (!provider) {
-        this.logger.warn(`No provider found for channel type: ${conversation.channelType}`);
+        this.logger.warn(
+          `No provider found for channel type: ${conversation.channelType}`,
+        );
         return;
       }
 
@@ -386,11 +431,11 @@ export class ConversationsService {
 
       if (result.success) {
         this.logger.log(
-          `✅ Message sent successfully to ${conversation.channelType} (messageId: ${result.messageId})`,
+          `âœ… Message sent successfully to ${conversation.channelType} (messageId: ${result.messageId})`,
         );
       } else {
         this.logger.error(
-          `❌ Failed to send message to ${conversation.channelType}: ${result.error}`,
+          `âŒ Failed to send message to ${conversation.channelType}: ${result.error}`,
         );
       }
     } catch (error) {
@@ -435,14 +480,14 @@ export class ConversationsService {
 
     const limit = Math.min(options?.limit ?? 50, 100);
 
-    // ✅ Order by DESC (newest first) for standard chat app behavior
+    // âœ… Order by DESC (newest first) for standard chat app behavior
     // Frontend will display in order received (oldest at top, newest at bottom)
     const messages = await query
       .orderBy('message.sentAt', 'DESC')
       .take(limit)
       .getMany();
 
-    // ✅ Reverse to get chronological order (oldest first, newest last)
+    // âœ… Reverse to get chronological order (oldest first, newest last)
     // This makes it easier for frontend to append new messages
     const chronologicalMessages = messages.reverse();
 
@@ -609,7 +654,8 @@ export class ConversationsService {
     } else {
       // Update existing conversation
       conversation.contactName = params.contactName || conversation.contactName;
-      conversation.contactAvatar = params.contactAvatar || conversation.contactAvatar;
+      conversation.contactAvatar =
+        params.contactAvatar || conversation.contactAvatar;
       conversation.lastMessageAt = new Date();
       conversation.status = 'active';
 
@@ -622,7 +668,10 @@ export class ConversationsService {
       }
 
       if (params.metadata) {
-        conversation.metadata = { ...conversation.metadata, ...params.metadata };
+        conversation.metadata = {
+          ...conversation.metadata,
+          ...params.metadata,
+        };
       }
     }
 
@@ -645,3 +694,4 @@ export class ConversationsService {
     return this.messageRepository.save(message);
   }
 }
+

@@ -1,4 +1,4 @@
-import { plainToClass } from 'class-transformer';
+﻿import { plainToClass } from 'class-transformer';
 import { validateSync } from 'class-validator';
 import { ClassConstructor } from 'class-transformer/types/interfaces';
 
@@ -20,3 +20,4 @@ function validateConfig<T extends object>(
 }
 
 export default validateConfig;
+

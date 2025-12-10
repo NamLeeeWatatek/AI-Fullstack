@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   HttpCode,
@@ -40,3 +40,4 @@ export class AuthFacebookController {
     return this.authService.validateSocialLogin('facebook', socialData);
   }
 }
+

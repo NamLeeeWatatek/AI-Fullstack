@@ -1,4 +1,4 @@
-export type DatabaseConfig = {
+﻿export type DatabaseConfig = {
   isDocumentDatabase: boolean;
   url?: string;
   type?: string;
@@ -15,3 +15,4 @@ export type DatabaseConfig = {
   key?: string;
   cert?: string;
 };
+

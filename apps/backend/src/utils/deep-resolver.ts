@@ -1,4 +1,4 @@
-async function deepResolvePromises(input) {
+﻿async function deepResolvePromises(input) {
   if (input instanceof Promise) {
     return await input;
   }
@@ -28,3 +28,4 @@ async function deepResolvePromises(input) {
 }
 
 export default deepResolvePromises;
+

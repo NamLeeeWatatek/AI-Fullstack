@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Knowledge Base Redux Slice
  * Manages KB state, folders, documents, and operations
  */
@@ -431,3 +431,4 @@ export const selectHasProcessingDocuments = (state: { knowledgeBase: KnowledgeBa
 }
 
 export default knowledgeBaseSlice.reducer
+

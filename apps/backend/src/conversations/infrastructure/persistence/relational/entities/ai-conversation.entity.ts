@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -49,3 +49,4 @@ export class AiConversationEntity extends EntityRelationalHelper {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }
+

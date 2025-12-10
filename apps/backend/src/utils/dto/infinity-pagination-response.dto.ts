@@ -1,4 +1,4 @@
-import { Type } from '@nestjs/common';
+﻿import { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class InfinityPaginationResponseDto<T> {
@@ -25,3 +25,4 @@ export function InfinityPaginationResponse<T>(classReference: Type<T>) {
 
   return Pagination;
 }
+

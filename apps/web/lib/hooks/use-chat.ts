@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
@@ -92,3 +92,4 @@ export function useChat({ conversationId, onMessageReceived }: UseChatOptions) {
         sending,
     };
 }
+

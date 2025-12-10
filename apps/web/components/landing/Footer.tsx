@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { MdAutoAwesome } from "react-icons/md";
 
@@ -19,31 +19,31 @@ export default function Footer() {
             </p>
           </div>
           <div>
-            <h4 className="font-bold text-slate-900 mb-4">Sản phẩm</h4>
+            <h4 className="font-bold text-slate-900 mb-4">Sáº£n pháº©m</h4>
             <ul className="space-y-3 text-sm text-slate-600">
               <li>
                 <a href="#" className="hover:text-indigo-600 transition-colors">
-                  Tính năng
+                  TÃ­nh nÄƒng
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-indigo-600 transition-colors">
-                  Bảng giá
+                  Báº£ng giÃ¡
                 </a>
               </li>
               <li>
                 <a href="#" className="hover:text-indigo-600 transition-colors">
-                  Tích hợp
+                  TÃ­ch há»£p
                 </a>
               </li>
             </ul>
           </div>
           <div>
-            <h4 className="font-bold text-slate-900 mb-4">Tài nguyên</h4>
+            <h4 className="font-bold text-slate-900 mb-4">TÃ i nguyÃªn</h4>
             <ul className="space-y-3 text-sm text-slate-600">
               <li>
                 <a href="#" className="hover:text-indigo-600 transition-colors">
-                  Tài liệu
+                  TÃ i liá»‡u
                 </a>
               </li>
               <li>
@@ -53,17 +53,17 @@ export default function Footer() {
               </li>
               <li>
                 <a href="#" className="hover:text-indigo-600 transition-colors">
-                  Cộng đồng
+                  Cá»™ng Ä‘á»“ng
                 </a>
               </li>
             </ul>
           </div>
           <div>
-            <h4 className="font-bold text-slate-900 mb-4">Công ty</h4>
+            <h4 className="font-bold text-slate-900 mb-4">CÃ´ng ty</h4>
             <ul className="space-y-3 text-sm text-slate-600">
               <li>
                 <a href="#" className="hover:text-indigo-600 transition-colors">
-                  Về chúng tôi
+                  Vá» chÃºng tÃ´i
                 </a>
               </li>
               <li>
@@ -73,16 +73,17 @@ export default function Footer() {
               </li>
               <li>
                 <a href="#" className="hover:text-indigo-600 transition-colors">
-                  Liên hệ
+                  LiÃªn há»‡
                 </a>
               </li>
             </ul>
           </div>
         </div>
         <div className="pt-8 border-t border-slate-200 text-center text-sm text-slate-500">
-          © 2024 WataOmi. All rights reserved.
+          Â© 2024 WataOmi. All rights reserved.
         </div>
       </div>
     </footer>
   );
 }
+

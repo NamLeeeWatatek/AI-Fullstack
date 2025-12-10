@@ -1,0 +1,200 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { Button } from '@/components/ui/Button'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card'
+import { Spinner } from '@/components/ui/Spinner'
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
+import type { RootState } from '@/lib/store/index'
+import { flowsApi } from '@/lib/api/flows'
+import { fetchFlow } from '@/lib/store/slices/flowsSlice'
+import { useParams, useRouter } from 'next/navigation'
+import toast from '@/lib/toast'
+import { UGCFactoryForm } from '@/components/features/ugc-factory/UGCFactoryForm'
+import { UGCFactoryExecutionStatus } from '@/components/features/ugc-factory/UGCFactoryExecutionStatus'
+import { UGCFactoryResults } from '@/components/features/ugc-factory/UGCFactoryResults'
+import { UGCFactoryExecutionHistory } from '@/components/features/ugc-factory/UGCFactoryExecutionHistory'
+import { FiArrowLeft } from 'react-icons/fi'
+
+// Inline selectors for flows state
+const selectFlowById = (id: string) => (state: RootState) => state.flows.currentFlow?.id === id ? state.flows.currentFlow : null
+const selectFlowProperties = (id: string) => (state: RootState) => {
+    const flow = state.flows.currentFlow
+    if (!flow?.nodes) return []
+
+    // Return properties directly from backend - dynamic form handles the format
+    for (const node of flow.nodes) {
+        if (node.properties && Array.isArray(node.properties) && node.properties.length > 0) {
+            if (node.type === 'manual' || node.type === 'trigger') continue
+            return node.properties
+        }
+    }
+    return []
+}
+const selectFlowLoading = (state: RootState) => state.flows.loading
+
+export default function UGCFactoryFlowPage() {
+    const params = useParams()
+    const router = useRouter()
+    const flowId = params.id as string
+
+    // Local state
+    const [formData, setFormData] = useState<Record<string, any>>({})
+    const [executionStatus, setExecutionStatus] = useState<'idle' | 'running' | 'completed' | 'failed'>('idle')
+    const [executionId, setExecutionId] = useState<string | null>(null)
+    const [executionResult, setExecutionResult] = useState<any>(null)
+    const [executionError, setExecutionError] = useState<string | null>(null)
+
+    const dispatch = useAppDispatch()
+
+    // Redux state
+    const selectedFlow = useAppSelector(selectFlowById(flowId))
+    const flowProperties: any[] = useAppSelector(selectFlowProperties(flowId))
+    const flowLoading = useAppSelector(selectFlowLoading)
+
+    useEffect(() => {
+        if (flowId) {
+            dispatch(fetchFlow(flowId))
+        }
+    }, [dispatch, flowId])
+
+    const handleExecute = async () => {
+        if (!selectedFlow) {
+            toast.error('No flow selected')
+            return
+        }
+
+        if (!selectedFlow.id || (typeof selectedFlow.id === 'string' && selectedFlow.id === 'NaN') || selectedFlow.id === null || selectedFlow.id === undefined) {
+            console.error('Invalid flow ID:', selectedFlow.id, 'Flow:', selectedFlow, 'Type:', typeof selectedFlow.id)
+            toast.error('Invalid flow ID')
+            return
+        }
+
+        try {
+            setExecutionStatus('running')
+            setExecutionError(null)
+
+            console.log('Executing flow:', selectedFlow.id, typeof selectedFlow.id)
+            console.log('Form data:', formData)
+
+            const executionData = formData
+
+            console.log('Execution data:', executionData)
+
+            console.log('About to execute flow ID:', selectedFlow.id, 'URL:', `/flows/${selectedFlow.id}/execute`)
+
+            const result = await flowsApi.execute(selectedFlow.id, executionData)
+            console.log('Execution started result:', result)
+
+            if (result.executionId) {
+                setExecutionId(result.executionId)
+                toast.success('Execution started!')
+                pollExecutionStatus(result.executionId)
+            } else {
+                throw new Error('No execution ID returned')
+            }
+        } catch (err: any) {
+            console.error('Execute error:', err)
+            toast.error(err.message || 'Failed to execute')
+            setExecutionStatus('failed')
+            setExecutionError(err.message)
+        }
+    }
+
+    const pollExecutionStatus = async (execId: string) => {
+        const maxAttempts = 30
+        let attempts = 0
+
+        const interval = setInterval(async () => {
+            attempts++
+
+            try {
+                const execution = await flowsApi.getExecution(execId)
+
+                if (execution.status === 'completed') {
+                    setExecutionStatus('completed')
+                    setExecutionResult(execution.output)
+                    toast.success('Execution completed!')
+                    clearInterval(interval)
+                } else if (execution.status === 'failed') {
+                    setExecutionStatus('failed')
+                    setExecutionError(execution.error || 'Execution failed')
+                    toast.error('Execution failed')
+                    clearInterval(interval)
+                } else if (attempts >= maxAttempts) {
+                    setExecutionStatus('failed')
+                    setExecutionError('Execution timeout')
+                    toast.error('Execution timeout')
+                    clearInterval(interval)
+                }
+            } catch (err) {
+                console.error('Failed to poll execution status', err)
+                clearInterval(interval)
+                setExecutionStatus('failed')
+            }
+        }, 2000)
+    }
+
+    const handleStartNew = () => {
+        setFormData({})
+        setExecutionStatus('idle')
+        setExecutionResult(null)
+        setExecutionError(null)
+    }
+
+    const handleBack = () => {
+        router.push('/ugc-factory')
+    }
+
+    if (flowLoading || !selectedFlow) {
+        return (
+            <div className="flex justify-center items-center h-full">
+                <Spinner className="w-8 h-8" />
+            </div>
+        )
+    }
+
+    // Flow detail view
+    return (
+        <div className="h-full p-8">
+            <div className="max-w-7xl mx-auto">
+                {/* Header */}
+                <div className="mb-6 flex items-center justify-between">
+                    <div>
+                        <p className="text-muted-foreground">{selectedFlow.description}</p>
+                    </div>
+                    <Button variant="outline" onClick={handleBack}>
+                        <FiArrowLeft className="w-4 h-4 mr-2" />
+                        Back to UGC Factory
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <UGCFactoryForm
+                        properties={flowProperties}
+                        formData={formData}
+                        onFormDataChange={setFormData}
+                        onSubmit={handleExecute}
+                    />
+
+                    <div className="space-y-6">
+                        <UGCFactoryExecutionStatus
+                            status={executionStatus}
+                            executionId={executionId}
+                            onStartNew={handleStartNew}
+                        />
+
+                        <UGCFactoryExecutionHistory
+                            flowId={selectedFlow.id}
+                            executionStatus={executionStatus}
+                            executionId={executionId}
+                            result={executionResult}
+                            error={executionError}
+                            onStartNew={handleStartNew}
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}

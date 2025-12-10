@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Spinner } from '@/components/ui/spinner'
+import { Spinner } from '@/components/ui/Spinner'
 import { FiCheckCircle, FiXCircle } from 'react-icons/fi'
 
 export default function OAuthCallbackPage() {

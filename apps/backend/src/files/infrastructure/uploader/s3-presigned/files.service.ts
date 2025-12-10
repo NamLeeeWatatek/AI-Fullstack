@@ -1,4 +1,4 @@
-import {
+﻿import {
   HttpStatus,
   Injectable,
   PayloadTooLargeException,
@@ -59,14 +59,14 @@ export class FilesS3PresignedService {
 
     try {
       await this.s3.send(new HeadBucketCommand({ Bucket: bucket }));
-      this.logger.log(`✅ Bucket '${bucket}' exists`);
+      this.logger.log(`âœ… Bucket '${bucket}' exists`);
       this.bucketsChecked.add(bucket);
     } catch (error) {
       if (
         error.name === 'NotFound' ||
         error.$metadata?.httpStatusCode === 404
       ) {
-        this.logger.log(`📦 Creating bucket '${bucket}'...`);
+        this.logger.log(`ðŸ“¦ Creating bucket '${bucket}'...`);
 
         try {
           await this.s3.send(new CreateBucketCommand({ Bucket: bucket }));
@@ -90,17 +90,17 @@ export class FilesS3PresignedService {
             }),
           );
 
-          this.logger.log(`✅ Bucket '${bucket}' created successfully`);
+          this.logger.log(`âœ… Bucket '${bucket}' created successfully`);
           this.bucketsChecked.add(bucket);
         } catch (createError) {
           this.logger.error(
-            `❌ Failed to create bucket '${bucket}': ${createError.message}`,
+            `âŒ Failed to create bucket '${bucket}': ${createError.message}`,
           );
           throw createError;
         }
       } else {
         this.logger.error(
-          `❌ Error checking bucket '${bucket}': ${error.message}`,
+          `âŒ Error checking bucket '${bucket}': ${error.message}`,
         );
         throw error;
       }
@@ -201,3 +201,4 @@ export class FilesS3PresignedService {
     return signedUrl;
   }
 }
+

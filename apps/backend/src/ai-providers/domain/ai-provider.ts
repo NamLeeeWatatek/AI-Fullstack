@@ -1,7 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * UserAiProvider domain entity - theo schema mới
+ * UserAiProvider domain entity - theo schema má»›i
  * Table: user_ai_providers
  */
 export class UserAiProvider {
@@ -49,7 +49,7 @@ export class UserAiProvider {
 }
 
 /**
- * WorkspaceAiProvider domain entity - theo schema mới
+ * WorkspaceAiProvider domain entity - theo schema má»›i
  * Table: workspace_ai_providers
  */
 export class WorkspaceAiProvider {
@@ -85,7 +85,7 @@ export class WorkspaceAiProvider {
 }
 
 /**
- * AiUsageLog domain entity - theo schema mới
+ * AiUsageLog domain entity - theo schema má»›i
  * Table: ai_usage_logs
  */
 export class AiUsageLog {
@@ -116,3 +116,4 @@ export class AiUsageLog {
   @ApiProperty()
   requestedAt: Date;
 }
+

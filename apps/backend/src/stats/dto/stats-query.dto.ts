@@ -1,4 +1,4 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
 
 export enum TimePeriod {
@@ -54,3 +54,4 @@ export class StatsQueryDto {
   @IsOptional()
   includeTrend?: boolean;
 }
+

@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+﻿import { Transform } from 'class-transformer';
 
 export class EntityDocumentHelper {
   @Transform(
@@ -15,3 +15,4 @@ export class EntityDocumentHelper {
   )
   public _id: string;
 }
+

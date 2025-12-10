@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Get,
@@ -116,7 +116,7 @@ export class AuthController {
   }
 
   /**
-   * ✅ NEW: Refresh token endpoint for frontend (no guard needed)
+   * âœ… NEW: Refresh token endpoint for frontend (no guard needed)
    * Accepts refreshToken in body instead of header
    */
   @Post('refresh-token')
@@ -125,7 +125,7 @@ export class AuthController {
     type: RefreshResponseDto,
   })
   public async refreshTokenFromBody(
-    @Body() body: { refreshToken: string }
+    @Body() body: { refreshToken: string },
   ): Promise<RefreshResponseDto> {
     // Validate and decode refresh token to get session info
     return this.service.refreshTokenFromBody(body.refreshToken);
@@ -166,3 +166,4 @@ export class AuthController {
     return this.service.softDelete(request.user);
   }
 }
+

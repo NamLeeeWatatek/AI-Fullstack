@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -16,46 +16,40 @@ import {
 } from 'react-icons/fi'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { PermissionGate, CanCreate, CanDelete } from '@/components/auth/PermissionGate'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Spinner } from '@/components/ui/spinner'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Spinner } from '@/components/ui/Spinner'
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { WorkflowCard } from '@/components/features/workflow/workflow-card'
-import { FlowsTable } from '@/components/features/workflow/flows-table'
-import { SearchBar } from '@/components/features/workflow/search-bar'
-import { WorkflowStats } from '@/components/features/workflow/workflow-stats'
-import { Pagination } from '@/components/ui/pagination'
+} from '@/components/ui/DropdownMenu'
+
+import { Pagination } from '@/components/ui/Pagination'
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import { usePagination } from '@/lib/hooks/use-pagination'
 import { fetchFlows, createFlow, updateFlow, deleteFlow, duplicateFlow, archiveFlow } from '@/lib/store/slices/flowsSlice'
 import { setDraftTemplate } from '@/lib/store/slices/workflowEditorSlice'
 import axiosClient from '@/lib/axios-client'
 import toast from '@/lib/toast'
-import { TemplateSelector } from '@/components/features/templates/template-selector'
-import { WorkflowRunModal } from '@/components/features/workflow/workflow-run-modal'
 import type { WorkflowNode, InputField } from '@/lib/types'
+import { FlowsTable } from '@/components/features/workflow/FlowsTable'
+import { SearchBar } from '@/components/features/workflow/SearchBar'
+import { WorkflowCard } from '@/components/features/workflow/WorkflowCard'
+import { WorkflowRunModal } from '@/components/features/workflow/WorkflowRunModal'
+import { WorkflowStats } from '@/components/features/workflow/WorkflowStats'
+import { AlertDialogFooter } from '@/components/ui/AlertDialog'
+import { AlertDialog, AlertDialogContent, AlertDialogCancel, AlertDialogAction } from '@radix-ui/react-alert-dialog'
 
 interface WorkflowWithNodes {
     id: number
     name: string
-    flow_data: {
+    nodes?: WorkflowNode[]
+    edges?: unknown[]
+    // Legacy field for backward compatibility
+    flow_data?: {
         nodes?: WorkflowNode[]
         edges?: unknown[]
     }
@@ -92,13 +86,13 @@ function FlowDropdownMenu({
     }
 
     const handleEdit = () => {
-        router.push(`/flows/${flowId}/edit`)
+        router.push(`/flows/${flowId}?mode=edit`)
     }
 
     const handleDuplicate = async () => {
         try {
             const duplicated = await dispatch(duplicateFlow(flowId.toString())).unwrap()
-            router.push(`/flows/${duplicated.id}/edit`)
+            router.push(`/flows/${duplicated.id}?mode=edit`)
         } catch (error) {
             toast.error('Failed to duplicate')
         }
@@ -218,7 +212,7 @@ export default function WorkflowsPage() {
 
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
     const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all')
-    const [showTemplateSelector, setShowTemplateSelector] = useState(false)
+
 
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [flowToDelete, setFlowToDelete] = useState<{ id: number; name: string } | null>(null)
@@ -251,13 +245,13 @@ export default function WorkflowsPage() {
         try {
             const fullWorkflow = await axiosClient.get(`/flows/${workflowId}`) as any
 
-            const flowData = fullWorkflow.data || fullWorkflow.flow_data || {}
-            const nodes = flowData.nodes || []
+            // Use new structure: flow.nodes directly (fallback to data.nodes for backward compatibility)
+            const nodes = fullWorkflow.nodes || fullWorkflow.data?.nodes || fullWorkflow.flow_data?.nodes || []
 
             const startNode = nodes.find((n: WorkflowNode) => n.type === 'start' || n.type === 'trigger-manual')
 
             if (startNode && startNode.data?.config?.inputFields?.length && startNode.data.config.inputFields.length > 0) {
-                setSelectedWorkflow({ ...fullWorkflow, flow_data: flowData })
+                setSelectedWorkflow(fullWorkflow)
                 setWorkflowInputFields(startNode.data.config.inputFields)
                 setRunModalOpen(true)
             } else {
@@ -324,19 +318,11 @@ export default function WorkflowsPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <CanCreate resource="flow">
-                        <Button
-                            variant="outline"
-                            onClick={() => setShowTemplateSelector(true)}
-                        >
-                            <FiGrid className="w-4 h-4 mr-2" />
-                            Use Template
+
+                        <Button onClick={() => router.push('/flows/new?mode=edit')}>
+                            <FiPlus className="w-4 h-4 mr-2" />
+                            Create from Scratch
                         </Button>
-                        <Link href="/flows/new/edit">
-                            <Button>
-                                <FiPlus className="w-4 h-4 mr-2" />
-                                Create from Scratch
-                            </Button>
-                        </Link>
                     </CanCreate>
                 </div>
             </div>
@@ -426,9 +412,9 @@ export default function WorkflowsPage() {
                             {pagination.search ? 'Try adjusting your search terms' : 'Create your first workflow to get started'}
                         </p>
                         {!pagination.search && (
-                            <Link href="/flows/new/edit">
-                                <Button>Create Workflow</Button>
-                            </Link>
+                            <Button onClick={() => router.push('/flows/new?mode=edit')}>
+                                Create Workflow
+                            </Button>
                         )}
                     </Card>
                 ) : (
@@ -468,24 +454,7 @@ export default function WorkflowsPage() {
             }
 
 
-            {
-                showTemplateSelector && (
-                    <TemplateSelector
-                        onSelect={async (templateData) => {
-                            setShowTemplateSelector(false)
 
-                            dispatch(setDraftTemplate({
-                                name: templateData.name,
-                                nodes: templateData.nodes || [],
-                                edges: templateData.edges || []
-                            }))
-
-                            router.push('/flows/new/edit')
-                        }}
-                        onClose={() => setShowTemplateSelector(false)}
-                    />
-                )
-            }
 
 
             <WorkflowRunModal
@@ -519,3 +488,4 @@ export default function WorkflowsPage() {
         </div >
     )
 }
+

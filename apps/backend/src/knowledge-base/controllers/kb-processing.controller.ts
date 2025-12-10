@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Request } from '@nestjs/common';
+﻿import { Controller, Get, Param, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { KBProcessingQueueService } from '../services/kb-processing-queue.service';
@@ -48,3 +48,4 @@ export class KBProcessingController {
     };
   }
 }
+

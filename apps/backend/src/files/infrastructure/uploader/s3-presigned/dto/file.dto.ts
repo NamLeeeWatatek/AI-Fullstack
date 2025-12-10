@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsString } from 'class-validator';
 
 export class FileUploadDto {
@@ -14,3 +14,4 @@ export class FileUploadDto {
   @IsString()
   bucket?: string;
 }
+

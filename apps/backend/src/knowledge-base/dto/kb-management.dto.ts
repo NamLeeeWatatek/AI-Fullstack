@@ -1,4 +1,4 @@
-import {
+﻿import {
   IsString,
   IsOptional,
   IsBoolean,
@@ -142,3 +142,4 @@ export class AssignAgentDto {
   @IsOptional()
   ragSettings?: Record<string, any>;
 }
+

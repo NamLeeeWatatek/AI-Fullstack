@@ -1,4 +1,4 @@
-
+﻿
 import { useEffect, useState, useCallback } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { useSession } from 'next-auth/react'
@@ -172,3 +172,4 @@ export function useExecutionSocket(options: UseExecutionSocketOptions = {}) {
     getExecution,
   }
 }
+

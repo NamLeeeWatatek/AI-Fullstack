@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Allow, IsNotEmpty } from 'class-validator';
 
 export class AuthAppleLoginDto {
@@ -14,3 +14,4 @@ export class AuthAppleLoginDto {
   @ApiPropertyOptional()
   lastName?: string;
 }
+

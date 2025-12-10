@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import {
   ChannelProvider,
   ChannelMessage,
@@ -75,3 +75,4 @@ export class ChannelStrategy {
     return Array.from(this.providers.keys());
   }
 }
+

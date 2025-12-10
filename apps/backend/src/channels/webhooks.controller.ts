@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Post,
   Get,
@@ -101,73 +101,78 @@ export class WebhooksController {
     }
   }
 
-@Get('facebook')
-@ApiOperation({ summary: 'Verify Facebook webhook' })
-async verifyFacebookWebhook(
-  @Query() query: any,
-  @Req() req: Request,
-) {
-  // Log cực chi tiết để bắt 100% request từ Facebook
-  this.logger.log('════════════════════════════════════════');
-  this.logger.log('[FACEBOOK VERIFY] ĐÃ CÓ REQUEST VÀO');
-  this.logger.log(`IP gọi tới       : ${req.ip} | ${req.headers['x-forwarded-for'] || 'no forward'}`);
-  this.logger.log(`User-Agent       : ${req.headers['user-agent']}`);
-  this.logger.log(`Full URL         : ${req.protocol}://${req.get('host')}${req.originalUrl}`);
-  this.logger.log(`Query params     : ${JSON.stringify(req.query)}`);
-  this.logger.log(`hub.mode         : ${query['hub.mode']}`);
-  this.logger.log(`hub.verify_token : "${query['hub.verify_token']}"`);
-  this.logger.log(`hub.challenge    : ${query['hub.challenge']}`);
-  this.logger.log('════════════════════════════════════════');
+  @Get('facebook')
+  @ApiOperation({ summary: 'Verify Facebook webhook' })
+  async verifyFacebookWebhook(@Query() query: any, @Req() req: Request) {
+    // Log cá»±c chi tiáº¿t Ä‘á»ƒ báº¯t 100% request tá»« Facebook
+    this.logger.log('â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•');
+    this.logger.log('[FACEBOOK VERIFY] ÄÃƒ CÃ“ REQUEST VÃ€O');
+    this.logger.log(
+      `IP gá»i tá»›i       : ${req.ip} | ${req.headers['x-forwarded-for'] || 'no forward'}`,
+    );
+    this.logger.log(`User-Agent       : ${req.headers['user-agent']}`);
+    this.logger.log(
+      `Full URL         : ${req.protocol}://${req.get('host')}${req.originalUrl}`,
+    );
+    this.logger.log(`Query params     : ${JSON.stringify(req.query)}`);
+    this.logger.log(`hub.mode         : ${query['hub.mode']}`);
+    this.logger.log(`hub.verify_token : "${query['hub.verify_token']}"`);
+    this.logger.log(`hub.challenge    : ${query['hub.challenge']}`);
+    this.logger.log('â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•');
 
-  const mode = query['hub.mode'];
-  const token = query['hub.verify_token'];
-  const challenge = query['hub.challenge'];
+    const mode = query['hub.mode'];
+    const token = query['hub.verify_token'];
+    const challenge = query['hub.challenge'];
 
-  // Validate mode
-  if (mode !== 'subscribe') {
-    this.logger.error('Mode không phải subscribe');
-    return 'Forbidden';
-  }
-
-  // ✅ FIX: Get verify token from database instead of hardcode
-  try {
-    // Get any active Facebook credential (workspace-agnostic for webhook verification)
-    const credential = await this.facebookOAuthService['credentialRepository'].findOne({
-      where: {
-        provider: 'facebook',
-        isActive: true,
-      },
-      order: {
-        updatedAt: 'DESC', // Get most recent
-      },
-    });
-
-    const expectedToken = credential?.metadata?.verifyToken;
-
-    if (!expectedToken) {
-      this.logger.error('VERIFY TOKEN CHƯA ĐƯỢC CẤU HÌNH!');
-      this.logger.error('→ Vui lòng setup Facebook App trong Channels page');
+    // Validate mode
+    if (mode !== 'subscribe') {
+      this.logger.error('Mode khÃ´ng pháº£i subscribe');
       return 'Forbidden';
     }
 
-    if (token !== expectedToken) {
-      this.logger.error('TOKEN KHÔNG KHỚP!');
-      this.logger.error(`→ Nhận được : "${token}"`);
-      this.logger.error(`→ Mong đợi  : "${expectedToken}"`);
-      this.logger.error(`→ Độ dài    : nhận=${token?.length || 0}, đúng=${expectedToken.length}`);
+    // âœ… FIX: Get verify token from database instead of hardcode
+    try {
+      // Get any active Facebook credential (workspace-agnostic for webhook verification)
+      const credential = await this.facebookOAuthService[
+        'credentialRepository'
+      ].findOne({
+        where: {
+          provider: 'facebook',
+          isActive: true,
+        },
+        order: {
+          updatedAt: 'DESC', // Get most recent
+        },
+      });
+
+      const expectedToken = credential?.metadata?.verifyToken;
+
+      if (!expectedToken) {
+        this.logger.error('VERIFY TOKEN CHÆ¯A ÄÆ¯á»¢C Cáº¤U HÃŒNH!');
+        this.logger.error('â†’ Vui lÃ²ng setup Facebook App trong Channels page');
+        return 'Forbidden';
+      }
+
+      if (token !== expectedToken) {
+        this.logger.error('TOKEN KHÃ”NG KHá»šP!');
+        this.logger.error(`â†’ Nháº­n Ä‘Æ°á»£c : "${token}"`);
+        this.logger.error(`â†’ Mong Ä‘á»£i  : "${expectedToken}"`);
+        this.logger.error(
+          `â†’ Äá»™ dÃ i    : nháº­n=${token?.length || 0}, Ä‘Ãºng=${expectedToken.length}`,
+        );
+        return 'Forbidden';
+      }
+
+      this.logger.log('VERIFICATION THÃ€NH CÃ”NG 100%');
+      return challenge;
+    } catch (error) {
+      this.logger.error('Lá»—i khi láº¥y verify token tá»« database:', error);
       return 'Forbidden';
     }
-
-    this.logger.log('VERIFICATION THÀNH CÔNG 100%');
-    return challenge;
-  } catch (error) {
-    this.logger.error('Lỗi khi lấy verify token từ database:', error);
-    return 'Forbidden';
   }
-}
   /**
    * Handle Facebook webhook events
-   * 
+   *
    * New implementation:
    * - Uses WebhookVerifierFactory for signature verification
    * - Uses FacebookWebhookProcessor for async processing
@@ -183,146 +188,169 @@ async verifyFacebookWebhook(
     @Req() req?: any,
   ) {
     this.logger.log('========== FACEBOOK WEBHOOK RECEIVED ==========');
-    this.logger.debug('Payload preview:', JSON.stringify(payload).substring(0, 200));
+    this.logger.debug(
+      'Payload preview:',
+      JSON.stringify(payload).substring(0, 200),
+    );
 
     try {
-      // ✅ FIX: Use raw body for signature verification if available
+      // âœ… FIX: Use raw body for signature verification if available
       const rawBody = req?.rawBody;
       const bodyForVerification = rawBody || payload;
-      
-      // Step 1: Verify signature với proper App Secret
-      const isValid = await this.verifyFacebookSignature(bodyForVerification, signature);
+
+      // Step 1: Verify signature vá»›i proper App Secret
+      const isValid = await this.verifyFacebookSignature(
+        bodyForVerification,
+        signature,
+      );
 
       if (!isValid) {
-        this.logger.error('❌ Invalid Facebook webhook signature');
-        // ⚠️ In development, log but continue processing
+        this.logger.error('âŒ Invalid Facebook webhook signature');
+        // âš ï¸ In development, log but continue processing
         if (process.env.NODE_ENV !== 'production') {
-          this.logger.warn('⚠️ Continuing in development mode despite signature mismatch');
+          this.logger.warn(
+            'âš ï¸ Continuing in development mode despite signature mismatch',
+          );
         } else {
           return { success: false, error: 'Invalid signature' };
         }
       } else {
-        this.logger.log('✅ Signature verified');
+        this.logger.log('âœ… Signature verified');
       }
 
-      // Step 2: Queue async processing và return ngay
+      // Step 2: Queue async processing vÃ  return ngay
       const result = await this.facebookProcessor.handle(payload, {
         signature,
         headers,
         receivedAt: new Date(),
       });
 
-      this.logger.log('✅ Webhook queued for processing');
+      this.logger.log('âœ… Webhook queued for processing');
 
       return result;
     } catch (error) {
-      this.logger.error(`Facebook webhook error: ${error.message}`, error.stack);
+      this.logger.error(
+        `Facebook webhook error: ${error.message}`,
+        error.stack,
+      );
       return { success: false, error: error.message };
     }
   }
 
   /**
-   * Verify Facebook webhook signature với proper App Secret
+   * Verify Facebook webhook signature vá»›i proper App Secret
    */
   private async verifyFacebookSignature(
     payload: any,
     signature?: string,
   ): Promise<boolean> {
     if (!signature) {
-      this.logger.warn('⚠️ No signature provided in webhook request');
+      this.logger.warn('âš ï¸ No signature provided in webhook request');
       return false;
     }
 
     try {
-      // ✅ FIX: Try to get App Secret from database first (per-workspace)
+      // âœ… FIX: Try to get App Secret from database first (per-workspace)
       // Then fallback to environment variable
       let appSecret: string | undefined;
 
       // Try to get pageId from payload to find the right credential
       const pageId = payload?.entry?.[0]?.id;
-      
+
       if (pageId) {
-        this.logger.debug(`🔍 Looking for credentials for page ${pageId}`);
-        
+        this.logger.debug(`ðŸ” Looking for credentials for page ${pageId}`);
+
         // Find channel connection by pageId
         const channels = await this.channelsService.findAll();
         this.logger.debug(`Found ${channels.length} total channels`);
-        
-        const facebookChannels = channels.filter(c => c.type === 'facebook');
+
+        const facebookChannels = channels.filter((c) => c.type === 'facebook');
         this.logger.debug(`Found ${facebookChannels.length} Facebook channels`);
-        
-        const channel = facebookChannels.find(c => 
-          c.metadata?.pageId === pageId
+
+        const channel = facebookChannels.find(
+          (c) => c.metadata?.pageId === pageId,
         );
 
         if (channel) {
           this.logger.debug(`Found channel: ${channel.name} (${channel.id})`);
           this.logger.debug(`Has credential: ${!!channel.credential}`);
-          this.logger.debug(`Has clientSecret: ${!!channel.credential?.clientSecret}`);
-          
+          this.logger.debug(
+            `Has clientSecret: ${!!channel.credential?.clientSecret}`,
+          );
+
           if (channel.credential?.clientSecret) {
             appSecret = channel.credential.clientSecret;
-            this.logger.log(`✅ Using App Secret from database for page ${pageId}`);
+            this.logger.log(
+              `âœ… Using App Secret from database for page ${pageId}`,
+            );
           }
         } else {
-          this.logger.warn(`⚠️ No channel found for page ${pageId}`);
+          this.logger.warn(`âš ï¸ No channel found for page ${pageId}`);
         }
       } else {
-        this.logger.warn('⚠️ No pageId found in webhook payload');
+        this.logger.warn('âš ï¸ No pageId found in webhook payload');
       }
 
       // Fallback to environment variable
       if (!appSecret) {
         appSecret = this.configService.get<string>('FACEBOOK_APP_SECRET');
         if (appSecret) {
-          this.logger.log('✅ Using App Secret from environment variable');
+          this.logger.log('âœ… Using App Secret from environment variable');
         } else {
           // Try direct process.env as fallback
           appSecret = process.env.FACEBOOK_APP_SECRET;
           if (appSecret) {
-            this.logger.log('✅ Using App Secret from process.env');
+            this.logger.log('âœ… Using App Secret from process.env');
           }
         }
       }
 
       if (!appSecret) {
-        this.logger.error('❌ No App Secret found (neither in database nor environment)');
-        this.logger.error('💡 Please either:');
-        this.logger.error('   1. Reconnect Facebook channel to save credentials in database');
+        this.logger.error(
+          'âŒ No App Secret found (neither in database nor environment)',
+        );
+        this.logger.error('ðŸ’¡ Please either:');
+        this.logger.error(
+          '   1. Reconnect Facebook channel to save credentials in database',
+        );
         this.logger.error('   2. Set FACEBOOK_APP_SECRET in .env file');
-        this.logger.warn('⚠️ Signature verification skipped - SECURITY RISK!');
+        this.logger.warn('âš ï¸ Signature verification skipped - SECURITY RISK!');
         // In development, allow webhooks without verification
         // In production, this should return false
         const allowInDev = process.env.NODE_ENV !== 'production';
         if (allowInDev) {
-          this.logger.warn('⚠️ Allowing webhook in development mode without verification');
+          this.logger.warn(
+            'âš ï¸ Allowing webhook in development mode without verification',
+          );
         }
         return allowInDev;
       }
 
       // Use WebhookVerifierFactory for verification
       const verifier = WebhookVerifierFactory.getVerifier('facebook');
-      
-      // ✅ FIX: If payload is already a string (raw body), use it directly
+
+      // âœ… FIX: If payload is already a string (raw body), use it directly
       // Otherwise stringify it (but this may cause signature mismatch)
       const isValid = verifier.verifySignature(payload, signature, appSecret);
 
       if (!isValid) {
-        this.logger.error('❌ Signature verification failed');
+        this.logger.error('âŒ Signature verification failed');
         this.logger.debug(`Payload type: ${typeof payload}`);
         this.logger.debug(`Payload is string: ${typeof payload === 'string'}`);
         this.logger.debug(`Secret used: ${appSecret.substring(0, 10)}...`);
-        
-        // ⚠️ TEMPORARY: In development, log but allow webhook
+
+        // âš ï¸ TEMPORARY: In development, log but allow webhook
         if (process.env.NODE_ENV !== 'production') {
-          this.logger.warn('⚠️ Allowing webhook in development despite signature mismatch');
+          this.logger.warn(
+            'âš ï¸ Allowing webhook in development despite signature mismatch',
+          );
           return true;
         }
       }
 
       return isValid;
     } catch (error) {
-      this.logger.error(`❌ Signature verification error: ${error.message}`);
+      this.logger.error(`âŒ Signature verification error: ${error.message}`);
       return false;
     }
   }
@@ -385,8 +413,9 @@ async verifyFacebookWebhook(
 
     if (!message) return;
 
-    this.logger.log(`Processing Facebook message from ${senderId} to page ${pageId}`);
-
+    this.logger.log(
+      `Processing Facebook message from ${senderId} to page ${pageId}`,
+    );
 
     try {
       const channel = await this.channelsService.findByExternalId(pageId);
@@ -396,17 +425,19 @@ async verifyFacebookWebhook(
         return;
       }
 
-      this.logger.log(`📱 Channel found: ${channel.name} (${channel.id})`);
-      this.logger.log(`📱 Channel metadata:`, JSON.stringify(channel.metadata));
+      this.logger.log(`ðŸ“± Channel found: ${channel.name} (${channel.id})`);
+      this.logger.log(`ðŸ“± Channel metadata:`, JSON.stringify(channel.metadata));
 
       const botId = channel.metadata?.botId as string | undefined;
 
       if (!botId) {
-        this.logger.error(`❌ No botId in channel metadata! Channel ${channel.id} needs to be linked to a bot.`);
+        this.logger.error(
+          `âŒ No botId in channel metadata! Channel ${channel.id} needs to be linked to a bot.`,
+        );
         return;
       }
 
-      this.logger.log(`🤖 Bot ID from channel: ${botId}`);
+      this.logger.log(`ðŸ¤– Bot ID from channel: ${botId}`);
 
       let contactName = 'Facebook User';
       let contactAvatar: string | undefined;
@@ -420,22 +451,25 @@ async verifyFacebookWebhook(
           contactName = userInfo.name || contactName;
           contactAvatar = userInfo.profile_pic;
         } catch (error) {
-          this.logger.warn(`Failed to get user info for ${senderId}: ${error.message}`);
+          this.logger.warn(
+            `Failed to get user info for ${senderId}: ${error.message}`,
+          );
         }
       }
 
-      const conversation = await this.conversationsService.findOrCreateFromWebhook({
-        botId,
-        channelId: channel.id,
-        channelType: 'facebook',
-        externalId: senderId,
-        contactName,
-        contactAvatar,
-        metadata: {
-          pageId,
-          recipientId,
-        },
-      });
+      const conversation =
+        await this.conversationsService.findOrCreateFromWebhook({
+          botId,
+          channelId: channel.id,
+          channelType: 'facebook',
+          externalId: senderId,
+          contactName,
+          contactAvatar,
+          metadata: {
+            pageId,
+            recipientId,
+          },
+        });
 
       try {
         this.conversationsGateway.broadcastConversationUpdate(conversation);
@@ -444,21 +478,25 @@ async verifyFacebookWebhook(
       }
 
       if (message.text) {
-        const savedMessage = await this.conversationsService.addMessageFromWebhook({
-          conversationId: conversation.id,
-          content: message.text,
-          role: 'user',
-          metadata: {
-            externalId: message.mid,
-            senderId,
-            pageId,
-            recipientId,
-            channelType: 'facebook',
-          },
-        });
+        const savedMessage =
+          await this.conversationsService.addMessageFromWebhook({
+            conversationId: conversation.id,
+            content: message.text,
+            role: 'user',
+            metadata: {
+              externalId: message.mid,
+              senderId,
+              pageId,
+              recipientId,
+              channelType: 'facebook',
+            },
+          });
 
         try {
-          this.conversationsGateway.emitNewMessage(conversation.id, savedMessage);
+          this.conversationsGateway.emitNewMessage(
+            conversation.id,
+            savedMessage,
+          );
         } catch (error) {
           this.logger.warn('Failed to emit message WebSocket event:', error);
         }
@@ -509,17 +547,18 @@ async verifyFacebookWebhook(
         return;
       }
 
-      const conversation = await this.conversationsService.findOrCreateFromWebhook({
-        botId,
-        channelId: channel.id,
-        channelType: 'instagram',
-        externalId: senderId,
-        contactName: 'Instagram User',
-        metadata: {
-          igId,
-          messageId: message.mid,
-        },
-      });
+      const conversation =
+        await this.conversationsService.findOrCreateFromWebhook({
+          botId,
+          channelId: channel.id,
+          channelType: 'instagram',
+          externalId: senderId,
+          contactName: 'Instagram User',
+          metadata: {
+            igId,
+            messageId: message.mid,
+          },
+        });
 
       try {
         this.conversationsGateway.broadcastConversationUpdate(conversation);
@@ -528,20 +567,24 @@ async verifyFacebookWebhook(
       }
 
       if (message.text) {
-        const savedMessage = await this.conversationsService.addMessageFromWebhook({
-          conversationId: conversation.id,
-          content: message.text,
-          role: 'user',
-          metadata: {
-            externalId: message.mid,
-            senderId,
-            igId,
-            channelType: 'instagram',
-          },
-        });
+        const savedMessage =
+          await this.conversationsService.addMessageFromWebhook({
+            conversationId: conversation.id,
+            content: message.text,
+            role: 'user',
+            metadata: {
+              externalId: message.mid,
+              senderId,
+              igId,
+              channelType: 'instagram',
+            },
+          });
 
         try {
-          this.conversationsGateway.emitNewMessage(conversation.id, savedMessage);
+          this.conversationsGateway.emitNewMessage(
+            conversation.id,
+            savedMessage,
+          );
         } catch (error) {
           this.logger.warn('Failed to emit message WebSocket event:', error);
         }
@@ -589,20 +632,22 @@ async verifyFacebookWebhook(
         return;
       }
 
-      const contactName = message.from.first_name || message.from.username || 'Telegram User';
+      const contactName =
+        message.from.first_name || message.from.username || 'Telegram User';
 
-      const conversation = await this.conversationsService.findOrCreateFromWebhook({
-        botId,
-        channelId: channel.id,
-        channelType: 'telegram',
-        externalId: chatId.toString(),
-        contactName,
-        metadata: {
-          chatId,
-          userId: message.from.id,
-          messageId: message.message_id,
-        },
-      });
+      const conversation =
+        await this.conversationsService.findOrCreateFromWebhook({
+          botId,
+          channelId: channel.id,
+          channelType: 'telegram',
+          externalId: chatId.toString(),
+          contactName,
+          metadata: {
+            chatId,
+            userId: message.from.id,
+            messageId: message.message_id,
+          },
+        });
 
       try {
         this.conversationsGateway.broadcastConversationUpdate(conversation);
@@ -611,20 +656,24 @@ async verifyFacebookWebhook(
       }
 
       if (text) {
-        const savedMessage = await this.conversationsService.addMessageFromWebhook({
-          conversationId: conversation.id,
-          content: text,
-          role: 'user',
-          metadata: {
-            userId: message.from.id,
-            messageId: message.message_id,
-            chatId,
-            channelType: 'telegram',
-          },
-        });
+        const savedMessage =
+          await this.conversationsService.addMessageFromWebhook({
+            conversationId: conversation.id,
+            content: text,
+            role: 'user',
+            metadata: {
+              userId: message.from.id,
+              messageId: message.message_id,
+              chatId,
+              channelType: 'telegram',
+            },
+          });
 
         try {
-          this.conversationsGateway.emitNewMessage(conversation.id, savedMessage);
+          this.conversationsGateway.emitNewMessage(
+            conversation.id,
+            savedMessage,
+          );
         } catch (error) {
           this.logger.warn('Failed to emit message WebSocket event:', error);
         }
@@ -651,3 +700,4 @@ async verifyFacebookWebhook(
     }
   }
 }
+

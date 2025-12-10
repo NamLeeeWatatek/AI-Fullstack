@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository, In } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
@@ -136,3 +136,4 @@ export class UsersRelationalRepository implements UserRepository {
     await this.usersRepository.softDelete(id);
   }
 }
+

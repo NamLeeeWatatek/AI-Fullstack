@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationEntity } from './infrastructure/persistence/relational/entities/notification.entity';
 import { NotificationsService } from './notifications.service';
@@ -11,3 +11,4 @@ import { NotificationsController } from './notifications.controller';
   exports: [NotificationsService],
 })
 export class NotificationsModule {}
+

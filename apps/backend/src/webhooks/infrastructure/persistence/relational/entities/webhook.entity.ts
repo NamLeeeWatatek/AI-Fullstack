@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -33,3 +33,4 @@ export class WebhookEventEntity extends EntityRelationalHelper {
   @Index()
   receivedAt: Date;
 }
+

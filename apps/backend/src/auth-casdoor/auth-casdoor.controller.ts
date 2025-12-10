@@ -1,4 +1,11 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get } from '@nestjs/common';
+﻿import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Get,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Public } from '../utils/public.decorator';
 import { AuthCasdoorService } from './auth-casdoor.service';
@@ -11,7 +18,7 @@ import { LoginResponseDto } from '../auth/dto/login-response.dto';
   version: '1',
 })
 export class AuthCasdoorController {
-  constructor(private readonly authCasdoorService: AuthCasdoorService) { }
+  constructor(private readonly authCasdoorService: AuthCasdoorService) {}
 
   @Get('login-url')
   @Public()
@@ -28,16 +35,18 @@ export class AuthCasdoorController {
   async callback(
     @Body() casdoorCallbackDto: CasdoorCallbackDto,
   ): Promise<LoginResponseDto> {
-    const result = await this.authCasdoorService.handleCallback(casdoorCallbackDto);
-    
+    const result =
+      await this.authCasdoorService.handleCallback(casdoorCallbackDto);
+
     // Debug log to check response structure
     console.log('[Casdoor Callback] Response:', {
       hasToken: !!result.token,
       hasUser: !!result.user,
       userEmail: result.user?.email,
-      userId: result.user?.id
+      userId: result.user?.id,
     });
-    
+
     return result;
   }
 }
+

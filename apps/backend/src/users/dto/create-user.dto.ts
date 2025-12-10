@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+﻿import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
@@ -68,3 +68,4 @@ export class CreateUserDto {
   @IsString()
   socialId?: string | null;
 }
+

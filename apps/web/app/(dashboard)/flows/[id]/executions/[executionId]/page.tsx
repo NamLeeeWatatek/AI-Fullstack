@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
+import { Button } from '@/components/ui/Button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Spinner } from '@/components/ui/Spinner'
 import toast from '@/lib/toast'
 import {
     FiArrowLeft,
@@ -106,7 +106,7 @@ export default function ExecutionDetailPage({
                             </p>
                         </div>
 
-                        {}
+                        { }
                         {(data.model || data.tokens_used) && (
                             <div className="mt-3 pt-3 border-t border-border/40 flex items-center gap-3 text-xs text-muted-foreground">
                                 {data.model && (
@@ -122,7 +122,7 @@ export default function ExecutionDetailPage({
                             </div>
                         )}
 
-                        {}
+                        { }
                         <details className="mt-3">
                             <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
                                 View Raw JSON
@@ -149,7 +149,7 @@ export default function ExecutionDetailPage({
 
             return (
                 <Card className="overflow-hidden border-border/40">
-                    {}
+                    { }
                     {imageUrl && (
                         <div className="relative w-full h-48 bg-muted">
                             <img
@@ -163,7 +163,7 @@ export default function ExecutionDetailPage({
                         </div>
                     )}
 
-                    {}
+                    { }
                     <CardContent className="p-4 space-y-2">
                         <h4 className="font-semibold text-base">{name}</h4>
 
@@ -186,7 +186,7 @@ export default function ExecutionDetailPage({
                             )}
                         </div>
 
-                        {}
+                        { }
                         <details className="mt-3">
                             <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
                                 View Raw JSON
@@ -280,7 +280,7 @@ export default function ExecutionDetailPage({
 
     return (
         <div className="p-4 space-y-6">
-            {}
+            { }
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
@@ -309,7 +309,7 @@ export default function ExecutionDetailPage({
                 </div>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
                 <Card>
                     <CardContent className="p-6">
@@ -353,7 +353,7 @@ export default function ExecutionDetailPage({
                 <Card>
                     <CardContent className="p-6">
                         <h3 className="text-2xl font-bold mb-1">
-                            {execution.node_executions.filter((n) => n.status === 'failed').length}
+                            {execution.node_executions?.filter((n) => n.status === 'failed').length || 0}
                         </h3>
                         <p className="text-sm text-muted-foreground">Failed Nodes</p>
                     </CardContent>
@@ -361,7 +361,7 @@ export default function ExecutionDetailPage({
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {}
+                { }
                 <div className="lg:col-span-2">
                     <Card>
                         <CardHeader>
@@ -369,7 +369,7 @@ export default function ExecutionDetailPage({
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-3">
-                                {execution.node_executions.map((nodeExec, index) => {
+                                {execution.node_executions?.map((nodeExec, index) => {
                                     const nodeType = getNodeType(nodeExec.node_type)
                                     const Icon = nodeType?.icon
 
@@ -384,12 +384,12 @@ export default function ExecutionDetailPage({
                                         >
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3 flex-1">
-                                                    {}
+                                                    { }
                                                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
                                                         {index + 1}
                                                     </div>
 
-                                                    {}
+                                                    { }
                                                     {Icon && nodeType && (
                                                         <div
                                                             className="p-2 rounded-lg"
@@ -402,7 +402,7 @@ export default function ExecutionDetailPage({
                                                         </div>
                                                     )}
 
-                                                    {}
+                                                    { }
                                                     <div className="flex-1">
                                                         <div className="font-medium">{nodeExec.node_label}</div>
                                                         <div className="text-xs text-muted-foreground">
@@ -410,7 +410,7 @@ export default function ExecutionDetailPage({
                                                         </div>
                                                     </div>
 
-                                                    {}
+                                                    { }
                                                     <div className="flex items-center gap-2">
                                                         {getStatusIcon(nodeExec.status)}
                                                         <span className="text-sm text-muted-foreground">
@@ -420,7 +420,7 @@ export default function ExecutionDetailPage({
                                                 </div>
                                             </div>
 
-                                            {}
+                                            { }
                                             {nodeExec.error_message && (
                                                 <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
                                                     <p className="text-sm text-red-500">{nodeExec.error_message}</p>
@@ -434,7 +434,7 @@ export default function ExecutionDetailPage({
                     </Card>
                 </div>
 
-                {}
+                { }
                 <div className="lg:col-span-1">
                     <Card className="sticky top-8">
                         <CardHeader>

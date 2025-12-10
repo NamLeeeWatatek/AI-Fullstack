@@ -1,11 +1,9 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
-import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
-import { AlertBanner, CodeBlock } from '@/components/ui/alert-banner'
+import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
 import { useWorkspace } from '@/lib/hooks/useWorkspace'
 import { axiosClient } from '@/lib/axios-client'
 import toast from '@/lib/toast'
@@ -36,8 +34,10 @@ import {
     CardFooter,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card"
-import { AssignBotDialog } from '@/components/channels/assign-bot-dialog'
+} from "@/components/ui/Card"
+import { AlertBanner, CodeBlock } from '@/components/ui/AlertBanner'
+import { AlertDialogConfirm } from '@/components/ui/AlertDialogConfirm'
+import { AssignBotDialog } from '@/components/channels/AssignBotDialog'
 
 export default function ChannelsPage() {
     const { data: session } = useSession()
@@ -64,7 +64,7 @@ export default function ChannelsPage() {
         verify_token: ''
     })
 
-    // ✅ NEW: Assign Bot Dialog State
+    // âœ… NEW: Assign Bot Dialog State
     const [assignBotDialogOpen, setAssignBotDialogOpen] = useState(false)
     const [selectedChannel, setSelectedChannel] = useState<any>(null)
 
@@ -76,8 +76,8 @@ export default function ChannelsPage() {
         try {
             setLoading(true)
             const [channelsData, configsData] = await Promise.all([
-                axiosClient.get('/channels').then(r => r.data),
-                axiosClient.get('/integrations').then(r => r.data)
+                axiosClient.get('/channels'),
+                axiosClient.get('/integrations')
             ])
             setChannels(channelsData)
             setConfigs(configsData)
@@ -97,15 +97,13 @@ export default function ChannelsPage() {
                 return
             }
 
-            const response = await (await axiosClient.get(`/bots?workspaceId=${currentWorkspace.id}`)).data
+            const response = await axiosClient.get(`/bots?workspaceId=${currentWorkspace.id}`)
 
             let botsList = []
             if (Array.isArray(response)) {
                 botsList = response
             } else if (response?.items && Array.isArray(response.items)) {
                 botsList = response.items
-            } else if (response?.data && Array.isArray(response.data)) {
-                botsList = response.data
             }
 
             setBots(botsList)
@@ -128,7 +126,7 @@ export default function ChannelsPage() {
             let oauthUrl: string
 
             if (provider === 'facebook' || provider === 'messenger' || provider === 'instagram') {
-                const response = await axiosClient.get('/channels/facebook/oauth/url').then(r => r.data)
+                const response = await axiosClient.get('/channels/facebook/oauth/url')
 
                 if (!response.url) {
                     toast.error('Please configure Facebook App settings first')
@@ -148,7 +146,7 @@ export default function ChannelsPage() {
                 }
 
                 const configParam = configId ? `?configId=${configId}` : ''
-                const response = await (await axiosClient.get(`/oauth/login/${provider}${configParam}`)).data
+                const response = await axiosClient.get(`/oauth/login/${provider}${configParam}`)
 
                 if (response.error || !response.url) {
                     toast.error(response.error || 'Failed to get OAuth URL')
@@ -192,20 +190,41 @@ export default function ChannelsPage() {
                         popup?.close()
                         window.removeEventListener('message', messageHandler)
 
-                        setTimeout(() => {
-                            loadData()
+                        setTimeout(async () => {
+                            await loadData()
                             setConnecting(null)
+
+                            // ðŸ”„ Auto-sync conversations after successful connection
+                            if (provider === 'facebook' && event.data.channelId) {
+                                try {
+                                    toast.info('Syncing conversations from Facebook...')
+                                    const syncResponse = await axiosClient.post(
+                                        `/channels/facebook/connections/${event.data.channelId}/sync-to-db`,
+                                        {
+                                            conversationLimit: 25,
+                                            messageLimit: 50,
+                                        }
+                                    )
+
+                                    if (syncResponse.success) {
+                                        toast.success(`Synced ${syncResponse.synced} conversation(s)`)
+                                    }
+                                } catch (error) {
+                                    console.error('Auto-sync failed:', error)
+                                    // Don't show error toast - user can manually sync later
+                                }
+                            }
                         }, 1000)
                     }
                 } else if (event.data?.status === 'error') {
                     toast.error(`Connection failed: ${event.data.message || event.data.channel || 'Unknown error'}`)
-                    
-                    // ✅ FIX: Clear Facebook data on error
+
+                    // âœ… FIX: Clear Facebook data on error
                     if (provider === 'facebook' || provider === 'messenger' || provider === 'instagram') {
                         setFacebookPages([])
                         setFacebookTempToken('')
                     }
-                    
+
                     popup?.close()
                     window.removeEventListener('message', messageHandler)
                     setConnecting(null)
@@ -256,7 +275,7 @@ export default function ChannelsPage() {
             client_id: existing?.client_id || '',
             client_secret: existing?.client_secret || '',
             scopes: existing?.scopes || '',
-            verify_token: existing?.verify_token || '' // ✅ FIX: No hardcode, empty by default
+            verify_token: existing?.verify_token || '' // âœ… FIX: No hardcode, empty by default
         })
     }
 
@@ -273,12 +292,12 @@ export default function ChannelsPage() {
 
         try {
             if (configForm.provider === 'facebook' || configForm.provider === 'messenger' || configForm.provider === 'instagram') {
-                // ✅ FIX: Require verify token, no hardcode fallback
+                // âœ… FIX: Require verify token, no hardcode fallback
                 if (!configForm.verify_token) {
                     toast.error('Verify Token is required for Facebook webhook')
                     return
                 }
-                
+
                 await axiosClient.post('/channels/facebook/setup', {
                     appId: configForm.client_id,
                     appSecret: configForm.client_secret,
@@ -317,7 +336,7 @@ export default function ChannelsPage() {
             return
         }
 
-        // ✅ FIX: Validate token exists
+        // âœ… FIX: Validate token exists
         if (!facebookTempToken) {
             toast.error('Session expired. Please reconnect Facebook again.')
             setFacebookPages([])
@@ -327,7 +346,7 @@ export default function ChannelsPage() {
         setConnectingPage(true)
 
         try {
-            await axiosClient.post('/channels/facebook/connect', {
+            const response = await axiosClient.post('/channels/facebook/connect', {
                 pageId: page.id,
                 pageName: page.name,
                 userAccessToken: facebookTempToken,
@@ -341,10 +360,31 @@ export default function ChannelsPage() {
             setFacebookPages(prev => prev.filter(p => p.id !== page.id))
 
             await loadData()
+
+            // ðŸ”„ Auto-sync conversations after connecting page
+            if (response.channelId) {
+                try {
+                    toast.info('Syncing conversations from Facebook...')
+                    const syncResponse = await axiosClient.post(
+                        `/channels/facebook/connections/${response.channelId}/sync-to-db`,
+                        {
+                            conversationLimit: 25,
+                            messageLimit: 50,
+                        }
+                    )
+
+                    if (syncResponse.success) {
+                        toast.success(`Synced ${syncResponse.synced} conversation(s)`)
+                    }
+                } catch (error) {
+                    console.error('Auto-sync failed:', error)
+                    // Don't show error toast - user can manually sync later
+                }
+            }
         } catch (error: any) {
             const errorMessage = error.response?.data?.message || error.message || 'Failed to connect page'
             toast.error(errorMessage)
-            
+
             // If token expired or invalid, clear pages
             if (errorMessage.includes('authorization') || errorMessage.includes('token')) {
                 setFacebookPages([])
@@ -501,7 +541,7 @@ export default function ChannelsPage() {
                 </Button>
             </div>
 
-            {}
+            { }
             <div className="flex gap-2 border-b border-border/40 pb-4">
                 <button
                     onClick={() => setActiveTab('connected')}
@@ -533,7 +573,7 @@ export default function ChannelsPage() {
                 </button>
             </div>
 
-            {}
+            { }
             {activeTab === 'connected' && (
                 <div>
                     {channels.length === 0 && configuredCount === 0 ? (
@@ -551,7 +591,7 @@ export default function ChannelsPage() {
                         </div>
                     ) : (
                         <div className="space-y-10">
-                            {}
+                            { }
                             {channels.length > 0 && (
                                 <div>
                                     <div className="flex items-center justify-between mb-6">
@@ -581,6 +621,12 @@ export default function ChannelsPage() {
                                                                 <FiCheckCircle className="w-3 h-3 mr-1" />
                                                                 Active
                                                             </span>
+                                                            {channel.metadata?.botId && (
+                                                                <span className="flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded-full">
+                                                                    <FiSettings className="w-3 h-3" />
+                                                                    Bot Assigned
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </CardHeader>
                                                     <CardContent>
@@ -594,12 +640,7 @@ export default function ChannelsPage() {
                                                             <span className="text-xs text-muted-foreground">
                                                                 Connected {new Date(channel.connected_at).toLocaleDateString()}
                                                             </span>
-                                                            {channel.metadata?.botId && (
-                                                                <span className="flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-950 px-2 py-0.5 rounded-full">
-                                                                    <FiSettings className="w-3 h-3" />
-                                                                    Bot Assigned
-                                                                </span>
-                                                            )}
+
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <button
@@ -628,7 +669,7 @@ export default function ChannelsPage() {
                                 </div>
                             )}
 
-                            {}
+                            { }
                             {configuredNotConnected.length > 0 && (
                                 <div>
                                     <div className="flex items-center justify-between mb-6">
@@ -673,7 +714,7 @@ export default function ChannelsPage() {
                                 </div>
                             )}
 
-                            {}
+                            { }
                             {notConfigured.length > 0 && (
                                 <div>
                                     <div className="flex items-center justify-between mb-6">
@@ -729,7 +770,7 @@ export default function ChannelsPage() {
                 </div>
             )}
 
-            {}
+            { }
             {activeTab === 'configurations' && (
                 <div className="space-y-10">
                     <AlertBanner
@@ -741,7 +782,7 @@ export default function ChannelsPage() {
                     </AlertBanner>
 
                     <div className="space-y-10">
-                        {}
+                        { }
                         {configuredCount > 0 && (
                             <div>
                                 <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
@@ -827,13 +868,13 @@ export default function ChannelsPage() {
                             </div>
                         )}
 
-                        {}
+                        { }
                         <div>
                             <h2 className="text-xl font-semibold mb-6">
                                 Available Integrations
                             </h2>
 
-                            {}
+                            { }
                             <div className="mb-8">
                                 <h3 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider pl-1">Messaging Channels</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -860,7 +901,7 @@ export default function ChannelsPage() {
                                 </div>
                             </div>
 
-                            {}
+                            { }
                             <div>
                                 <h3 className="text-sm font-medium text-muted-foreground mb-4 uppercase tracking-wider pl-1">Business Integrations</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -893,7 +934,7 @@ export default function ChannelsPage() {
                 </div>
             )}
 
-            {}
+            { }
             {configForm.provider && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
                     <div className="bg-card border border-border rounded-xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden"
@@ -914,7 +955,7 @@ export default function ChannelsPage() {
                                 </button>
                             </div>
 
-                            {}
+                            { }
                             <AlertBanner variant="tip" className="mb-6">
                                 You need to create an app in the <span className="font-semibold">{configForm.provider} developer portal</span> to get these credentials.
                             </AlertBanner>
@@ -959,7 +1000,7 @@ export default function ChannelsPage() {
                                     />
                                 </div>
 
-                                {}
+                                { }
                                 {(configForm.provider === 'facebook' || configForm.provider === 'messenger' || configForm.provider === 'instagram') && (
                                     <div>
                                         <label className="block text-sm font-medium mb-2">
@@ -979,7 +1020,7 @@ export default function ChannelsPage() {
                                     </div>
                                 )}
 
-                                {}
+                                { }
                                 {configForm.provider !== 'facebook' && configForm.provider !== 'messenger' && configForm.provider !== 'instagram' && (
                                     <div>
                                         <label className="block text-sm font-medium mb-2">
@@ -995,7 +1036,7 @@ export default function ChannelsPage() {
                                     </div>
                                 )}
 
-                                {}
+                                { }
                                 {(configForm.provider === 'facebook' || configForm.provider === 'messenger' || configForm.provider === 'instagram') && (
                                     <CodeBlock label="Webhook URL">
                                         {process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '')}/api/webhooks/facebook
@@ -1024,7 +1065,7 @@ export default function ChannelsPage() {
                 </div>
             )}
 
-            {}
+            { }
             {facebookPages.length > 0 && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
                     <div className="bg-card border border-border rounded-xl p-6 w-full max-w-2xl shadow-2xl relative overflow-hidden max-h-[80vh] overflow-y-auto"
@@ -1049,7 +1090,7 @@ export default function ChannelsPage() {
                             </button>
                         </div>
 
-                        {}
+                        { }
                         <AlertBanner variant="info" title="Select Bot" className="mb-6">
                             {loadingBots ? (
                                 <div className="flex items-center gap-2">
@@ -1087,7 +1128,7 @@ export default function ChannelsPage() {
                             )}
                         </AlertBanner>
 
-                        {}
+                        { }
                         <div className="space-y-3">
                             <h4 className="text-sm font-medium text-muted-foreground">Available Pages ({facebookPages.length})</h4>
                             {facebookPages.map((page) => (
@@ -1127,7 +1168,7 @@ export default function ChannelsPage() {
                 </div>
             )}
 
-            {}
+            { }
             <AlertDialogConfirm
                 open={disconnectId !== null}
                 onOpenChange={(open) => !open && setDisconnectId(null)}
@@ -1150,7 +1191,7 @@ export default function ChannelsPage() {
                 variant="destructive"
             />
 
-            {/* ✅ Assign Bot Dialog */}
+            {/* âœ… Assign Bot Dialog */}
             {currentWorkspace && (
                 <AssignBotDialog
                     open={assignBotDialogOpen}
@@ -1163,3 +1204,4 @@ export default function ChannelsPage() {
         </div>
     )
 }
+

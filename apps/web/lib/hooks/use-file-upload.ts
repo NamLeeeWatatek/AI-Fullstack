@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { fileUploadService, FileUploadOptions } from '@/lib/services/file-upload-service';
 
 interface UseFileUploadOptions extends FileUploadOptions {
@@ -80,3 +80,4 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
     error,
   };
 }
+

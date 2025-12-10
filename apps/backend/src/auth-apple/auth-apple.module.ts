@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { AuthAppleService } from './auth-apple.service';
 import { ConfigModule } from '@nestjs/config';
 import { AuthAppleController } from './auth-apple.controller';
@@ -11,3 +11,4 @@ import { AuthModule } from '../auth/auth.module';
   controllers: [AuthAppleController],
 })
 export class AuthAppleModule {}
+

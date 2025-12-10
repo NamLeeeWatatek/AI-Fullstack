@@ -1,18 +1,16 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
+import { Button } from '@/components/ui/Button'
+import { Spinner } from '@/components/ui/Spinner'
+import { Card } from '@/components/ui/Card'
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/Select'
 import axiosClient from '@/lib/axios-client'
 import toast from '@/lib/toast'
 import { useWorkspace } from '@/lib/hooks/useWorkspace'
@@ -37,7 +35,9 @@ import {
     FiEdit2,
     FiRefreshCw,
 } from 'react-icons/fi'
-import { AiChatInterface } from '@/components/chat/ai-chat-interface'
+import { AiChatInterface } from '@/components/chat/AiChatInterface'
+import { AlertDialogConfirm } from '@/components/ui/AlertDialogConfirm'
+import { Badge } from '@/components/ui/Badge'
 
 export default function ChatWithAIPage() {
     const { currentWorkspace } = useWorkspace()
@@ -822,7 +822,7 @@ export default function ChatWithAIPage() {
                     )}
                 </header>
 
-                {/* ✅ PROFESSIONAL: Use dedicated AI Chat Interface */}
+                {/* âœ… PROFESSIONAL: Use dedicated AI Chat Interface */}
                 <AiChatInterface
                     messages={messages}
                     onSendMessage={handleSend}
@@ -846,3 +846,4 @@ export default function ChatWithAIPage() {
         </div>
     )
 }
+

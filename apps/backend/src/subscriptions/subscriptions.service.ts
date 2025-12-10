@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -196,3 +196,4 @@ export class SubscriptionsService {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   }
 }
+

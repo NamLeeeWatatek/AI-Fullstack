@@ -1,4 +1,4 @@
-import { registerAs } from '@nestjs/config';
+﻿import { registerAs } from '@nestjs/config';
 
 import { IsString } from 'class-validator';
 import validateConfig from '../../utils/validate-config';
@@ -46,3 +46,4 @@ export default registerAs<AuthConfig>('auth', () => {
       .AUTH_CONFIRM_EMAIL_TOKEN_EXPIRES_IN as ms.StringValue,
   };
 });
+

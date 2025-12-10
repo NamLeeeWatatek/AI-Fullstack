@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { UserRepository } from '../user.repository';
 import { UsersRelationalRepository } from './repositories/user.repository';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -15,3 +15,4 @@ import { UserEntity } from './entities/user.entity';
   exports: [UserRepository],
 })
 export class RelationalUserPersistenceModule {}
+

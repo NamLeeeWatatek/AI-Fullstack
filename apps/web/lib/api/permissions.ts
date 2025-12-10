@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Permissions API Client
  */
 import axiosClient from '@/lib/axios-client'
@@ -33,3 +33,4 @@ export const permissionsApi = {
     return axiosClient.get(`/permissions/resources/${resourceType}`)
   }
 }
+

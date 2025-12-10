@@ -1,4 +1,4 @@
-
+﻿
 export interface Workspace {
   id: string;
   name: string;
@@ -31,3 +31,4 @@ export interface UpdateWorkspaceDto {
   avatarUrl?: string | null;
   plan?: 'free' | 'starter' | 'pro' | 'enterprise';
 }
+

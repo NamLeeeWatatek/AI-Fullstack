@@ -1,4 +1,4 @@
-
+﻿
 export interface Bot {
   id: string
   workspaceId: string
@@ -213,3 +213,4 @@ export interface AiSuggestWidgetProps {
   onApply?: (suggestion: string) => void
   className?: string
 }
+

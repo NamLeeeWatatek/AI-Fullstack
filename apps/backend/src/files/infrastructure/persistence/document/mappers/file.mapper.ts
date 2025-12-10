@@ -1,4 +1,4 @@
-import { FileType } from '../../../../domain/file';
+﻿import { FileType } from '../../../../domain/file';
 import { FileSchemaClass } from '../entities/file.schema';
 
 export class FileMapper {
@@ -17,3 +17,4 @@ export class FileMapper {
     return persistenceSchema;
   }
 }
+

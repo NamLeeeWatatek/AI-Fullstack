@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Reusable Pagination Hook
  * Use this for any paginated resource
  */
@@ -95,3 +95,4 @@ export function usePagination({
     buildParams,
   }
 }
+

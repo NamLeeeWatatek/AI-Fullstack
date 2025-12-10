@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import type { Role, RoleBadgeProps } from '@/lib/types'
@@ -33,3 +33,4 @@ export function RoleBadge({ role, className = '' }: RoleBadgeProps) {
     </span>
   )
 }
+

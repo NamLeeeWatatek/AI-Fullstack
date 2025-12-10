@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -6,26 +6,42 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   UseGuards,
   Request,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { FlowsService } from './flows.service';
 import { ExecutionService } from './execution.service';
 import { CreateFlowDto } from './dto/create-flow.dto';
 import { UpdateFlowDto } from './dto/update-flow.dto';
 import { CreateFlowFromTemplateDto } from './dto/create-flow-from-template.dto';
+import { FlowTransformInterceptor } from './interceptors/flow-transform.interceptor';
+import { FlowTransformService } from './services/flow-transform.service';
+import {
+  PublicFlowDto,
+  DetailedFlowDto,
+} from './dto/public-flow.dto';
 
 @ApiTags('Flows')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
+@UseInterceptors(FlowTransformInterceptor)
 @Controller({ path: 'flows', version: '1' })
 export class FlowsController {
   constructor(
     private readonly flowsService: FlowsService,
     private readonly executionService: ExecutionService,
-  ) {}
+    private readonly transformService: FlowTransformService,
+  ) { }
 
   @Post()
   @ApiOperation({ summary: 'Create flow' })
@@ -42,15 +58,28 @@ export class FlowsController {
     return this.flowsService.createFromTemplate(createDto, req.user.id);
   }
 
+
   @Get()
   @ApiOperation({ summary: 'Get all flows' })
-  findAll(@Request() req) {
-    return this.flowsService.findAll(req.user.id);
+  @ApiResponse({ status: 200, type: [PublicFlowDto] })
+  async findAll(@Request() req, @Query('published') published?: string) {
+    const publishedBoolean =
+      published === 'true' ? true : published === 'false' ? false : undefined;
+
+    const flows = await this.flowsService.findAll(
+      req.user.id,
+      publishedBoolean,
+    );
+
+    // Interceptor will automatically transform to PublicFlowDto
+    return flows;
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get flow by ID' })
+  @ApiResponse({ status: 200, type: DetailedFlowDto })
   findOne(@Param('id') id: string) {
+    // Interceptor will automatically transform to DetailedFlowDto
     return this.flowsService.findOne(id);
   }
 
@@ -69,10 +98,23 @@ export class FlowsController {
   @Post(':id/execute')
   @ApiOperation({ summary: 'Execute flow' })
   async execute(@Param('id') id: string, @Body() input?: any) {
+    // Log for debugging invalid IDs
+    console.log('Execute request for flow ID:', id, 'typeof:', typeof id);
+
+    // Validate UUID format first to avoid invalid strings reaching the database
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      throw new BadRequestException(`Invalid flow ID format: ${id}`);
+    }
+
     const flow = await this.flowsService.findOne(id);
+    const flowData = {
+      nodes: flow.nodes || [],
+      edges: flow.edges || [],
+    };
     const executionId = await this.executionService.executeFlow(
       id,
-      flow.data,
+      flowData,
       input,
     );
     return {
@@ -94,4 +136,35 @@ export class FlowsController {
   getExecution(@Param('executionId') executionId: string) {
     return this.executionService.getExecution(executionId);
   }
+
+  @Get(':id/versions')
+  @ApiOperation({ summary: 'Get flow versions' })
+  getVersions(@Param('id') id: string) {
+    return this.flowsService.getVersions(id);
+  }
+
+  @Post(':id/versions')
+  @ApiOperation({ summary: 'Create flow version' })
+  createVersion(
+    @Param('id') id: string,
+    @Body() versionData: { name: string; description?: string },
+  ) {
+    return this.flowsService.createVersion(id, versionData);
+  }
+
+  @Post(':id/versions/:versionId/restore')
+  @ApiOperation({ summary: 'Restore flow version' })
+  restoreVersion(
+    @Param('id') id: string,
+    @Param('versionId') versionId: string,
+  ) {
+    return this.flowsService.restoreVersion(id, versionId);
+  }
+
+  @Post(':id/generate-form-schema')
+  @ApiOperation({ summary: 'Auto-generate formSchema for flow (UGC Factory)' })
+  generateFormSchema(@Param('id') id: string) {
+    return this.flowsService.generateFormSchema(id);
+  }
 }
+

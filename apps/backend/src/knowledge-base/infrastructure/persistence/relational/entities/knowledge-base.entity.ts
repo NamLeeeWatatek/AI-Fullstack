@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
@@ -333,3 +333,4 @@ export class RagFeedbackEntity extends EntityRelationalHelper {
 export const KnowledgeBaseFolderEntity = KbFolderEntity;
 export const KnowledgeBaseDocumentEntity = KbDocumentEntity;
 export const AgentKnowledgeBaseEntity = RagFeedbackEntity;
+

@@ -1,4 +1,4 @@
-
+﻿
 import type { Socket } from 'socket.io-client'
 
 export type MessageHandler = (data: any) => void
@@ -39,3 +39,4 @@ export interface ExecutionEvent {
   type: 'executionStarted' | 'nodeExecutionBefore' | 'nodeExecutionAfter' | 'executionFinished' | 'executionError'
   data: any
 }
+

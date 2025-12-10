@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NestInterceptor,
   ExecutionContext,
@@ -14,3 +14,4 @@ export class ResolvePromisesInterceptor implements NestInterceptor {
     return next.handle().pipe(mergeMap((data) => deepResolvePromises(data)));
   }
 }
+

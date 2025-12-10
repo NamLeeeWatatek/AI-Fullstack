@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
@@ -88,7 +88,7 @@ const initialNodes: Node[] = [
     position: { x: 40, y: 30 },
     data: { 
       label: "Trigger",
-      subtitle: "Khách hàng nhắn tin",
+      subtitle: "KhÃ¡ch hÃ ng nháº¯n tin",
       icon: HiSparkles,
       gradient: "from-emerald-500 to-teal-600",
       delay: 0.2
@@ -116,7 +116,7 @@ const initialNodes: Node[] = [
     position: { x: 140, y: 160 },
     data: { 
       label: "AI Agent",
-      subtitle: "Phân tích ngữ cảnh & ý định",
+      subtitle: "PhÃ¢n tÃ­ch ngá»¯ cáº£nh & Ã½ Ä‘á»‹nh",
       icon: MdAutoAwesome,
       gradient: "from-purple-500 to-indigo-600",
       delay: 0.5
@@ -130,7 +130,7 @@ const initialNodes: Node[] = [
     position: { x: 420, y: 160 },
     data: { 
       label: "Router",
-      subtitle: "Phân luồng thông minh",
+      subtitle: "PhÃ¢n luá»“ng thÃ´ng minh",
       icon: MdOutlineSmartToy,
       gradient: "from-orange-500 to-red-600",
       delay: 0.6
@@ -144,7 +144,7 @@ const initialNodes: Node[] = [
     position: { x: 100, y: 290 },
     data: { 
       label: "Auto Reply",
-      subtitle: "Trả lời tự động",
+      subtitle: "Tráº£ lá»i tá»± Ä‘á»™ng",
       icon: FiMessageSquare,
       gradient: "from-blue-500 to-cyan-600",
       delay: 0.8
@@ -158,7 +158,7 @@ const initialNodes: Node[] = [
     position: { x: 440, y: 290 },
     data: { 
       label: "Handoff",
-      subtitle: "Chuyển nhân viên",
+      subtitle: "Chuyá»ƒn nhÃ¢n viÃªn",
       icon: FiCpu,
       gradient: "from-teal-500 to-emerald-600",
       delay: 0.9
@@ -331,3 +331,4 @@ export default function DesktopFlowMockup({ showDesktop }: DesktopFlowMockupProp
     </motion.div>
   );
 }
+

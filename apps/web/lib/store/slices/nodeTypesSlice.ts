@@ -1,4 +1,4 @@
-/**
+﻿/**
  * NodeTypes Redux Slice
  */
 import { createSlice, createAsyncThunk, type PayloadAction, type ActionReducerMapBuilder } from '@reduxjs/toolkit'
@@ -51,24 +51,21 @@ export const fetchNodeTypes = createAsyncThunk<ApiNodeType[], string | undefined
   'nodeTypes/fetchNodeTypes',
   async (category?: string) => {
     const url = category ? `/node-types/?category=${category}` : '/node-types/'
-    const response: any = await axiosClient.get(url)
-    return (response.data || response) as ApiNodeType[]
+    return await axiosClient.get(url) as ApiNodeType[]
   }
 )
 
 export const fetchNodeCategories = createAsyncThunk<NodeCategory[], void>(
   'nodeTypes/fetchNodeCategories',
   async () => {
-    const response: any = await axiosClient.get('/node-types/categories')
-    return (response.data || response) as NodeCategory[]
+    return await axiosClient.get('/node-types/categories') as NodeCategory[]
   }
 )
 
 export const fetchNodeType = createAsyncThunk<ApiNodeType, string>(
   'nodeTypes/fetchNodeType',
   async (nodeId: string) => {
-    const response: any = await axiosClient.get(`/node-types/${nodeId}`)
-    return (response.data || response) as ApiNodeType
+    return await axiosClient.get(`/node-types/${nodeId}`) as ApiNodeType
   }
 )
 
@@ -116,3 +113,4 @@ const nodeTypesSlice = createSlice({
 
 export const { clearError } = nodeTypesSlice.actions
 export default nodeTypesSlice.reducer
+

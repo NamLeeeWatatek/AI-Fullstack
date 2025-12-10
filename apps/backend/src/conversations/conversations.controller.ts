@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -39,7 +39,7 @@ import { CurrentWorkspace } from '../workspaces/decorators/current-workspace.dec
 @UseGuards(AuthGuard('jwt'))
 @Controller({ path: 'conversations', version: '1' })
 export class ConversationsController {
-  constructor(private readonly conversationsService: ConversationsService) { }
+  constructor(private readonly conversationsService: ConversationsService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create conversation' })
@@ -53,7 +53,8 @@ export class ConversationsController {
   @ApiOperation({ summary: 'Get all conversations with pagination' })
   @ApiHeader({
     name: 'X-Workspace-Id',
-    description: 'Workspace ID to filter conversations (optional, defaults to user\'s default workspace)',
+    description:
+      "Workspace ID to filter conversations (optional, defaults to user's default workspace)",
     required: false,
   })
   @ApiQuery({ name: 'botId', required: false })
@@ -71,7 +72,8 @@ export class ConversationsController {
     name: 'source',
     required: false,
     enum: ['all', 'channel', 'widget'],
-    description: 'Filter by conversation source: all, channel (Facebook, WhatsApp, etc.), or widget (AI chat)'
+    description:
+      'Filter by conversation source: all, channel (Facebook, WhatsApp, etc.), or widget (AI chat)',
   })
   findAll(
     @CurrentWorkspace() workspaceId: string | undefined,
@@ -258,3 +260,4 @@ export class ConversationsController {
     return this.conversationsService.getConversationStats(botId, period);
   }
 }
+

@@ -1,4 +1,4 @@
-import { AppConfig } from './app-config.type';
+﻿import { AppConfig } from './app-config.type';
 import { AppleConfig } from '../auth-apple/config/apple-config.type';
 import { AuthConfig } from '../auth/config/auth-config.type';
 import { DatabaseConfig } from '../database/config/database-config.type';
@@ -17,3 +17,4 @@ export type AllConfigType = {
   google: GoogleConfig;
   mail: MailConfig;
 };
+

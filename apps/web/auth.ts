@@ -1,4 +1,4 @@
-import NextAuth from "next-auth"
+﻿import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 
 /**
@@ -6,7 +6,7 @@ import Credentials from "next-auth/providers/credentials"
  * Call backend to refresh access token using refresh token
  */
 /**
- * ✅ Refresh Access Token
+ * âœ… Refresh Access Token
  * Calls backend /auth/refresh-token endpoint with refresh token in body
  */
 async function refreshAccessToken(token: any) {
@@ -33,13 +33,13 @@ async function refreshAccessToken(token: any) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('[Auth] ❌ Refresh failed:', response.status, errorText)
+      console.error('[Auth] âŒ Refresh failed:', response.status, errorText)
       throw new Error(`Token refresh failed: ${response.status}`)
     }
 
     const refreshedTokens = await response.json()
 
-    console.log('[Auth] ✅ Token refreshed successfully')
+    console.log('[Auth] âœ… Token refreshed successfully')
 
     return {
       ...token,
@@ -51,11 +51,11 @@ async function refreshAccessToken(token: any) {
   } catch (error: any) {
     // Handle specific errors
     if (error.name === 'AbortError') {
-      console.error('[Auth] ❌ Token refresh timeout (5s)')
+      console.error('[Auth] âŒ Token refresh timeout (5s)')
     } else if (error.code === 'UND_ERR_CONNECT_TIMEOUT') {
-      console.error('[Auth] ❌ Cannot connect to backend')
+      console.error('[Auth] âŒ Cannot connect to backend')
     } else {
-      console.error('[Auth] ❌ Token refresh error:', error.message)
+      console.error('[Auth] âŒ Token refresh error:', error.message)
     }
 
     return {
@@ -96,7 +96,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
               workspacesCount: data.workspaces?.length || 0
             })
 
-            // ✅ Validate required fields
+            // âœ… Validate required fields
             if (!data.token || !data.user || !data.user.id || !data.user.email) {
               console.error('[NextAuth] Missing required fields in backend data')
               return null
@@ -164,7 +164,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             userId: data.user?.id
           })
 
-          // ✅ Validate required fields
+          // âœ… Validate required fields
           if (!data.token || !data.user || !data.user.id || !data.user.email) {
             console.error('[NextAuth] Missing required fields in backend response')
             return null
@@ -215,15 +215,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // If there's a refresh error, don't try to refresh again
       if (token.error === "RefreshAccessTokenError") {
-        console.log('[Auth] ⚠️ Previous refresh failed, skipping auto-refresh');
+        console.log('[Auth] âš ï¸ Previous refresh failed, skipping auto-refresh');
         return token;
       }
 
-      // ✅ Auto-refresh: Check if token is about to expire (5 min buffer)
+      // âœ… Auto-refresh: Check if token is about to expire (5 min buffer)
       const shouldRefresh = token.accessTokenExpires && Date.now() > (token.accessTokenExpires as number) - 5 * 60 * 1000;
 
       if (shouldRefresh && token.refreshToken) {
-        console.log('[Auth] 🔄 Token expiring soon, refreshing...');
+        console.log('[Auth] ðŸ”„ Token expiring soon, refreshing...');
         return refreshAccessToken(token);
       }
 

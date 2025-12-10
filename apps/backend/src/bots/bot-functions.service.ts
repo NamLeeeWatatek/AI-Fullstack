@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateBotFunctionDto } from './dto/create-bot-function.dto';
@@ -232,3 +232,4 @@ Please provide helpful suggestions for this task.`;
     };
   }
 }
+

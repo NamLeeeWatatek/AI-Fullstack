@@ -1,19 +1,16 @@
-
-/**
+﻿/**
  * Remove null bytes and other invalid characters for PostgreSQL UTF8
  */
 export function sanitizeText(text: string | null | undefined): string {
   if (!text) return '';
 
-  return (
-    text
-      .replace(/\0/g, '')
-      .replace(/[\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '')
-      .replace(/[\uD800-\uDFFF]/g, '')
-      .replace(/\r\n/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim()
-  );
+  return text
+    .replace(/\0/g, '')
+    .replace(/[\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '')
+    .replace(/[\uD800-\uDFFF]/g, '')
+    .replace(/\r\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**
@@ -80,8 +77,7 @@ export function extractCleanText(content: string, mimeType?: string): string {
     try {
       const parsed = JSON.parse(cleaned);
       cleaned = JSON.stringify(parsed, null, 2);
-    } catch {
-    }
+    } catch {}
   }
 
   return cleaned;
@@ -96,14 +92,12 @@ export function normalizeEncoding(buffer: Buffer): string {
     if (isValidText(utf8Text)) {
       return sanitizeText(utf8Text);
     }
-  } catch {
-  }
+  } catch {}
 
   try {
     const latin1Text = buffer.toString('latin1');
     return sanitizeText(latin1Text);
-  } catch {
-  }
+  } catch {}
 
   return sanitizeText(buffer.toString('ascii', 0, buffer.length));
 }
@@ -136,3 +130,4 @@ export function sanitizeMetadata(
 
   return sanitized;
 }
+

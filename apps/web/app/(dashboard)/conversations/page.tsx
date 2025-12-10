@@ -1,12 +1,11 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConversationsSocket } from '@/lib/hooks/useConversationsSocket';
 import { useNotifications } from '@/lib/hooks/useNotifications';
-import { useNotificationPreferences } from '@/components/notifications/notification-settings';
-import { ChannelConversationList, type ChannelConversation } from '@/components/conversations/channel-conversation-list';
+import { useNotificationPreferences } from '@/components/notifications/NotificationSettings';
 import {
   MessageSquare,
   Search,
@@ -35,26 +34,27 @@ import {
   FiMessageCircle
 } from 'react-icons/fi';
 import { FaWhatsapp, FaTelegram, FaFacebookMessenger } from 'react-icons/fa';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { ScrollArea } from '@/components/ui/ScrollArea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Spinner } from '@/components/ui/spinner';
-import { ChatInterface } from '@/components/chat/chat-interface';
-import { NotificationSettings } from '@/components/notifications/notification-settings';
+} from '@/components/ui/DropdownMenu';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Spinner } from '@/components/ui/Spinner';
+import { ChatInterface } from '@/components/chat/ChatInterface';
+import { NotificationSettings } from '@/components/notifications/NotificationSettings';
 import axiosClient from '@/lib/axios-client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { ChannelConversation } from '@/components/conversations/ChannelConversationList';
+import { Badge } from '@/components/ui/Badge';
 
-// ✅ Use ChannelConversation type from component
+// âœ… Use ChannelConversation type from component
 type Conversation = ChannelConversation;
 
 interface Channel {
@@ -66,7 +66,7 @@ interface Channel {
   unreadCount: number;
 }
 
-// ✅ FIX: Safe date formatting helper
+// âœ… FIX: Safe date formatting helper
 const formatRelativeTime = (dateString: string): string => {
   try {
     const date = new Date(dateString);
@@ -109,7 +109,7 @@ export default function ConversationsPage() {
   const [syncing, setSyncing] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
-  // ✅ FIX: Use local state instead of URL params for selected conversation
+  // âœ… FIX: Use local state instead of URL params for selected conversation
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
 
   // Enterprise features
@@ -141,7 +141,7 @@ export default function ConversationsPage() {
       }
     });
 
-    // 🏢 ENTERPRISE NOTIFICATIONS - Slack/Teams/Intercom style
+    // ðŸ¢ ENTERPRISE NOTIFICATIONS - Slack/Teams/Intercom style
     const isCurrentlyViewing = selectedId === updatedConversation.id;
     const isWindowFocused = typeof document !== 'undefined' && document.hasFocus();
 
@@ -169,7 +169,7 @@ export default function ConversationsPage() {
         // Desktop notification (if enabled and granted)
         if (notificationPrefs.desktop && permission === 'granted') {
           showNotification({
-            title: `💬 ${customerName}`,
+            title: `ðŸ’¬ ${customerName}`,
             body: messagePreview,
             icon: newMessage.customerAvatar || '/logo.png',
             tag: `conversation-${newMessage.id}`,
@@ -177,7 +177,7 @@ export default function ConversationsPage() {
           });
         } else {
           // Fallback to toast notification
-          toast(`💬 ${customerName}`, {
+          toast(`ðŸ’¬ ${customerName}`, {
             description: messagePreview,
             duration: 4000,
           });
@@ -187,15 +187,13 @@ export default function ConversationsPage() {
   }, [selectedId, notificationPrefs, permission, showNotification, playSound]);
 
   const handleNewMessage = useCallback((message: any) => {
-    console.log('[Conversations Page] New message received:', message);
-    
+
     // Update conversation's last message and move to top
     setConversations((prev) => {
       const conversationId = message.conversationId;
       const conversation = prev.find(c => c.id === conversationId);
-      
+
       if (!conversation) {
-        console.log('[Conversations Page] Conversation not found for message');
         return prev;
       }
 
@@ -212,7 +210,7 @@ export default function ConversationsPage() {
       });
 
       // Sort by lastMessageAt (newest first)
-      return updated.sort((a, b) => 
+      return updated.sort((a, b) =>
         new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
       );
     });
@@ -224,34 +222,59 @@ export default function ConversationsPage() {
     enabled: true,
   });
 
-  useEffect(() => {
-    loadChannels();
-  }, []);
-
-  useEffect(() => {
-    console.log('[useEffect] Triggered - Loading conversations', {
-      statusFilter,
-      selectedChannel,
-      channelsCount: channels.length,
-      isConnected
-    });
-    
-    loadConversations(false);
-
-    const interval = setInterval(() => {
-      if (!isConnected) {
-        loadConversations(true);
+  const loadConversations = useCallback(async (silent = false) => {
+    try {
+      if (!silent) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
       }
-    }, 30000);
+      const params = new URLSearchParams();
 
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, selectedChannel, isConnected]);
+      params.set('source', 'channel');
+
+      if (selectedChannel !== 'all') {
+        const channel = channels.find(c => c.id === selectedChannel);
+        if (channel) {
+          params.set('channelId', channel.id);
+          params.set('channelType', channel.type);
+        }
+      }
+
+      const data = await axiosClient.get(`/conversations?${params.toString()}`);
+
+
+
+      let rawConversations: any[] = [];
+      if (Array.isArray(data)) {
+        rawConversations = data;
+      } else if (data?.items && Array.isArray(data.items)) {
+        rawConversations = data.items;
+      } else if (data?.conversations && Array.isArray(data.conversations)) {
+        rawConversations = data.conversations;
+      } else if (data?.data && Array.isArray(data.data)) {
+        rawConversations = data.data;
+      }
+
+      const mappedConversations = rawConversations.map(mapConversation);
+
+
+      setConversations(mappedConversations);
+    } catch (error) {
+      if (!silent) {
+        toast.error('Failed to load conversations');
+      }
+      setConversations([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [selectedChannel, channels, statusFilter]);
 
   const loadChannels = async () => {
     try {
       setChannelsLoading(true);
-      const data = await axiosClient.get('/channels').then(r => r.data);
+      const data = await axiosClient.get('/channels');
 
       const mappedChannels: Channel[] = (data?.items || data || []).map((channel: any) => ({
         id: channel.id,
@@ -271,80 +294,20 @@ export default function ConversationsPage() {
     }
   };
 
-  const loadConversations = async (silent = false) => {
-    try {
-      if (!silent) {
-        setLoading(true);
-      } else {
-        setRefreshing(true);
+  useEffect(() => {
+    loadChannels();
+  }, []);
+
+  useEffect(() => {
+    loadConversations(false);
+    const interval = setInterval(() => {
+      if (!isConnected) {
+        loadConversations(true);
       }
-      const params = new URLSearchParams();
+    }, 30000);
 
-      // 🎯 ONLY load CHANNEL conversations (Facebook, Instagram, etc)
-      // EXCLUDE bot/widget conversations - keep them separate
-      params.set('source', 'channel');  // Add filter for channels only
-
-      if (selectedChannel !== 'all') {
-        const channel = channels.find(c => c.id === selectedChannel);
-        if (channel) {
-          params.set('channelId', channel.id);
-          params.set('channelType', channel.type);
-        }
-      }
-
-      // 🔍 DEBUG: Check workspace context
-      const workspaceId = localStorage.getItem('currentWorkspaceId');
-      console.log('[Loading Conversations]', {
-        statusFilter,
-        selectedChannel,
-        workspaceId,
-        params: params.toString(),
-      });
-
-      const response = await axiosClient.get(`/conversations?${params.toString()}`);
-      const data = response.data;
-
-      console.log('[API Response]', {
-        status: response.status,
-        dataType: typeof data,
-        isArray: Array.isArray(data),
-        keys: data ? Object.keys(data) : [],
-        data: data,
-      });
-      
-      console.log('[API Response - Full Data]', JSON.stringify(data, null, 2));
-
-      let rawConversations: any[] = [];
-      if (Array.isArray(data)) {
-        rawConversations = data;
-      } else if (data?.items && Array.isArray(data.items)) {
-        rawConversations = data.items;
-      } else if (data?.conversations && Array.isArray(data.conversations)) {
-        rawConversations = data.conversations;
-      } else if (data?.data && Array.isArray(data.data)) {
-        rawConversations = data.data;
-      }
-
-      const mappedConversations = rawConversations.map(mapConversation);
-
-      console.log('[Conversations Loaded]', {
-        total: data?.total || rawConversations.length,
-        loaded: mappedConversations.length,
-        rawCount: rawConversations.length,
-        conversations: mappedConversations,
-      });
-
-      setConversations(mappedConversations);
-    } catch (error) {
-      if (!silent) {
-        toast.error('Failed to load conversations');
-      }
-      setConversations([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    return () => clearInterval(interval);
+  }, [statusFilter, selectedChannel, isConnected, loadConversations]);
 
   const handleSync = async () => {
     if (selectedChannel === 'all') {
@@ -362,15 +325,13 @@ export default function ConversationsPage() {
       setSyncing(true);
       toast.info('Syncing conversations from Facebook...');
 
-      const response = await axiosClient.post(
+      const data = await axiosClient.post(
         `/channels/facebook/connections/${channel.id}/sync-to-db`,
         {
           conversationLimit: 25,
           messageLimit: 50,
         }
       );
-
-      const data = response.data;
 
       if (data.success) {
         toast.success(`Synced ${data.synced} conversation(s) from Facebook`);
@@ -380,7 +341,6 @@ export default function ConversationsPage() {
         toast.error('Failed to sync conversations');
       }
     } catch (error: any) {
-      console.error('Sync error:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to sync conversations';
       toast.error(errorMessage);
     } finally {
@@ -389,9 +349,9 @@ export default function ConversationsPage() {
   };
 
   const mapConversation = (conv: any): Conversation => {
-    // ✅ Try multiple sources for last message
+    // âœ… Try multiple sources for last message
     let lastMessage = 'No messages yet';
-    
+
     if (conv.lastMessage) {
       lastMessage = conv.lastMessage;
     } else if (conv.last_message) {
@@ -402,15 +362,9 @@ export default function ConversationsPage() {
       const lastMsg = conv.messages[conv.messages.length - 1];
       lastMessage = lastMsg.content || lastMsg.text || 'No messages yet';
     }
-    
-    console.log('[mapConversation] Mapping:', {
-      id: conv.id,
-      customerName: conv.customerName || conv.contactName,
-      lastMessage,
-      rawConv: conv
-    });
 
-    // ✅ FIX: Ensure valid date
+
+    // âœ… FIX: Ensure valid date
     let lastMessageAt = new Date().toISOString();
     const rawDate = conv.lastMessageAt || conv.last_message_at || conv.updatedAt || conv.updated_at || conv.createdAt || conv.created_at;
     if (rawDate) {
@@ -474,19 +428,25 @@ export default function ConversationsPage() {
     )
     : [];
 
-  // ✅ FIX: Select conversation without navigation
+  // âœ… FIX: Select conversation without navigation
   const handleSelectConversation = (id: string) => {
     setSelectedConversationId(id);
   };
 
-  const channelsWithCounts = channels.map(channel => ({
-    ...channel,
-    unreadCount: conversations.filter(
-      conv => conv.channelType === channel.type && conv.unreadCount > 0
-    ).length,
-  }));
+  const channelsWithCounts = useMemo(() =>
+    channels.map(channel => ({
+      ...channel,
+      unreadCount: conversations.filter(
+        conv => conv.channelType === channel.type && conv.unreadCount > 0
+      ).length,
+    })),
+    [channels, conversations]
+  );
 
-  const totalUnread = conversations.filter(conv => conv.unreadCount > 0).length;
+  const totalUnread = useMemo(() =>
+    conversations.filter(conv => conv.unreadCount > 0).length,
+    [conversations]
+  );
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
@@ -793,17 +753,17 @@ export default function ConversationsPage() {
                         <div className="flex items-center gap-2 mb-1.5">
                           {conv.metadata?.tags?.includes('VIP') && (
                             <Badge variant="secondary" className="h-5 px-2 text-[10px] font-medium bg-amber-500/10 text-amber-700 border-amber-500/20">
-                              🔒 VIP Lead
+                              ðŸ”’ VIP Lead
                             </Badge>
                           )}
                           {conv.metadata?.tags?.includes('Hot') && (
                             <Badge variant="secondary" className="h-5 px-2 text-[10px] font-medium bg-red-500/10 text-red-700 border-red-500/20">
-                              🔥 Hot Lead
+                              ðŸ”¥ Hot Lead
                             </Badge>
                           )}
                           {conv.metadata?.tags?.includes('Payment') && (
                             <Badge variant="secondary" className="h-5 px-2 text-[10px] font-medium bg-green-500/10 text-green-700 border-green-500/20">
-                              💳 Payments
+                              ðŸ’³ Payments
                             </Badge>
                           )}
                           {!conv.metadata?.tags?.length && (
@@ -934,7 +894,7 @@ function ConversationChat({
   const loadConversation = async () => {
     try {
       setLoading(true);
-      const data = await (await axiosClient.get(`/conversations/${conversationId}`)).data;
+      const data = await axiosClient.get(`/conversations/${conversationId}`);
 
       const mappedConversation = {
         id: data.id,
@@ -962,7 +922,7 @@ function ConversationChat({
 
   const handleSendMessage = async (content: string) => {
     try {
-      // ✅ FIX: Backend requires 'role' not 'sender'
+      // âœ… FIX: Backend requires 'role' not 'sender'
       await axiosClient.post(`/conversations/${conversationId}/messages`, {
         content,
         role: 'assistant' // Agent/Bot message
@@ -973,7 +933,7 @@ function ConversationChat({
     }
   };
 
-  // 🤖 → 👤 Human Handoff: Agent takes over
+  // ðŸ¤– â†’ ðŸ‘¤ Human Handoff: Agent takes over
   const handleTakeover = async () => {
     try {
       await axiosClient.post(`/conversations/${conversationId}/takeover`);
@@ -984,7 +944,7 @@ function ConversationChat({
     }
   };
 
-  // 👤 → 🤖 Hand Back: Return to bot
+  // ðŸ‘¤ â†’ ðŸ¤– Hand Back: Return to bot
   const handleHandBack = async () => {
     try {
       await axiosClient.post(`/conversations/${conversationId}/handback`);
@@ -1066,7 +1026,7 @@ function ConversationChat({
           <div className="flex items-center gap-2">
             <StatusBadge status={conversation.status} />
 
-            {/* 🤖/👤 Human Handoff Indicator */}
+            {/* ðŸ¤–/ðŸ‘¤ Human Handoff Indicator */}
             {conversation.metadata?.humanTakeover ? (
               <Badge variant="default" className="gap-1.5 bg-gradient-to-r from-green-500 to-emerald-500 h-6 px-2.5">
                 <User className="w-3 h-3" />
@@ -1135,7 +1095,7 @@ function ConversationChat({
           customerName={conversation.customerName}
           isChannelConversation={true}
           onSendMessage={handleSendMessage}
-          senderRole="assistant" // ✅ Agent/Bot sending to customer
+          senderRole="assistant" // âœ… Agent/Bot sending to customer
         />
       </div>
     </>

@@ -1,9 +1,9 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+﻿import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 /**
  * Decorator to extract current workspace ID from request
  * Priority: Header > Query > Body > User's default workspace
- * 
+ *
  * Usage:
  * @Get()
  * findAll(@CurrentWorkspace() workspaceId: string) { ... }
@@ -32,3 +32,4 @@ export const CurrentWorkspace = createParamDecorator(
     return request.defaultWorkspaceId;
   },
 );
+

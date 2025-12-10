@@ -1,4 +1,4 @@
-import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
+﻿import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useCallback } from "react";
 import { useAppDispatch } from "@/lib/store/hooks";
@@ -22,7 +22,7 @@ export function useAuth() {
 
     try {
       const { default: axiosClient } = await import('@/lib/axios-client');
-      const [currentWsResponse, allWsResponse] = await Promise.all([
+      const [currentWs, allWs] = await Promise.all([
         axiosClient.get('/workspaces/current', {
           headers: { Authorization: `Bearer ${accessToken}` },
         }),
@@ -31,24 +31,23 @@ export function useAuth() {
         }),
       ]);
 
-      const currentWs = currentWsResponse.data;
-      const allWs = allWsResponse.data;
-
       if (currentWs) {
         dispatch(setCurrentWorkspace(currentWs));
       }
       if (allWs && Array.isArray(allWs)) {
         dispatch(setWorkspaces(allWs));
       }
-    } catch {
-
+    } catch (error) {
+      console.error('[Auth] Failed to fetch workspace:', error);
+      // Note: Not showing toast to avoid interrupting user experience
+      // The user can still use the app with default/fallback workspace
     }
   }, [accessToken, dispatch]);
 
   // Handle refresh token error - auto logout
   useEffect(() => {
     if (error === "RefreshAccessTokenError") {
-      console.log('[Auth] ⚠️ Refresh token expired, logging out...');
+      console.log('[Auth] âš ï¸ Refresh token expired, logging out...');
       nextAuthSignOut({ redirect: false }).then(() => {
         router.push("/login?error=session_expired");
       });
@@ -85,3 +84,4 @@ export function useAuth() {
     signOut,
   };
 }
+

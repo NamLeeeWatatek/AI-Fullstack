@@ -1,4 +1,4 @@
-export type MailConfig = {
+﻿export type MailConfig = {
   port: number;
   host?: string;
   user?: string;
@@ -9,3 +9,4 @@ export type MailConfig = {
   secure: boolean;
   requireTLS: boolean;
 };
+

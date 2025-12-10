@@ -1,3 +1,4 @@
-export type AppleConfig = {
+﻿export type AppleConfig = {
   appAudience: string[];
 };
+

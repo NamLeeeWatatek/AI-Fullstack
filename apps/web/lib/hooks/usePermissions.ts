@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Permissions Hook
  * Provides permission checking and capabilities for components
  */
@@ -80,3 +80,4 @@ export function usePermissions() {
     canAccessFeature,
   }
 }
+

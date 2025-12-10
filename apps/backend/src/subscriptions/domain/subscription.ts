@@ -1,7 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Plan domain entity - theo schema mới
+ * Plan domain entity - theo schema má»›i
  * Table: plans
  */
 export class Plan {
@@ -31,7 +31,7 @@ export class Plan {
 }
 
 /**
- * Subscription domain entity - theo schema mới
+ * Subscription domain entity - theo schema má»›i
  * Table: subscriptions
  */
 export class Subscription {
@@ -64,7 +64,7 @@ export class Subscription {
 }
 
 /**
- * UsageQuota domain entity - theo schema mới
+ * UsageQuota domain entity - theo schema má»›i
  * Table: usage_quotas
  */
 export class UsageQuota {
@@ -85,7 +85,7 @@ export class UsageQuota {
 }
 
 /**
- * Invoice domain entity - theo schema mới
+ * Invoice domain entity - theo schema má»›i
  * Table: invoices
  */
 export class Invoice {
@@ -119,3 +119,4 @@ export class Invoice {
   @ApiProperty()
   createdAt: Date;
 }
+

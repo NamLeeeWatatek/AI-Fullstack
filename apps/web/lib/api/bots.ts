@@ -1,4 +1,4 @@
-import axiosClient from '../axios-client'
+﻿import axiosClient from '../axios-client'
 
 export interface Bot {
   id: string
@@ -64,23 +64,19 @@ export const botsApi = {
   async getAll(workspaceId: string, status?: string) {
     const params = new URLSearchParams({ workspaceId })
     if (status) params.append('status', status)
-    const response = await axiosClient.get(`/bots?${params}`)
-    return response.data || response
+    return await axiosClient.get(`/bots?${params}`)
   },
 
   async getOne(id: string): Promise<Bot> {
-    const response = await axiosClient.get(`/bots/${id}`)
-    return response.data || response
+    return await axiosClient.get(`/bots/${id}`)
   },
 
   async create(data: CreateBotDto): Promise<Bot> {
-    const response = await axiosClient.post('/bots', data)
-    return response.data || response
+    return await axiosClient.post('/bots', data)
   },
 
   async update(id: string, data: UpdateBotDto): Promise<Bot> {
-    const response = await axiosClient.patch(`/bots/${id}`, data)
-    return response.data || response
+    return await axiosClient.patch(`/bots/${id}`, data)
   },
 
   async delete(id: string): Promise<void> {
@@ -88,36 +84,30 @@ export const botsApi = {
   },
 
   async activate(id: string): Promise<Bot> {
-    const response = await axiosClient.post(`/bots/${id}/activate`)
-    return response.data || response
+    return await axiosClient.post(`/bots/${id}/activate`)
   },
 
   async pause(id: string): Promise<Bot> {
-    const response = await axiosClient.post(`/bots/${id}/pause`)
-    return response.data || response
+    return await axiosClient.post(`/bots/${id}/pause`)
   },
 
   async archive(id: string): Promise<Bot> {
-    const response = await axiosClient.post(`/bots/${id}/archive`)
-    return response.data || response
+    return await axiosClient.post(`/bots/${id}/archive`)
   },
 
   async duplicate(id: string, name?: string): Promise<Bot> {
-    const response = await axiosClient.post(`/bots/${id}/duplicate`, { name })
-    return response.data || response
+    return await axiosClient.post(`/bots/${id}/duplicate`, { name })
   },
 
   async getChannels(botId: string): Promise<BotChannel[]> {
-    const response = await axiosClient.get(`/bots/${botId}/channels`)
-    return response.data || response
+    return await axiosClient.get(`/bots/${botId}/channels`)
   },
 
   async createChannel(
     botId: string,
     data: { type: string; name: string; config?: Record<string, any> }
   ): Promise<BotChannel> {
-    const response = await axiosClient.post(`/bots/${botId}/channels`, data)
-    return response.data || response
+    return await axiosClient.post(`/bots/${botId}/channels`, data)
   },
 
   async updateChannel(
@@ -125,11 +115,10 @@ export const botsApi = {
     channelId: string,
     data: { name?: string; config?: Record<string, any>; isActive?: boolean }
   ): Promise<BotChannel> {
-    const response = await axiosClient.patch(
+    return await axiosClient.patch(
       `/bots/${botId}/channels/${channelId}`,
       data
     )
-    return response.data || response
   },
 
   async deleteChannel(botId: string, channelId: string): Promise<void> {
@@ -141,11 +130,10 @@ export const botsApi = {
     channelId: string,
     isActive: boolean
   ): Promise<BotChannel> {
-    const response = await axiosClient.patch(
+    return await axiosClient.patch(
       `/bots/${botId}/channels/${channelId}/toggle`,
       { isActive }
     )
-    return response.data || response
   },
 
   async executeFunction(
@@ -154,11 +142,10 @@ export const botsApi = {
     input: Record<string, any>,
     conversationHistory?: Array<{ role: string; content: string }>
   ): Promise<any> {
-    const response = await axiosClient.post(`/bots/${botId}/execute/${functionName}`, {
+    return await axiosClient.post(`/bots/${botId}/execute/${functionName}`, {
       input,
       conversationHistory,
     })
-    return response.data || response
   },
 
   async chat(
@@ -174,7 +161,7 @@ export const botsApi = {
       historyLength: conversationHistory?.length || 0,
     });
 
-    const response = await axiosClient.post(`/knowledge-bases/chat`, {
+    const data: any = await axiosClient.post(`/knowledge-bases/chat`, {
       message,
       botId,
       knowledgeBaseIds: knowledgeBaseIds && knowledgeBaseIds.length > 0 ? knowledgeBaseIds : undefined,
@@ -184,7 +171,6 @@ export const botsApi = {
       })),
     });
 
-    const data = response.data || response;
     console.log('[Bot Chat Response]', {
       answerLength: data.answer?.length || 0,
       sourcesCount: data.sources?.length || 0,
@@ -198,3 +184,4 @@ export const botsApi = {
 }
 
 export const executeBotFunction = botsApi.executeFunction.bind(botsApi)
+

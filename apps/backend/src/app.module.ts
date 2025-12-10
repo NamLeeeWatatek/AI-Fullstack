@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CacheModule } from '@nestjs/cache-manager';
 import { UsersModule } from './users/users.module';
@@ -38,7 +38,6 @@ import { NodeTypesModule } from './node-types/node-types.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { ChannelsModule } from './channels/channels.module';
 import { KnowledgeBaseModule } from './knowledge-base/knowledge-base.module';
-import { TemplatesModule } from './templates/templates.module';
 import { IntegrationsModule } from './integrations/integrations.module';
 import { StatsModule } from './stats/stats.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
@@ -47,19 +46,18 @@ import { AuditModule } from './audit/audit.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { SharedModule } from './shared/shared.module';
-import { TemplateFormsModule } from './template-forms/template-forms.module';
 
 const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
   .isDocumentDatabase
   ? MongooseModule.forRootAsync({
-    useClass: MongooseConfigService,
-  })
+      useClass: MongooseConfigService,
+    })
   : TypeOrmModule.forRootAsync({
-    useClass: TypeOrmConfigService,
-    dataSourceFactory: async (options: DataSourceOptions) => {
-      return new DataSource(options).initialize();
-    },
-  });
+      useClass: TypeOrmConfigService,
+      dataSourceFactory: async (options: DataSourceOptions) => {
+        return new DataSource(options).initialize();
+      },
+    });
 
 @Module({
   imports: [
@@ -90,7 +88,7 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
         }),
         loaderOptions: {
           path: path.join(__dirname, '../i18n/'),
-          watch: true
+          watch: true,
         },
       }),
       resolvers: [
@@ -137,8 +135,6 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     KnowledgeBaseModule,
 
     HomeModule,
-    TemplatesModule,
-    TemplateFormsModule,
     IntegrationsModule,
     StatsModule,
 
@@ -150,4 +146,5 @@ const infrastructureDatabaseModule = (databaseConfig() as DatabaseConfig)
     PermissionsModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}
+

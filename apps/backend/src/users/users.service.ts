@@ -1,4 +1,4 @@
-import {
+﻿import {
   HttpStatus,
   Injectable,
   UnprocessableEntityException,
@@ -72,8 +72,7 @@ export class UsersService {
     if (this.casdoorSyncService && createUserDto.provider !== 'casdoor') {
       try {
         await this.casdoorSyncService.syncUserToCasdoor(user);
-      } catch (error) {
-      }
+      } catch (error) {}
     }
 
     return user;
@@ -183,8 +182,7 @@ export class UsersService {
     if (this.casdoorSyncService && updatedUser && updateUserDto.role) {
       try {
         await this.casdoorSyncService.syncUserToCasdoor(updatedUser);
-      } catch (error) {
-      }
+      } catch (error) {}
     }
 
     return updatedUser;
@@ -197,8 +195,7 @@ export class UsersService {
     if (this.casdoorSyncService && user?.email) {
       try {
         await this.casdoorSyncService.deleteUserFromCasdoor(user.email);
-      } catch (error) {
-      }
+      } catch (error) {}
     }
   }
 
@@ -220,3 +217,4 @@ export class UsersService {
     });
   }
 }
+

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+﻿import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { FilesS3PresignedService } from './files.service';
@@ -23,3 +23,4 @@ export class FilesS3PresignedController {
     return this.filesService.create(file);
   }
 }
+

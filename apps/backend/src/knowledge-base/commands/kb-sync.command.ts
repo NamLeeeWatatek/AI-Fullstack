@@ -1,4 +1,4 @@
-import { Command, CommandRunner, Option } from 'nest-commander';
+﻿import { Command, CommandRunner, Option } from 'nest-commander';
 import { KBSyncService } from '../services/kb-sync.service';
 import { Logger } from '@nestjs/common';
 
@@ -23,7 +23,7 @@ export class KBSyncCommand extends CommandRunner {
     options?: SyncCommandOptions,
   ): Promise<void> {
     if (!options?.kbId) {
-      this.logger.error('❌ Knowledge base ID is required (--kb-id)');
+      this.logger.error('âŒ Knowledge base ID is required (--kb-id)');
       return;
     }
 
@@ -41,47 +41,47 @@ export class KBSyncCommand extends CommandRunner {
           await this.rebuild(options.kbId);
           break;
         default:
-          this.logger.error(`❌ Unknown action: ${action}`);
+          this.logger.error(`âŒ Unknown action: ${action}`);
       }
     } catch (error) {
-      this.logger.error(`❌ Error: ${error.message}`);
+      this.logger.error(`âŒ Error: ${error.message}`);
       throw error;
     }
   }
 
   private async verify(kbId: string) {
-    this.logger.log(`🔍 Verifying collection for KB: ${kbId}`);
+    this.logger.log(`ðŸ” Verifying collection for KB: ${kbId}`);
     const result = await this.syncService.verifyCollection(kbId);
 
-    this.logger.log(`📊 Total chunks: ${result.totalChunks}`);
-    this.logger.log(`⚠️  Missing vectors: ${result.missingVectors}`);
-    this.logger.log(`❌ Failed embeddings: ${result.failedEmbeddings}`);
+    this.logger.log(`ðŸ“Š Total chunks: ${result.totalChunks}`);
+    this.logger.log(`âš ï¸  Missing vectors: ${result.missingVectors}`);
+    this.logger.log(`âŒ Failed embeddings: ${result.failedEmbeddings}`);
 
     if (result.missingVectors === 0 && result.failedEmbeddings === 0) {
-      this.logger.log('✅ Collection is healthy!');
+      this.logger.log('âœ… Collection is healthy!');
     } else {
       this.logger.warn(
-        '⚠️  Collection has issues. Run with --action=sync or --action=rebuild',
+        'âš ï¸  Collection has issues. Run with --action=sync or --action=rebuild',
       );
     }
   }
 
   private async sync(kbId: string) {
-    this.logger.log(`🔄 Syncing missing vectors for KB: ${kbId}`);
+    this.logger.log(`ðŸ”„ Syncing missing vectors for KB: ${kbId}`);
     const result = await this.syncService.syncMissingVectors(kbId);
 
-    this.logger.log(`✅ Synced: ${result.synced}`);
-    this.logger.log(`❌ Errors: ${result.errors}`);
+    this.logger.log(`âœ… Synced: ${result.synced}`);
+    this.logger.log(`âŒ Errors: ${result.errors}`);
   }
 
   private async rebuild(kbId: string) {
-    this.logger.log(`🔄 Rebuilding entire collection for KB: ${kbId}`);
-    this.logger.warn('⚠️  This will regenerate ALL embeddings!');
+    this.logger.log(`ðŸ”„ Rebuilding entire collection for KB: ${kbId}`);
+    this.logger.warn('âš ï¸  This will regenerate ALL embeddings!');
 
     const result = await this.syncService.rebuildCollection(kbId);
 
-    this.logger.log(`✅ Processed: ${result.chunksProcessed}`);
-    this.logger.log(`❌ Errors: ${result.errors}`);
+    this.logger.log(`âœ… Processed: ${result.chunksProcessed}`);
+    this.logger.log(`âŒ Errors: ${result.errors}`);
   }
 
   @Option({
@@ -105,3 +105,4 @@ export class KBSyncCommand extends CommandRunner {
     return val as 'verify' | 'sync' | 'rebuild';
   }
 }
+

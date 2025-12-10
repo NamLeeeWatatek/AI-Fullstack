@@ -1,27 +1,13 @@
-/**
+﻿/**
  * Flows Redux Slice
  */
 import { createSlice, createAsyncThunk, type PayloadAction, type ActionReducerMapBuilder } from '@reduxjs/toolkit'
 import type { Draft } from '@reduxjs/toolkit'
-import axiosClient from '@/lib/axios-client'
+import { flowsApi, type Flow as FlowsApiFlow } from '@/lib/api/flows'
 import type { PaginatedResponse, PaginationParams } from '@/lib/types/pagination'
 
-export interface Flow {
-  id: string  // Changed from number to string (UUID)
-  name: string
-  description: string
-  status: 'draft' | 'published' | 'archived'
-  is_active: boolean
-  flow_data: Record<string, unknown>
-  created_at: string
-  updated_at: string
-  archived_at?: string
-  user_id: string
-  version?: number
-  executions?: number
-  successRate?: number
-  channel_id?: number | null
-}
+// Use Flow type from flowsApi for consistency
+type Flow = FlowsApiFlow
 
 interface FlowsState {
   items: Flow[]
@@ -62,74 +48,58 @@ export const fetchFlows = createAsyncThunk<
 >(
   'flows/fetchFlows',
   async (params) => {
-    const queryParams = new URLSearchParams()
-    
-    if (params) {
-      if (params.page) queryParams.append('page', params.page.toString())
-      if (params.page_size) queryParams.append('page_size', params.page_size.toString())
-      if (params.search) queryParams.append('search', params.search)
-      if (params.sort_by) queryParams.append('sort_by', params.sort_by)
-      if (params.sort_order) queryParams.append('sort_order', params.sort_order)
-      
-      if ('status' in params && params.status) {
-        queryParams.append('status', params.status)
-      }
-      
-      if (params.filters) {
-        Object.entries(params.filters).forEach(([key, value]) => {
-          queryParams.append(key, String(value))
-        })
-      }
-    }
-    
-    const url = `/flows/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-    const response: any = await axiosClient.get(url)
-    const data = response.data || response
-    
-    if (Array.isArray(data)) {
+    const flows = await flowsApi.getAll()
+    console.log('flows from service', flows)
+    if (Array.isArray(flows)) {
       return {
-        items: data,
-        total: data.length,
+        items: flows,
+        total: flows.length,
         page: 1,
-        page_size: data.length,
+        page_size: flows.length,
         total_pages: 1,
         has_next: false,
         has_prev: false,
       }
     }
-    
-    return data as PaginatedResponse<Flow>
+
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      page_size: 25,
+      total_pages: 1,
+      has_next: false,
+      has_prev: false,
+    }
   }
 )
 
 export const fetchFlow = createAsyncThunk<Flow, string>(
   'flows/fetchFlow',
   async (id: string) => {
-    const response: any = await axiosClient.get(`/flows/${id}`)
-    return (response.data || response) as Flow
+    return await flowsApi.getOne(id)
   }
 )
 
 export const createFlow = createAsyncThunk<Flow, Partial<Flow>>(
   'flows/createFlow',
   async (data: Partial<Flow>) => {
-    const response: any = await axiosClient.post('/flows/', data)
-    return (response.data || response) as Flow
+    // TODO: Implement create in flowsApi
+    throw new Error('createFlow not implemented in flowsApi')
   }
 )
 
 export const updateFlow = createAsyncThunk<Flow, { id: string; data: Partial<Flow> }>(
   'flows/updateFlow',
   async ({ id, data }: { id: string; data: Partial<Flow> }) => {
-    const response: any = await axiosClient.patch(`/flows/${id}`, data)
-    return (response.data || response) as Flow
+    return await flowsApi.update(id, data)
   }
 )
 
 export const deleteFlow = createAsyncThunk<string, string>(
   'flows/deleteFlow',
   async (id: string) => {
-    await axiosClient.delete(`/flows/${id}`)
+    await flowsApi.delete(id)
     return id
   }
 )
@@ -137,16 +107,16 @@ export const deleteFlow = createAsyncThunk<string, string>(
 export const duplicateFlow = createAsyncThunk<Flow, string>(
   'flows/duplicateFlow',
   async (id: string) => {
-    const response: any = await axiosClient.post(`/flows/${id}/duplicate`)
-    return (response.data || response) as Flow
+    // TODO: Implement duplicate in flowsApi
+    throw new Error('duplicateFlow not implemented in flowsApi')
   }
 )
 
 export const archiveFlow = createAsyncThunk<Flow, string>(
   'flows/archiveFlow',
   async (id: string) => {
-    const response: any = await axiosClient.post(`/flows/${id}/archive`)
-    return (response.data || response) as Flow
+    // TODO: Implement archive in flowsApi
+    throw new Error('archiveFlow not implemented in flowsApi')
   }
 )
 
@@ -226,3 +196,4 @@ const flowsSlice = createSlice({
 
 export const { setCurrentFlow, clearError } = flowsSlice.actions
 export default flowsSlice.reducer
+

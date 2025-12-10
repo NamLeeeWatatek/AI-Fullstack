@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Platform Utilities
  * Centralized utilities for platform icons and colors
  */

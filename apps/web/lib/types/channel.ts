@@ -1,4 +1,4 @@
-
+﻿
 export interface ChannelType {
   id: string
   name: string
@@ -22,7 +22,7 @@ export interface Channel {
   accessToken?: string
   refreshToken?: string
   expiresAt?: string
-  metadata?: Record<string, any> // ✅ For storing botId and other data
+  metadata?: Record<string, any> // âœ… For storing botId and other data
 }
 
 export interface IntegrationConfig {
@@ -32,7 +32,7 @@ export interface IntegrationConfig {
   client_id: string
   client_secret: string
   scopes?: string
-  verify_token?: string // ✅ For Facebook webhook verification
+  verify_token?: string // âœ… For Facebook webhook verification
   is_active: boolean
   createdAt?: string
   updatedAt?: string
@@ -54,3 +54,4 @@ export interface UpdateIntegrationDto {
   scopes?: string
   isActive?: boolean
 }
+

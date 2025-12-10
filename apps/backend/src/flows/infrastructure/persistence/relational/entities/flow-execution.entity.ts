@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -52,3 +52,4 @@ export class FlowExecutionEntity extends EntityRelationalHelper {
   @UpdateDateColumn()
   updatedAt: Date;
 }
+

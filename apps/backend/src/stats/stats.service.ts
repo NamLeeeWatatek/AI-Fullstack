@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThanOrEqual } from 'typeorm';
 import {
@@ -41,8 +41,11 @@ export class StatsService {
     private readonly flowExecutionRepository: Repository<FlowExecutionEntity>,
     @InjectRepository(WorkspaceEntity)
     private readonly workspaceRepository: Repository<WorkspaceEntity>,
-  ) { }
-  async getDashboardStats(query: StatsQueryDto, workspaceId?: string): Promise<DashboardStatsDto> {
+  ) {}
+  async getDashboardStats(
+    query: StatsQueryDto,
+    workspaceId?: string,
+  ): Promise<DashboardStatsDto> {
     const { startDate, endDate } = this.getDateRange(query);
 
     const [
@@ -92,29 +95,31 @@ export class StatsService {
 
     const buildQuery = (dateFilter?: { createdAt: any }) => {
       const query = this.userRepository.createQueryBuilder('user');
-      
+
       if (workspaceId) {
         query
           .innerJoin('workspace_member', 'wm', 'wm.userId = user.id')
           .where('wm.workspaceId = :workspaceId', { workspaceId });
       }
-      
+
       if (dateFilter) {
-        const condition = workspaceId ? 'user.createdAt BETWEEN :startDate AND :endDate' : 'user.createdAt BETWEEN :startDate AND :endDate';
+        const condition = workspaceId
+          ? 'user.createdAt BETWEEN :startDate AND :endDate'
+          : 'user.createdAt BETWEEN :startDate AND :endDate';
         query.andWhere(condition, dateFilter.createdAt);
       }
-      
+
       return query;
     };
 
     const total = await buildQuery().getCount();
 
-    const current = await buildQuery({ 
-      createdAt: { startDate, endDate } 
+    const current = await buildQuery({
+      createdAt: { startDate, endDate },
     }).getCount();
 
-    const previous = await buildQuery({ 
-      createdAt: { startDate: previousStartDate, endDate: previousEndDate } 
+    const previous = await buildQuery({
+      createdAt: { startDate: previousStartDate, endDate: previousEndDate },
     }).getCount();
 
     const active = total;
@@ -162,7 +167,9 @@ export class StatsService {
     });
 
     const previous = await this.botRepository.count({
-      where: buildWhere({ createdAt: Between(previousStartDate, previousEndDate) }),
+      where: buildWhere({
+        createdAt: Between(previousStartDate, previousEndDate),
+      }),
     });
 
     const active = await this.botRepository.count({
@@ -207,7 +214,7 @@ export class StatsService {
         query.where('bot.workspaceId = :workspaceId', { workspaceId });
       }
 
-      Object.keys(additionalWhere).forEach(key => {
+      Object.keys(additionalWhere).forEach((key) => {
         const condition = `conversation.${key} ${Array.isArray(additionalWhere[key]) ? 'IN (:...value)' : '= :value'}`;
         query.andWhere(condition, { value: additionalWhere[key] });
       });
@@ -218,14 +225,20 @@ export class StatsService {
     const total = await buildQuery().getCount();
 
     const current = await buildQuery()
-      .andWhere('conversation.createdAt BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .andWhere('conversation.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
       .getCount();
 
     const previous = await buildQuery()
-      .andWhere('conversation.createdAt BETWEEN :previousStartDate AND :previousEndDate', {
-        previousStartDate,
-        previousEndDate
-      })
+      .andWhere(
+        'conversation.createdAt BETWEEN :previousStartDate AND :previousEndDate',
+        {
+          previousStartDate,
+          previousEndDate,
+        },
+      )
       .getCount();
 
     const active = await buildQuery({ status: 'active' }).getCount();
@@ -236,7 +249,9 @@ export class StatsService {
       .createQueryBuilder('message')
       .leftJoin('message.conversation', 'conversation')
       .leftJoin('conversation.bot', 'bot')
-      .where(workspaceId ? 'bot.workspaceId = :workspaceId' : '1=1', { workspaceId })
+      .where(workspaceId ? 'bot.workspaceId = :workspaceId' : '1=1', {
+        workspaceId,
+      })
       .getCount();
 
     const avgMessagesPerConversation =
@@ -283,14 +298,20 @@ export class StatsService {
     const totalExecutions = await buildQuery().getCount();
 
     const current = await buildQuery()
-      .andWhere('execution.createdAt BETWEEN :startDate AND :endDate', { startDate, endDate })
+      .andWhere('execution.createdAt BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      })
       .getCount();
 
     const previous = await buildQuery()
-      .andWhere('execution.createdAt BETWEEN :previousStartDate AND :previousEndDate', {
-        previousStartDate,
-        previousEndDate,
-      })
+      .andWhere(
+        'execution.createdAt BETWEEN :previousStartDate AND :previousEndDate',
+        {
+          previousStartDate,
+          previousEndDate,
+        },
+      )
       .getCount();
 
     const successfulExecutions = await buildQuery()
@@ -366,7 +387,9 @@ export class StatsService {
     });
 
     const previous = await this.workspaceRepository.count({
-      where: buildWhere({ createdAt: Between(previousStartDate, previousEndDate) }),
+      where: buildWhere({
+        createdAt: Between(previousStartDate, previousEndDate),
+      }),
     });
 
     const active = total;
@@ -722,3 +745,4 @@ export class StatsService {
     return trend;
   }
 }
+

@@ -1,4 +1,4 @@
-import { instanceToPlain } from 'class-transformer';
+﻿import { instanceToPlain } from 'class-transformer';
 import { AfterLoad, BaseEntity } from 'typeorm';
 
 export class EntityRelationalHelper extends BaseEntity {
@@ -13,3 +13,4 @@ export class EntityRelationalHelper extends BaseEntity {
     return instanceToPlain(this);
   }
 }
+

@@ -1,4 +1,4 @@
-import { UserSchemaClass } from '../../../../../users/infrastructure/persistence/document/entities/user.schema';
+﻿import { UserSchemaClass } from '../../../../../users/infrastructure/persistence/document/entities/user.schema';
 import { UserMapper } from '../../../../../users/infrastructure/persistence/document/mappers/user.mapper';
 import { Session } from '../../../../domain/session';
 import { SessionSchemaClass } from '../entities/session.schema';
@@ -33,3 +33,4 @@ export class SessionMapper {
     return sessionEntity;
   }
 }
+

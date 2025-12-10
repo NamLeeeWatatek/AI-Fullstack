@@ -1,15 +1,16 @@
-import type { Metadata } from 'next'
+﻿import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
-import { Toaster } from '@/components/ui/sonner'
-import { ThemeProvider } from '@/components/providers/theme-provider'
-import { SessionProvider } from '@/components/providers/session-provider'
-import { TokenRefreshProvider } from '@/components/providers/token-refresh-provider'
-import { QueryProvider } from '@/components/providers/query-provider'
+import { Toaster } from '@/components/ui/Sonner'
+
 import { WorkspaceProvider } from '@/lib/context/workspace-context'
 import { ReduxProvider } from '@/lib/store/Provider'
 import './globals.css'
+import { QueryProvider } from '@/components/providers/QueryProvider'
+import { TokenRefreshProvider } from '@/components/providers/TokenRefreshProvider'
+import { SessionProvider } from 'next-auth/react'
+import { ThemeProvider } from 'next-themes'
 
-const inter = Inter({ 
+const inter = Inter({
     subsets: ['latin'],
     weight: ['300', '400', '500', '600', '700'],
     display: 'swap',
@@ -52,3 +53,4 @@ export default function RootLayout({
         </html>
     )
 }
+

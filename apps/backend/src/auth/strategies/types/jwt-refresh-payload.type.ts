@@ -1,4 +1,4 @@
-import { Session } from '../../../session/domain/session';
+﻿import { Session } from '../../../session/domain/session';
 
 export type JwtRefreshPayloadType = {
   sessionId: Session['id'];
@@ -6,3 +6,4 @@ export type JwtRefreshPayloadType = {
   iat: number;
   exp: number;
 };
+

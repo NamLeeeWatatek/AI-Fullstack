@@ -1,4 +1,4 @@
-import {
+﻿import {
   WebSocketGateway,
   SubscribeMessage,
   MessageBody,
@@ -32,8 +32,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private activeUsers = new Map<string, Set<string>>();
 
-  handleConnection(client: Socket) {
-  }
+  handleConnection(client: Socket) {}
 
   handleDisconnect(client: Socket) {
     this.activeUsers.forEach((users, flowId) => {
@@ -170,3 +169,4 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 }
+

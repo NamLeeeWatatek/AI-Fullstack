@@ -1,4 +1,4 @@
-
+﻿
 export interface BotConversation {
   id: string;
   botId: string;
@@ -88,3 +88,4 @@ export type CreateAiConversationResponse = AiConversation;
 export type UpdateAiConversationResponse = AiConversation;
 export type DeleteAiConversationResponse = { success: boolean };
 export type AddAiMessageResponse = AiConversation;
+

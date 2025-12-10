@@ -1,3 +1,4 @@
+﻿
 import {
   Controller,
   Get,
@@ -10,21 +11,20 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBody } from '@nestjs/swagger';
 import { NodeTypesService } from './node-types.service';
-import { NodeType, NodeCategory } from './domain/node-type';
-import { NodeTypeEntity } from './infrastructure/persistence/relational/entities/node-type.entity';
+import { NodeCategory } from './types';
+import { NodeType } from './domain/node-type';
 
 @ApiTags('Node Types')
 @Controller({ path: 'node-types', version: '1' })
 export class NodeTypesController {
-  constructor(private readonly nodeTypesService: NodeTypesService) {}
+  constructor(private readonly nodeTypesService: NodeTypesService) { }
 
   @Get()
   @ApiOperation({ summary: 'Get all node types' })
-  @ApiQuery({ name: 'category', required: false })
   async findAll(@Query('category') category?: string): Promise<NodeType[]> {
-    return this.nodeTypesService.findAll(category);
+    return this.nodeTypesService.findAll(category as any);
   }
 
   @Get('categories')
@@ -41,18 +41,18 @@ export class NodeTypesController {
 
   @Post()
   @ApiOperation({ summary: 'Create new node type (Admin)' })
-  @ApiBody({ type: NodeTypeEntity })
-  async create(@Body() data: Partial<NodeTypeEntity>): Promise<NodeTypeEntity> {
+  @ApiBody({ type: NodeType })
+  async create(@Body() data: Omit<NodeType, 'createdAt' | 'updatedAt'>): Promise<NodeType> {
     return this.nodeTypesService.create(data);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update node type (Admin)' })
-  @ApiBody({ type: NodeTypeEntity })
+  @ApiBody({ type: NodeType })
   async update(
     @Param('id') id: string,
-    @Body() data: Partial<NodeTypeEntity>,
-  ): Promise<NodeTypeEntity> {
+    @Body() data: Partial<NodeType>,
+  ): Promise<NodeType> {
     return this.nodeTypesService.update(id, data);
   }
 
@@ -63,3 +63,4 @@ export class NodeTypesController {
     return this.nodeTypesService.remove(id);
   }
 }
+

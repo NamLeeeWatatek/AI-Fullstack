@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RoleEntity } from '../../../../roles/infrastructure/persistence/relational/entities/role.entity';
@@ -75,3 +75,4 @@ export class RoleSeedService {
     }
   }
 }
+

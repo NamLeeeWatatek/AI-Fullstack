@@ -1,29 +1,20 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  NodeCategoryId,
+  NodeProperty as NodePropertyModel,
+  NodePropertyType,
+  NodeType as NodeTypeModel,
+} from '../types';
 
-export class NodeProperty {
+export class NodeProperty implements NodePropertyModel {
   @ApiProperty()
   name: string;
 
   @ApiProperty()
   label: string;
 
-  @ApiProperty({
-    enum: [
-      'text',
-      'url',
-      'textarea',
-      'json',
-      'select',
-      'boolean',
-      'number',
-      'file',
-      'image',
-      'key-value',
-      'multi-select',
-      'dynamic-form',
-    ],
-  })
-  type: string;
+  @ApiProperty()
+  type: NodePropertyType;
 
   @ApiPropertyOptional()
   required?: boolean;
@@ -44,6 +35,27 @@ export class NodeProperty {
   showWhen?: Record<string, any>;
 
   @ApiPropertyOptional()
+  min?: number;
+
+  @ApiPropertyOptional()
+  max?: number;
+
+  @ApiPropertyOptional()
+  step?: number;
+
+  @ApiPropertyOptional()
+  pattern?: string;
+
+  @ApiPropertyOptional()
+  maxLength?: number;
+
+  @ApiPropertyOptional()
+  rows?: number;
+
+  @ApiPropertyOptional()
+  helpText?: string;
+
+  @ApiPropertyOptional()
   accept?: string;
 
   @ApiPropertyOptional()
@@ -53,39 +65,55 @@ export class NodeProperty {
   properties?: NodeProperty[];
 }
 
-export class NodeType {
+export class NodeType implements NodeTypeModel {
   @ApiProperty()
   id: string;
 
   @ApiProperty()
   label: string;
 
-  @ApiProperty()
-  category: string;
-
-  @ApiProperty()
-  icon: string;
+  @ApiProperty({ enum: ['trigger', 'action', 'logic', 'transform', 'data', 'ai', 'messaging', 'integration'] })
+  category: NodeCategoryId;
 
   @ApiProperty()
   color: string;
 
-  @ApiProperty()
-  description: string;
+  @ApiPropertyOptional()
+  description?: string;
 
   @ApiPropertyOptional()
   isPremium?: boolean;
 
+  @ApiPropertyOptional()
+  isActive?: boolean;
+
+  @ApiPropertyOptional()
+  isTrigger?: boolean;
+
   @ApiPropertyOptional({ type: [NodeProperty] })
   properties?: NodeProperty[];
+
+  @ApiPropertyOptional({ type: Object })
+  outputSchema?: Record<string, any>;
+
+  @ApiPropertyOptional()
+  executor?: string;
+
+  @ApiPropertyOptional()
+  sortOrder?: number;
+
+  @ApiPropertyOptional({ type: Object })
+  metadata?: Record<string, any>;
+
+  @ApiPropertyOptional({ type: [String] })
+  tags?: string[];
+
+  @ApiPropertyOptional()
+  createdAt?: Date;
+
+  @ApiPropertyOptional()
+  updatedAt?: Date;
 }
 
-export class NodeCategory {
-  @ApiProperty()
-  id: string;
+export type { NodePropertyType, NodeCategoryId };
 
-  @ApiProperty()
-  label: string;
-
-  @ApiProperty()
-  color: string;
-}

@@ -1,8 +1,7 @@
-
+﻿
 export * from './flow'
 export * from './node'
 export * from './channel'
-export * from './template'
 export * from './inbox'
 
 export * from './workflow'
@@ -22,3 +21,4 @@ export * from './common'
 export * from './settings'
 export * from './pagination'
 export * from './permissions'
+

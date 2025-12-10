@@ -1,1 +1,2 @@
-export { ChannelConfigDialog } from './channel-config-dialog'
+﻿export { ChannelConfigDialog } from './ChannelConfigDialog'
+

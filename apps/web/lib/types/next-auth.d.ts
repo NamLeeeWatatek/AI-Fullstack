@@ -1,4 +1,4 @@
-import { DefaultSession } from "next-auth"
+﻿import { DefaultSession } from "next-auth"
 
 export interface SessionWorkspace {
   id: string
@@ -40,3 +40,4 @@ declare module "@auth/core/jwt" {
     workspaces?: SessionWorkspace[]
   }
 }
+

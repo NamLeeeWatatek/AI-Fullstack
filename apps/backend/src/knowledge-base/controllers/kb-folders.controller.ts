@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -60,3 +60,4 @@ export class KBFoldersController {
     return this.foldersService.remove(folderId, userId);
   }
 }
+

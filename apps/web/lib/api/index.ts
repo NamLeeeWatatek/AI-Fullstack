@@ -1,4 +1,4 @@
-
+﻿
 export * from './bots'
 
 export * from './flows'
@@ -9,9 +9,9 @@ export * from './conversations'
 
 export * from './channels'
 
-export * from './ai-models'
-
-export * from './nodeTypes'
+// Explicitly export to avoid NodeProperty ambiguity with flows.ts
+export type { NodeTypeAPI, NodeCategory } from './nodeTypes'
+export { fetchNodeTypes, fetchNodeCategories, fetchNodeType } from './nodeTypes'
 
 export * from './permissions'
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { axiosClient } from '@/lib/axios-client'
 
 export interface AIModel {
@@ -48,7 +48,7 @@ export function useAIModels(): UseAIModelsReturn {
             setLoading(true)
             setError(null)
             const response = await axiosClient.get('/ai-providers/models')
-            setProviders(response.data || [])
+            setProviders(response || [])
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load models')
         } finally {
@@ -93,3 +93,4 @@ export function useAIModels(): UseAIModelsReturn {
         getDefaultModel
     }
 }
+

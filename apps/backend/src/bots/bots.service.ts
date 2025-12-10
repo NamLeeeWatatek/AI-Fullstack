@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -76,10 +76,10 @@ export class BotsService {
             messages: {
               welcome:
                 createDto.welcomeMessage ||
-                'Xin chào! Tôi có thể giúp gì cho bạn?',
-              placeholder: createDto.placeholderText || 'Nhập tin nhắn...',
-              offline: 'Chúng tôi hiện không trực tuyến',
-              errorMessage: 'Đã có lỗi xảy ra',
+                'Xin chÃ o! TÃ´i cÃ³ thá»ƒ giÃºp gÃ¬ cho báº¡n?',
+              placeholder: createDto.placeholderText || 'Nháº­p tin nháº¯n...',
+              offline: 'ChÃºng tÃ´i hiá»‡n khÃ´ng trá»±c tuyáº¿n',
+              errorMessage: 'ÄÃ£ cÃ³ lá»—i xáº£y ra',
             },
             behavior: {
               autoOpen: false,
@@ -109,8 +109,7 @@ export class BotsService {
         defaultVersion.id,
         userId,
       );
-    } catch (error) {
-    }
+    } catch (error) {}
 
     return savedBot;
   }
@@ -143,15 +142,18 @@ export class BotsService {
 
   async update(id: string, updateDto: UpdateBotDto) {
     const bot = await this.findOne(id);
-    
+
     // Clean up invalid UUID strings
     if (updateDto.flowId === 'undefined' || updateDto.flowId === 'null') {
       updateDto.flowId = null;
     }
-    if (updateDto.aiProviderId === 'undefined' || updateDto.aiProviderId === 'null') {
+    if (
+      updateDto.aiProviderId === 'undefined' ||
+      updateDto.aiProviderId === 'null'
+    ) {
       updateDto.aiProviderId = null;
     }
-    
+
     Object.assign(bot, updateDto);
     return this.botRepository.save(bot);
   }
@@ -448,7 +450,8 @@ export class BotsService {
         configUpdate.theme.botMessageTextColor = appearance.botMessageTextColor;
       if (appearance.fontFamily)
         configUpdate.theme.fontFamily = appearance.fontFamily;
-      if (appearance.position) configUpdate.theme.position = appearance.position;
+      if (appearance.position)
+        configUpdate.theme.position = appearance.position;
       if (appearance.buttonSize)
         configUpdate.theme.buttonSize = appearance.buttonSize;
       if (appearance.showAvatar !== undefined)
@@ -489,17 +492,21 @@ export class BotsService {
       primaryColor: activeVersion.config.theme?.primaryColor || '#667eea',
       backgroundColor: activeVersion.config.theme?.backgroundColor || '#ffffff',
       botMessageColor: activeVersion.config.theme?.botMessageColor || '#f9fafb',
-      botMessageTextColor: activeVersion.config.theme?.botMessageTextColor || '#1f2937',
-      fontFamily: activeVersion.config.theme?.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto',
+      botMessageTextColor:
+        activeVersion.config.theme?.botMessageTextColor || '#1f2937',
+      fontFamily:
+        activeVersion.config.theme?.fontFamily ||
+        '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto',
       position: activeVersion.config.theme?.position || 'bottom-right',
       buttonSize: activeVersion.config.theme?.buttonSize || 'medium',
       showAvatar: activeVersion.config.theme?.showAvatar ?? true,
       showTimestamp: activeVersion.config.theme?.showTimestamp ?? true,
       welcomeMessage:
         activeVersion.config.messages?.welcome ||
-        'Xin chào! Tôi có thể giúp gì cho bạn?',
+        'Xin chÃ o! TÃ´i cÃ³ thá»ƒ giÃºp gÃ¬ cho báº¡n?',
       placeholderText:
-        activeVersion.config.messages?.placeholder || 'Nhập tin nhắn...',
+        activeVersion.config.messages?.placeholder || 'Nháº­p tin nháº¯n...',
     };
   }
 }
+

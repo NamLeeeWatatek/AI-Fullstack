@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -23,7 +23,7 @@ export default function ChannelCallbackPage() {
       setStatus('error');
       setMessage('OAuth cancelled or failed');
       notifyParent('error', error);
-      setProcessed(true); // ✅ Mark as processed
+      setProcessed(true); // âœ… Mark as processed
       return;
     }
 
@@ -31,7 +31,7 @@ export default function ChannelCallbackPage() {
       setStatus('error');
       setMessage('No authorization code received');
       notifyParent('error', 'No code');
-      setProcessed(true); // ✅ Mark as processed
+      setProcessed(true); // âœ… Mark as processed
       return;
     }
 
@@ -50,7 +50,7 @@ export default function ChannelCallbackPage() {
         const response = res.data || res;
 
         if (response.success && response.pages && response.pages.length > 0) {
-          // ✅ FIX: Validate tempToken exists
+          // âœ… FIX: Validate tempToken exists
           if (!response.tempToken) {
             setStatus('error');
             setMessage('Failed to get access token. Please try again.');
@@ -78,7 +78,7 @@ export default function ChannelCallbackPage() {
     } catch (error: any) {
       setStatus('error');
       
-      // ✅ FIX: Better error messages
+      // âœ… FIX: Better error messages
       let errorMessage = 'Failed to process callback';
       
       if (error.response?.data?.message) {
@@ -148,3 +148,4 @@ export default function ChannelCallbackPage() {
     </div>
   );
 }
+

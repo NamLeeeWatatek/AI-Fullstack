@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 
 export class TimeSeriesDataPoint {
   @ApiProperty({ example: '2025-11-01' })
@@ -128,3 +128,4 @@ export class DashboardStatsDto {
   @ApiProperty({ example: '2025-11-30T16:29:20.000Z' })
   generatedAt: Date;
 }
+

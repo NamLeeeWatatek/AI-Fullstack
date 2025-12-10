@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+﻿import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   BotEntity,
@@ -52,7 +52,13 @@ import { MessageBufferService } from './services/message-buffer.service';
     forwardRef(() => ConversationsModule),
     MessagingModule,
   ],
-  controllers: [BotsController, PublicBotController, PublicWidgetController, WidgetVersionController, WidgetDeploymentController],
+  controllers: [
+    BotsController,
+    PublicBotController,
+    PublicWidgetController,
+    WidgetVersionController,
+    WidgetDeploymentController,
+  ],
   providers: [
     BotsService,
     PublicBotService,
@@ -75,4 +81,5 @@ import { MessageBufferService } from './services/message-buffer.service';
     MessageBufferService,
   ],
 })
-export class BotsModule { }
+export class BotsModule {}
+

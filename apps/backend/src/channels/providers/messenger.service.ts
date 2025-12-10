@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -40,7 +40,8 @@ export class MessengerService {
         };
       }
 
-      const pageAccessToken = connection.accessToken || connection.metadata?.accessToken;
+      const pageAccessToken =
+        connection.accessToken || connection.metadata?.accessToken;
       if (!pageAccessToken) {
         return {
           success: false,
@@ -97,7 +98,8 @@ export class MessengerService {
       const connection = await this.getConnection('facebook', channelId);
       if (!connection) return;
 
-      const pageAccessToken = connection.accessToken || connection.metadata?.accessToken;
+      const pageAccessToken =
+        connection.accessToken || connection.metadata?.accessToken;
       if (!pageAccessToken) return;
 
       const url = `https://graph.facebook.com/${this.apiVersion}/me/messages`;
@@ -130,7 +132,8 @@ export class MessengerService {
         return { success: false, error: 'Facebook page not connected' };
       }
 
-      const pageAccessToken = connection.accessToken || connection.metadata?.accessToken;
+      const pageAccessToken =
+        connection.accessToken || connection.metadata?.accessToken;
       if (!pageAccessToken) {
         return { success: false, error: 'Page access token not found' };
       }
@@ -189,3 +192,4 @@ export class MessengerService {
     return this.connectionRepository.findOne({ where });
   }
 }
+

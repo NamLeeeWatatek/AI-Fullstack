@@ -1,4 +1,5 @@
-export interface MailData<T = never> {
+﻿export interface MailData<T = never> {
   to: string;
   data: T;
 }
+

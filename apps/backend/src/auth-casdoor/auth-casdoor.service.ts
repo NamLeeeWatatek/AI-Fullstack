@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+﻿import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import crypto from 'crypto';
@@ -52,7 +52,9 @@ export class AuthCasdoorService {
 
     const loginUrl = `${this.casdoorEndpoint}/login/oauth/authorize?${params.toString()}`;
 
-    this.logger.log(`Generated Casdoor login URL with redirect: ${redirectUri}`);
+    this.logger.log(
+      `Generated Casdoor login URL with redirect: ${redirectUri}`,
+    );
 
     return { loginUrl };
   }
@@ -181,15 +183,21 @@ export class AuthCasdoorService {
       this.logger.error(`Token exchange error: ${error.message}`);
       this.logger.error(`Token URL: ${tokenUrl}`);
       this.logger.error(`Casdoor endpoint: ${this.casdoorEndpoint}`);
-      
+
       if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-        this.logger.error(`Connection timeout - Casdoor server may be down or unreachable`);
-        throw new UnauthorizedException('Casdoor server is not responding. Please try again later.');
+        this.logger.error(
+          `Connection timeout - Casdoor server may be down or unreachable`,
+        );
+        throw new UnauthorizedException(
+          'Casdoor server is not responding. Please try again later.',
+        );
       }
-      
+
       if (error.response) {
         this.logger.error(`Response status: ${error.response.status}`);
-        this.logger.error(`Response data: ${JSON.stringify(error.response.data)}`);
+        this.logger.error(
+          `Response data: ${JSON.stringify(error.response.data)}`,
+        );
       }
       throw new UnauthorizedException('Failed to exchange code for token');
     }
@@ -211,23 +219,23 @@ export class AuthCasdoorService {
       const userInfo = userInfoResponse.data;
       this.logger.log(`Basic userinfo: ${JSON.stringify(userInfo)}`);
 
-    let getUserUrl: string;
+      let getUserUrl: string;
 
-    if (
-      userInfo.preferred_username &&
-      userInfo.preferred_username.includes('/')
-    ) {
-      getUserUrl = `${this.casdoorEndpoint}/api/get-user?id=${encodeURIComponent(userInfo.preferred_username)}`;
-      this.logger.log(
-        `Using preferred_username: ${userInfo.preferred_username}`,
-      );
-    } else if (userInfo.name) {
-      getUserUrl = `${this.casdoorEndpoint}/api/get-user?owner=${encodeURIComponent(this.orgName)}&name=${encodeURIComponent(userInfo.name)}`;
-      this.logger.log(`Using owner=${this.orgName}, name=${userInfo.name}`);
-    } else {
-      getUserUrl = `${this.casdoorEndpoint}/api/get-user?owner=${encodeURIComponent(this.orgName)}&userId=${encodeURIComponent(userInfo.sub)}`;
-      this.logger.log(`Using owner=${this.orgName}, userId=${userInfo.sub}`);
-    }
+      if (
+        userInfo.preferred_username &&
+        userInfo.preferred_username.includes('/')
+      ) {
+        getUserUrl = `${this.casdoorEndpoint}/api/get-user?id=${encodeURIComponent(userInfo.preferred_username)}`;
+        this.logger.log(
+          `Using preferred_username: ${userInfo.preferred_username}`,
+        );
+      } else if (userInfo.name) {
+        getUserUrl = `${this.casdoorEndpoint}/api/get-user?owner=${encodeURIComponent(this.orgName)}&name=${encodeURIComponent(userInfo.name)}`;
+        this.logger.log(`Using owner=${this.orgName}, name=${userInfo.name}`);
+      } else {
+        getUserUrl = `${this.casdoorEndpoint}/api/get-user?owner=${encodeURIComponent(this.orgName)}&userId=${encodeURIComponent(userInfo.sub)}`;
+        this.logger.log(`Using owner=${this.orgName}, userId=${userInfo.sub}`);
+      }
 
       const fullUserResponse = await axios.get(getUserUrl, {
         headers: {
@@ -332,3 +340,4 @@ export class AuthCasdoorService {
     return user;
   }
 }
+

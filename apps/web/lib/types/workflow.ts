@@ -1,4 +1,4 @@
-
+﻿
 import type { Node, Edge } from 'reactflow'
 import type { NodeType } from './node'
 
@@ -177,3 +177,4 @@ export interface KeyValueEditorProps {
   description?: string
   disabled?: boolean
 }
+

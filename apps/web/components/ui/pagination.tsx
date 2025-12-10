@@ -1,6 +1,6 @@
-'use client'
+﻿'use client'
 
-import { Button } from './button'
+import { Button } from './Button'
 import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight } from 'react-icons/fi'
 import { cn } from '@/lib/utils'
 
@@ -57,7 +57,7 @@ export function Pagination({
 
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-border/40">
-      {}
+      { }
       <div className="flex items-center gap-4">
         <p className="text-sm text-muted-foreground">
           Showing <span className="font-medium">{startItem}</span> to{' '}
@@ -65,7 +65,7 @@ export function Pagination({
           <span className="font-medium">{total}</span> results
         </p>
 
-        {}
+        { }
         {onPageSizeChange && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Per page:</span>
@@ -84,9 +84,9 @@ export function Pagination({
         )}
       </div>
 
-      {}
+      { }
       <div className="flex items-center gap-2">
-        {}
+        { }
         <Button
           variant="outline"
           size="icon"
@@ -97,7 +97,7 @@ export function Pagination({
           <FiChevronsLeft className="w-4 h-4" />
         </Button>
 
-        {}
+        { }
         <Button
           variant="outline"
           size="icon"
@@ -108,7 +108,7 @@ export function Pagination({
           <FiChevronLeft className="w-4 h-4" />
         </Button>
 
-        {}
+        { }
         <div className="flex items-center gap-1">
           {getPageNumbers().map((page, index) => (
             <div key={index}>
@@ -131,7 +131,7 @@ export function Pagination({
           ))}
         </div>
 
-        {}
+        { }
         <Button
           variant="outline"
           size="icon"
@@ -142,7 +142,7 @@ export function Pagination({
           <FiChevronRight className="w-4 h-4" />
         </Button>
 
-        {}
+        { }
         <Button
           variant="outline"
           size="icon"
@@ -156,3 +156,4 @@ export function Pagination({
     </div>
   )
 }
+

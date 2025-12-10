@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+﻿import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BotsModule } from '../bots/bots.module';
 import { AiProvidersModule } from '../ai-providers/ai-providers.module';
@@ -80,3 +80,4 @@ import {
   ],
 })
 export class KnowledgeBaseModule {}
+

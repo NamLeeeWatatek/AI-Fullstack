@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsString,
@@ -79,3 +79,4 @@ export class CreateBotFunctionDto {
   @IsObject()
   outputSchema?: Record<string, any>;
 }
+

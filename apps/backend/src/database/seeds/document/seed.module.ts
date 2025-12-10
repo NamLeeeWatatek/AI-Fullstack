@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { MongooseModule } from '@nestjs/mongoose';
@@ -22,3 +22,4 @@ import { MongooseConfigService } from '../../mongoose-config.service';
   ],
 })
 export class SeedModule {}
+

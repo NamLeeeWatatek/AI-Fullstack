@@ -3,11 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
-import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
+
 import toast from '@/lib/toast'
 import {
     FiClock,
@@ -21,6 +17,10 @@ import {
 import axiosClient from '@/lib/axios-client'
 import { useExecutionSocket } from '@/lib/hooks/useExecutionSocket'
 import type { Execution } from '@/lib/types'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { AlertDialogConfirm } from '@/components/ui/AlertDialogConfirm'
+import { Spinner } from '@/components/ui/Spinner'
 
 export default function ExecutionsPage({ params }: { params: { id: string } }) {
     const router = useRouter()
@@ -56,7 +56,7 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
 
     const loadFlow = async () => {
         try {
-            const data = await (await axiosClient.get(`/flows/${params.id}`)).data
+            const data = await axiosClient.get(`/flows/${params.id}`)
             setFlowName(data.name)
         } catch (e: any) {
             toast.error('Failed to load flow')
@@ -66,7 +66,7 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
     const loadExecutions = async () => {
         try {
             setLoading(true)
-            const data = await (await axiosClient.get(`/executions/?flow_id=${params.id}`)).data
+            const data = await axiosClient.get(`/executions/?flow_id=${params.id}`)
             setExecutions(data)
         } catch (e: any) {
             toast.error('Failed to load executions')
@@ -135,7 +135,7 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
 
     return (
         <div className="p-8">
-            {}
+            { }
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                     <div>
@@ -158,7 +158,7 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-2">
@@ -206,7 +206,7 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
                 </Card>
             </div>
 
-            {}
+            { }
             {loading ? (
                 <div className="flex justify-center items-center py-20">
                     <Spinner className="size-8 text-primary" />
@@ -217,7 +217,7 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
                     <p className="text-muted-foreground mb-4">
                         Run this workflow to see execution history
                     </p>
-                    <Link href={`/flows/${params.id}/edit`}>
+                    <Link href={`/flows/${params.id}?mode=edit`}>
                         <Button>Open Editor</Button>
                     </Link>
                 </Card>
@@ -305,7 +305,7 @@ export default function ExecutionsPage({ params }: { params: { id: string } }) {
                 </Card>
             )}
 
-            {}
+            { }
             <AlertDialogConfirm
                 open={deleteExecutionId !== null}
                 onOpenChange={(open) => !open && setDeleteExecutionId(null)}

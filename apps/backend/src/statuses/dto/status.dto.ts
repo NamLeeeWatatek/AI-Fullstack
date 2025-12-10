@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber } from 'class-validator';
 
 export class StatusDto {
@@ -6,3 +6,4 @@ export class StatusDto {
   @IsNumber()
   id: number | string;
 }
+

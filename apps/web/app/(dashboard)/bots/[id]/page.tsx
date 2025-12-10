@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
 import { Save, AlertCircle, Plus, Code, Palette, History, Clock, Bot as BotIcon, MessageSquare, Zap, Settings as SettingsIcon, Plug } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { toast } from 'sonner';
 import { botsApi } from '@/lib/api/bots';
 import axiosClient from '@/lib/axios-client';
@@ -16,16 +16,16 @@ import {
     SystemPromptSection,
     AIConfigSection,
     AdvancedSettingsSection,
-} from '@/components/bots/bot-config-sections';
-import { BotFunctionsSection } from '@/components/bots/bot-functions-section';
-import { BotChannelsSection } from '@/components/bots/bot-channels-section';
-import { BotFunctionModal } from '@/components/features/bots/bot-function-modal';
-import { WidgetVersionsList } from '@/components/widget/widget-versions-list';
-import { WidgetDeploymentHistory } from '@/components/widget/widget-deployment-history';
-import { WidgetEmbedCode } from '@/components/widget/widget-embed-code';
-import { WidgetAppearanceSettings } from '@/components/widget/widget-appearance-settings';
-import { CreateVersionDialog } from '@/components/widget/create-version-dialog';
+} from '@/components/bots/BotConfigSections';
+import { BotFunctionsSection } from '@/components/bots/BotFunctionsSection';
+import { BotChannelsSection } from '@/components/bots/BotChannelsSection';
+import { BotFunctionModal } from '@/components/features/bots/BotFunctionModal';
 import { useWidgetVersions, useWidgetDeployments } from '@/lib/hooks/use-widget-versions';
+import { CreateVersionDialog } from '@/components/widget/CreateVersionDialog';
+import { WidgetAppearanceSettings } from '@/components/widget/WidgetAppearanceSettings';
+import { WidgetDeploymentHistory } from '@/components/widget/WidgetDeploymentHistory';
+import { WidgetEmbedCode } from '@/components/widget/WidgetEmbedCode';
+import { WidgetVersionsList } from '@/components/widget/WidgetVersionsList';
 
 export default function BotDetailPage() {
     const params = useParams();
@@ -120,8 +120,7 @@ export default function BotDetailPage() {
 
     const loadBotFunctions = async () => {
         try {
-            const response = await axiosClient.get(`/bots/${botId}/functions`);
-            const data = response.data || response;
+            const data = await axiosClient.get(`/bots/${botId}/functions`);
             setBotFunctions(Array.isArray(data) ? data : []);
         } catch {
         }
@@ -138,7 +137,7 @@ export default function BotDetailPage() {
     const loadAppearanceSettings = async () => {
         try {
             const response = await axiosClient.get(`/bots/${botId}/widget/appearance`);
-            setBotSettings(response.data);
+            setBotSettings(response);
         } catch {
         }
     };
@@ -165,7 +164,7 @@ export default function BotDetailPage() {
                     cleanData[key] = value;
                 }
             });
-            
+
             console.log('[Bot Save] Sending data:', cleanData);
             await botsApi.update(botId, cleanData);
             toast.success('Bot updated successfully');

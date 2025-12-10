@@ -1,4 +1,5 @@
-export type GoogleConfig = {
+﻿export type GoogleConfig = {
   clientId?: string;
   clientSecret?: string;
 };
+

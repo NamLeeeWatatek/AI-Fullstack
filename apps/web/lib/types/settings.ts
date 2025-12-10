@@ -1,4 +1,4 @@
-
+﻿
 export interface Category {
   id: number
   name: string
@@ -44,3 +44,4 @@ export interface TagSelectorProps {
   onChange: (tags: number[]) => void
   maxTags?: number
 }
+

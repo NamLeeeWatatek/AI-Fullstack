@@ -1,9 +1,11 @@
-import { Module, OnModuleInit } from '@nestjs/common';
+﻿import { Module, OnModuleInit } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { RelationalFlowPersistenceModule } from './infrastructure/persistence/relational/relational-persistence.module';
 import {
   FlowEntity,
   FlowExecutionEntity,
   NodeExecutionEntity,
+  FlowVersionEntity,
 } from './infrastructure/persistence/relational/entities';
 import { FlowsService } from './flows.service';
 import { FlowsController } from './flows.controller';
@@ -11,6 +13,7 @@ import { ExecutionsController } from './executions.controller';
 import { FlowsGateway } from './flows.gateway';
 import { ExecutionGateway } from './execution.gateway';
 import { ExecutionService } from './execution.service';
+import { FlowTransformService } from './services/flow-transform.service';
 import { NodeExecutorStrategy } from './execution/node-executor.strategy';
 import { HttpRequestExecutor } from './execution/executors/http-request.executor';
 import { CodeExecutor } from './execution/executors/code.executor';
@@ -21,22 +24,25 @@ import { WebhookTriggerExecutor } from './execution/executors/webhook-trigger.ex
 import { ApiConnectorExecutor } from './execution/executors/api-connector.executor';
 import { ResponseHandlerExecutor } from './execution/executors/response-handler.executor';
 import { ChannelsModule } from '../channels/channels.module';
-import { TemplatesModule } from '../templates/templates.module';
+import { NodeTypesModule } from '../node-types/node-types.module';
 import { FlowEventListener } from './listeners/flow-event.listener';
 
 @Module({
   imports: [
+    RelationalFlowPersistenceModule,
     TypeOrmModule.forFeature([
       FlowEntity,
       FlowExecutionEntity,
       NodeExecutionEntity,
+      FlowVersionEntity,
     ]),
     ChannelsModule,
-    TemplatesModule,
+    NodeTypesModule,
   ],
   controllers: [FlowsController, ExecutionsController],
   providers: [
     FlowsService,
+    FlowTransformService,
     FlowsGateway,
     ExecutionGateway,
     ExecutionService,
@@ -51,7 +57,12 @@ import { FlowEventListener } from './listeners/flow-event.listener';
     ResponseHandlerExecutor,
     FlowEventListener,
   ],
-  exports: [FlowsService, ExecutionService, ExecutionGateway, FlowEventListener],
+  exports: [
+    FlowsService,
+    ExecutionService,
+    ExecutionGateway,
+    FlowEventListener,
+  ],
 })
 export class FlowsModule implements OnModuleInit {
   constructor(
@@ -120,3 +131,4 @@ export class FlowsModule implements OnModuleInit {
     });
   }
 }
+

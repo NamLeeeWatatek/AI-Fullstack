@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsOptional,
@@ -58,3 +58,4 @@ export class CreateKnowledgeBaseDto {
   @IsUUID()
   workspaceId?: string;
 }
+

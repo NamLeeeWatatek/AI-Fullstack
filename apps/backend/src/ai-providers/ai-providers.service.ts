@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -40,7 +40,9 @@ export class AiProvidersService {
     private usageLogRepo: Repository<AiUsageLogEntity>,
     private readonly encryptionUtil: EncryptionUtil,
   ) {
-    this.logger.log('✅ AI Providers Service initialized with secure encryption');
+    this.logger.log(
+      'âœ… AI Providers Service initialized with secure encryption',
+    );
   }
 
   /**
@@ -69,14 +71,17 @@ export class AiProvidersService {
       order: { createdAt: 'DESC' },
     });
 
-    return providers.map(p => {
+    return providers.map((p) => {
       const masked = { ...p };
       if (p.apiKeyEncrypted) {
         try {
           const decrypted = this.encryptionUtil.decrypt(p.apiKeyEncrypted);
           (masked as any).apiKeyMasked = this.maskApiKey(decrypted);
         } catch (error) {
-          this.logger.error(`Failed to decrypt API key for provider ${p.id}`, error);
+          this.logger.error(
+            `Failed to decrypt API key for provider ${p.id}`,
+            error,
+          );
           (masked as any).apiKeyMasked = '****';
         }
       }
@@ -93,14 +98,17 @@ export class AiProvidersService {
       throw new NotFoundException('AI provider not found');
     }
 
-    // ✅ Mask API key before returning
+    // âœ… Mask API key before returning
     const masked = { ...provider };
     if (provider.apiKeyEncrypted) {
       try {
         const decrypted = this.encryptionUtil.decrypt(provider.apiKeyEncrypted);
         (masked as any).apiKeyMasked = this.maskApiKey(decrypted);
       } catch (error) {
-        this.logger.error(`Failed to decrypt API key for provider ${id}`, error);
+        this.logger.error(
+          `Failed to decrypt API key for provider ${id}`,
+          error,
+        );
         (masked as any).apiKeyMasked = '****';
       }
     }
@@ -116,7 +124,7 @@ export class AiProvidersService {
     const provider = await this.userProviderRepo.findOne({
       where: { id, userId },
     });
-    
+
     if (!provider) {
       throw new NotFoundException('AI provider not found');
     }
@@ -133,9 +141,9 @@ export class AiProvidersService {
     if (dto.apiKey) {
       const oldKeyLength = provider.apiKeyEncrypted?.length;
       provider.apiKeyEncrypted = this.encryptionUtil.encrypt(dto.apiKey);
-      provider.isVerified = false;  // ✅ Reset verification when API key changes
+      provider.isVerified = false; // âœ… Reset verification when API key changes
       provider.verifiedAt = null;
-      
+
       this.logger.log(`[UPDATE] API key updated for provider ${id}:`, {
         oldKeyLength,
         newKeyLength: provider.apiKeyEncrypted?.length,
@@ -147,7 +155,7 @@ export class AiProvidersService {
     if (dto.isActive !== undefined) provider.isActive = dto.isActive;
 
     const saved = await this.userProviderRepo.save(provider);
-    
+
     this.logger.log(`[UPDATE] Provider ${id} SAVED to database:`, {
       id: saved.id,
       displayName: saved.displayName,
@@ -170,11 +178,11 @@ export class AiProvidersService {
   }
 
   async verifyUserProvider(userId: string, id: string) {
-    // ✅ Get provider directly from DB (not through getUserProvider which masks the key)
+    // âœ… Get provider directly from DB (not through getUserProvider which masks the key)
     const provider = await this.userProviderRepo.findOne({
       where: { id, userId },
     });
-    
+
     if (!provider) {
       throw new NotFoundException('AI provider not found');
     }
@@ -194,7 +202,7 @@ export class AiProvidersService {
     provider.verifiedAt = new Date();
     await this.userProviderRepo.save(provider);
 
-    // ✅ Return masked version for response
+    // âœ… Return masked version for response
     return this.getUserProvider(userId, id);
   }
 
@@ -238,7 +246,7 @@ export class AiProvidersService {
     const provider = await this.workspaceProviderRepo.findOne({
       where: { id, workspaceId },
     });
-    
+
     if (!provider) {
       throw new NotFoundException('AI provider not found');
     }
@@ -394,7 +402,7 @@ export class AiProvidersService {
   }
 
   private getApiKey(provider: string): string {
-    // ❌ NO LONGER USE .ENV FALLBACK - Force users to configure in Settings
+    // âŒ NO LONGER USE .ENV FALLBACK - Force users to configure in Settings
     throw new BadRequestException(
       `No API key configured for ${provider}. Please add your API key in Settings > AI Providers.`,
     );
@@ -418,7 +426,11 @@ export class AiProvidersService {
       });
 
       for (const wp of workspaceProviders) {
-        if (!wp.modelList || wp.modelList.length === 0 || wp.modelList.includes(model)) {
+        if (
+          !wp.modelList ||
+          wp.modelList.length === 0 ||
+          wp.modelList.includes(model)
+        ) {
           if (wp.apiKeyEncrypted) {
             return this.encryptionUtil.decrypt(wp.apiKeyEncrypted);
           }
@@ -437,7 +449,11 @@ export class AiProvidersService {
       });
 
       for (const up of userProviders) {
-        if (!up.modelList || up.modelList.length === 0 || up.modelList.includes(model)) {
+        if (
+          !up.modelList ||
+          up.modelList.length === 0 ||
+          up.modelList.includes(model)
+        ) {
           if (up.apiKeyEncrypted) {
             return this.encryptionUtil.decrypt(up.apiKeyEncrypted);
           }
@@ -453,7 +469,7 @@ export class AiProvidersService {
     prompt: string,
     model?: string,
     userId?: string,
-    workspaceId?: string
+    workspaceId?: string,
   ): Promise<string> {
     const modelName = model || 'gemini-2.0-flash';
 
@@ -482,21 +498,25 @@ export class AiProvidersService {
    */
   async getApiKeyByProviderId(
     providerId: string,
-    type: 'workspace' | 'user' = 'workspace'
+    type: 'workspace' | 'user' = 'workspace',
   ): Promise<{ apiKey: string; provider: string } | null> {
     try {
-      this.logger.log(`[GET_KEY] Getting API key for provider ${providerId}, type: ${type}`);
-      
+      this.logger.log(
+        `[GET_KEY] Getting API key for provider ${providerId}, type: ${type}`,
+      );
+
       if (type === 'workspace') {
         const provider = await this.workspaceProviderRepo.findOne({
-          where: { id: providerId, isActive: true }
+          where: { id: providerId, isActive: true },
         });
-        
+
         if (!provider?.apiKeyEncrypted) {
-          this.logger.warn(`[GET_KEY] Workspace provider ${providerId} not found or has no key`);
+          this.logger.warn(
+            `[GET_KEY] Workspace provider ${providerId} not found or has no key`,
+          );
           return null;
         }
-        
+
         this.logger.log(`[GET_KEY] Found workspace provider:`, {
           id: provider.id,
           provider: provider.provider,
@@ -504,24 +524,28 @@ export class AiProvidersService {
           keyLength: provider.apiKeyEncrypted?.length,
           isActive: provider.isActive,
         });
-        
+
         const decrypted = this.encryptionUtil.decrypt(provider.apiKeyEncrypted);
-        this.logger.log(`[GET_KEY] Decrypted key length: ${decrypted.length}, first 10 chars: ${decrypted.substring(0, 10)}...`);
-        
+        this.logger.log(
+          `[GET_KEY] Decrypted key length: ${decrypted.length}, first 10 chars: ${decrypted.substring(0, 10)}...`,
+        );
+
         return {
           apiKey: decrypted,
-          provider: provider.provider
+          provider: provider.provider,
         };
       } else {
         const provider = await this.userProviderRepo.findOne({
-          where: { id: providerId, isActive: true }
+          where: { id: providerId, isActive: true },
         });
-        
+
         if (!provider?.apiKeyEncrypted) {
-          this.logger.warn(`[GET_KEY] User provider ${providerId} not found or has no key`);
+          this.logger.warn(
+            `[GET_KEY] User provider ${providerId} not found or has no key`,
+          );
           return null;
         }
-        
+
         this.logger.log(`[GET_KEY] Found user provider:`, {
           id: provider.id,
           provider: provider.provider,
@@ -530,17 +554,22 @@ export class AiProvidersService {
           isActive: provider.isActive,
           isVerified: provider.isVerified,
         });
-        
+
         const decrypted = this.encryptionUtil.decrypt(provider.apiKeyEncrypted);
-        this.logger.log(`[GET_KEY] Decrypted key length: ${decrypted.length}, first 10 chars: ${decrypted.substring(0, 10)}...`);
-        
+        this.logger.log(
+          `[GET_KEY] Decrypted key length: ${decrypted.length}, first 10 chars: ${decrypted.substring(0, 10)}...`,
+        );
+
         return {
           apiKey: decrypted,
-          provider: provider.provider
+          provider: provider.provider,
         };
       }
     } catch (error) {
-      this.logger.error(`[GET_KEY] Error getting API key for provider ${providerId}:`, error);
+      this.logger.error(
+        `[GET_KEY] Error getting API key for provider ${providerId}:`,
+        error,
+      );
       return null;
     }
   }
@@ -582,16 +611,22 @@ export class AiProvidersService {
     userId?: string,
   ): Promise<string> {
     let apiKey: string | null = null;
-    let providerName: string = this.getProviderFromModel(model);  // ✅ Initialize with default
+    let providerName: string = this.getProviderFromModel(model); // âœ… Initialize with default
 
-    // ✅ Priority 1: Use specific provider ID if provided (bot's configured provider)
+    // âœ… Priority 1: Use specific provider ID if provided (bot's configured provider)
     if (providerId) {
       this.logger.log(`Using bot's configured AI provider: ${providerId}`);
-      const providerData = await this.getApiKeyByProviderId(providerId, 'workspace');
-      
+      const providerData = await this.getApiKeyByProviderId(
+        providerId,
+        'workspace',
+      );
+
       if (!providerData) {
         // Try user provider
-        const userProviderData = await this.getApiKeyByProviderId(providerId, 'user');
+        const userProviderData = await this.getApiKeyByProviderId(
+          providerId,
+          'user',
+        );
         if (userProviderData) {
           apiKey = userProviderData.apiKey;
           providerName = userProviderData.provider;
@@ -600,35 +635,39 @@ export class AiProvidersService {
         apiKey = providerData.apiKey;
         providerName = providerData.provider;
       }
-      
+
       if (!apiKey) {
         throw new BadRequestException(
-          `AI Provider ${providerId} not found or has no API key configured. Please check bot settings.`
+          `AI Provider ${providerId} not found or has no API key configured. Please check bot settings.`,
         );
       }
     } else {
-      // ✅ Priority 2: Find provider by workspace/user + model (fallback)
-      this.logger.log(`No specific provider configured, auto-detecting by model: ${model}`);
+      // âœ… Priority 2: Find provider by workspace/user + model (fallback)
+      this.logger.log(
+        `No specific provider configured, auto-detecting by model: ${model}`,
+      );
       apiKey = await this.getApiKeyForModel(model, userId, workspaceId);
       providerName = this.getProviderFromModel(model);
     }
 
-    // ❌ NO FALLBACK - User must configure API key
+    // âŒ NO FALLBACK - User must configure API key
     if (!apiKey) {
-      this.logger.error(`❌ No API key available for model ${model}`);
-      this.logger.error(`providerId: ${providerId}, workspaceId: ${workspaceId}, userId: ${userId}`);
-      
+      this.logger.error(`âŒ No API key available for model ${model}`);
+      this.logger.error(
+        `providerId: ${providerId}, workspaceId: ${workspaceId}, userId: ${userId}`,
+      );
+
       if (!providerId) {
         throw new BadRequestException(
           `No AI provider configured for this bot. Please:\n` +
-          `1. Go to Settings > AI Providers\n` +
-          `2. Add your ${providerName.toUpperCase()} API key\n` +
-          `3. Assign the provider to your bot in Bot Settings`
+            `1. Go to Settings > AI Providers\n` +
+            `2. Add your ${providerName.toUpperCase()} API key\n` +
+            `3. Assign the provider to your bot in Bot Settings`,
         );
       } else {
         throw new BadRequestException(
           `AI Provider ${providerId} not found or has no API key configured.\n` +
-          `Please check Settings > AI Providers and ensure your API key is valid.`
+            `Please check Settings > AI Providers and ensure your API key is valid.`,
         );
       }
     }
@@ -689,7 +728,11 @@ export class AiProvidersService {
     return 'google';
   }
 
-  private async chatWithGoogle(prompt: string, model: string, apiKey?: string | null): Promise<string> {
+  private async chatWithGoogle(
+    prompt: string,
+    model: string,
+    apiKey?: string | null,
+  ): Promise<string> {
     const key = apiKey || this.getApiKey('google');
     const genAI = new GoogleGenerativeAI(key);
     const genModel = genAI.getGenerativeModel({ model });
@@ -743,12 +786,14 @@ export class AiProvidersService {
       parts: [{ text: m.content }],
     }));
 
-    // ✅ Fix: Google AI requires first message to be 'user', not 'model'
+    // âœ… Fix: Google AI requires first message to be 'user', not 'model'
     // If history starts with 'model', remove it or skip it
     const validHistory = history.filter((msg, index) => {
       // If first message is 'model', skip it
       if (index === 0 && msg.role === 'model') {
-        this.logger.warn('Skipping first message with role "model" for Google AI compatibility');
+        this.logger.warn(
+          'Skipping first message with role "model" for Google AI compatibility',
+        );
         return false;
       }
       return true;
@@ -774,7 +819,11 @@ export class AiProvidersService {
     return result.embedding.values;
   }
 
-  private async chatWithOpenAI(prompt: string, model: string, apiKey?: string | null): Promise<string> {
+  private async chatWithOpenAI(
+    prompt: string,
+    model: string,
+    apiKey?: string | null,
+  ): Promise<string> {
     const key = apiKey || this.getApiKey('openai');
     const openai = new OpenAI({ apiKey: key });
     const response = await openai.chat.completions.create({

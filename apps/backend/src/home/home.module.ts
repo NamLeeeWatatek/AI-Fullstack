@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { HomeService } from './home.service';
 import { HomeController } from './home.controller';
 import { ConfigModule } from '@nestjs/config';
@@ -9,3 +9,4 @@ import { ConfigModule } from '@nestjs/config';
   providers: [HomeService],
 })
 export class HomeModule {}
+

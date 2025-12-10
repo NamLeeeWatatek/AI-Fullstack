@@ -1,4 +1,4 @@
-
+﻿
 export interface KnowledgeBase {
   id: string;
   workspaceId?: string | null;
@@ -233,3 +233,4 @@ export type MoveDocumentResponse = KBDocument;
 export type GetAgentAssignmentsResponse = AgentKnowledgeBase[];
 export type AssignAgentResponse = AgentKnowledgeBase;
 export type UnassignAgentResponse = { success: boolean };
+

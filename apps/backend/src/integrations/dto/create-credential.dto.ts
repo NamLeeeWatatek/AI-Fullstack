@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -39,3 +39,4 @@ export class CreateCredentialDto {
   @IsBoolean()
   isActive?: boolean;
 }
+

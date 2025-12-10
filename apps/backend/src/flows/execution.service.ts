@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ExecutionGateway } from './execution.gateway';
@@ -47,7 +47,7 @@ export class ExecutionService {
     @InjectRepository(NodeExecutionEntity)
     private nodeExecutionRepository: Repository<NodeExecutionEntity>,
     private readonly eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   executeFlow(
     flowId: string,
@@ -66,7 +66,7 @@ export class ExecutionService {
     inputData?: any,
     metadata?: any,
   ): string {
-    const executionId = `exec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const executionId = `exec-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
     const execution: FlowExecution = {
       executionId,
@@ -81,7 +81,7 @@ export class ExecutionService {
 
     this.executionGateway.emitExecutionStart(executionId, flowId);
 
-    this.executeNodes(executionId, flowData, inputData).catch((error) => {
+    this.executeNodes(executionId, flowData, inputData).catch(async (error) => {
       execution.status = 'failed';
       execution.error = error.message;
       execution.endTime = Date.now();
@@ -95,6 +95,8 @@ export class ExecutionService {
       );
       this.eventEmitter.emit('flow.execution.failed', failureEvent);
 
+      // Save failed execution to database
+      await this.saveExecutionToDatabase(execution, flowId);
     });
 
     return executionId;
@@ -232,8 +234,7 @@ export class ExecutionService {
 
         await this.nodeExecutionRepository.save(nodeExecutions);
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   private buildExecutionOrder(nodes: any[], edges: any[]): string[] {
@@ -317,3 +318,4 @@ export class ExecutionService {
     });
   }
 }
+

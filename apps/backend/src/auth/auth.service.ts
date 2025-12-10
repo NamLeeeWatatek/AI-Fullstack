@@ -1,4 +1,4 @@
-import {
+﻿import {
   HttpStatus,
   Injectable,
   NotFoundException,
@@ -537,7 +537,7 @@ export class AuthService {
   }
 
   /**
-   * ✅ NEW: Refresh token from body (for frontend)
+   * âœ… NEW: Refresh token from body (for frontend)
    * Decodes refresh token to get session info, then calls refreshToken
    */
   async refreshTokenFromBody(
@@ -619,3 +619,4 @@ export class AuthService {
     };
   }
 }
+

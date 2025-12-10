@@ -1,4 +1,4 @@
-import { registerAs } from '@nestjs/config';
+﻿import { registerAs } from '@nestjs/config';
 
 import { IsEnum, IsString, ValidateIf } from 'class-validator';
 import validateConfig from '../../utils/validate-config';
@@ -53,3 +53,4 @@ export default registerAs<FileConfig>('file', () => {
     maxFileSize: 5242880,
   };
 });
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -72,3 +72,4 @@ export class DataAccessLogEntity extends EntityRelationalHelper {
   @Index()
   createdAt: Date;
 }
+

@@ -1,4 +1,4 @@
-import { registerAs } from '@nestjs/config';
+﻿import { registerAs } from '@nestjs/config';
 
 import { IsJSON, IsOptional } from 'class-validator';
 import validateConfig from '../../utils/validate-config';
@@ -17,3 +17,4 @@ export default registerAs<AppleConfig>('apple', () => {
     appAudience: JSON.parse(process.env.APPLE_APP_AUDIENCE ?? '[]'),
   };
 });
+

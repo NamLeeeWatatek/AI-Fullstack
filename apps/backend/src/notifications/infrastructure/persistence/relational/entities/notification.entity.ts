@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -37,3 +37,4 @@ export class NotificationEntity extends EntityRelationalHelper {
   @Index()
   createdAt: Date;
 }
+

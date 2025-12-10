@@ -1,8 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Workspace } from '../../workspaces/domain/workspace';
 
 /**
- * Bot domain entity - theo schema mới
+ * Bot domain entity - theo schema má»›i
  * Table: bots
  * Fields: id, workspace_id, name, description, avatar_url, default_language,
  *         timezone, status, created_by, deleted_at, created_at, updated_at
@@ -83,7 +83,8 @@ export class Bot {
 
   @ApiPropertyOptional({
     type: [String],
-    description: 'Allowed origins for CORS (e.g., ["https://example.com", "*"])',
+    description:
+      'Allowed origins for CORS (e.g., ["https://example.com", "*"])',
   })
   allowedOrigins?: string[] | null;
 
@@ -156,7 +157,7 @@ export class Bot {
 }
 
 /**
- * FlowVersion domain entity - theo schema mới
+ * FlowVersion domain entity - theo schema má»›i
  * Table: flow_versions
  * Fields: id, bot_id, version, name, description, status, published_at, created_by, created_at
  */
@@ -206,7 +207,7 @@ export class FlowVersion {
 }
 
 /**
- * BotKnowledgeBase domain entity - theo schema mới
+ * BotKnowledgeBase domain entity - theo schema má»›i
  * Table: bot_knowledge_bases
  * Fields: bot_id, knowledge_base_id, priority, rag_settings, is_active, created_at
  */
@@ -229,3 +230,4 @@ export class BotKnowledgeBase {
   @ApiProperty()
   createdAt: Date;
 }
+

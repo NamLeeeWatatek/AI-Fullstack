@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { NodeTypeSeedService } from './node-type-seed.service';
 import { NodeTypeEntity } from '../../../../node-types/infrastructure/persistence/relational/entities/node-type.entity';
@@ -9,3 +9,4 @@ import { NodeTypeEntity } from '../../../../node-types/infrastructure/persistenc
   exports: [NodeTypeSeedService],
 })
 export class NodeTypeSeedModule {}
+

@@ -1,4 +1,12 @@
-import { Controller, Get, Query, HttpCode, HttpStatus, Request, UseGuards } from '@nestjs/common';
+﻿import {
+  Controller,
+  Get,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -15,7 +23,7 @@ import { StatsQueryDto } from './dto/stats-query.dto';
 @UseGuards(AuthGuard('jwt'))
 @Controller({ path: 'stats', version: '1' })
 export class StatsController {
-  constructor(private readonly statsService: StatsService) { }
+  constructor(private readonly statsService: StatsService) {}
 
   @Get('dashboard')
   @HttpCode(HttpStatus.OK)
@@ -36,3 +44,4 @@ export class StatsController {
     return this.statsService.getDashboardStats(query, workspaceId);
   }
 }
+

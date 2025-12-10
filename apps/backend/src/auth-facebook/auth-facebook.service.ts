@@ -1,4 +1,4 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+﻿import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SocialInterface } from '../social/interfaces/social.interface';
 import { FacebookInterface } from './interfaces/facebook.interface';
@@ -178,3 +178,4 @@ export class AuthFacebookService {
     }
   }
 }
+

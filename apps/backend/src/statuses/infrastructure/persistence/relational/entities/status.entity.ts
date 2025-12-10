@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+﻿import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 import { EntityRelationalHelper } from '../../../../../utils/relational-entity-helper';
 
@@ -12,3 +12,4 @@ export class StatusEntity extends EntityRelationalHelper {
   @Column()
   name?: string;
 }
+

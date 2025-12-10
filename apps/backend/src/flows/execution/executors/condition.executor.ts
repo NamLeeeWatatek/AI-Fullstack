@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import {
   NodeExecutor,
   NodeExecutionInput,
@@ -43,3 +43,4 @@ export class ConditionExecutor implements NodeExecutor {
     return true;
   }
 }
+

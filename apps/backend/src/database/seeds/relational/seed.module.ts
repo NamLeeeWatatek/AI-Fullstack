@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -9,7 +9,7 @@ import { StatusSeedModule } from './status/status-seed.module';
 import { UserSeedModule } from './user/user-seed.module';
 import { PermissionSeedModule } from './permission/permission-seed.module';
 import { NodeTypeSeedModule } from './node-type/node-type-seed.module';
-import { TemplateSeedModule } from './template/template-seed.module';
+import { FlowSeedModule } from './flow/flow-seed.module';
 import databaseConfig from '../../config/database.config';
 import appConfig from '../../../config/app.config';
 
@@ -20,7 +20,7 @@ import appConfig from '../../../config/app.config';
     StatusSeedModule,
     UserSeedModule,
     NodeTypeSeedModule,
-    TemplateSeedModule,
+    FlowSeedModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [databaseConfig, appConfig],
@@ -35,3 +35,4 @@ import appConfig from '../../../config/app.config';
   ],
 })
 export class SeedModule {}
+

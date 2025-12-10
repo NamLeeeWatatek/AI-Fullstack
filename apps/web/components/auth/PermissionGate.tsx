@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { ReactNode } from 'react'
 import { usePermissions } from '@/lib/hooks/usePermissions'
@@ -136,3 +136,4 @@ export function CanDelete({ resource, children, fallback }: { resource: Resource
     </PermissionGate>
   )
 }
+

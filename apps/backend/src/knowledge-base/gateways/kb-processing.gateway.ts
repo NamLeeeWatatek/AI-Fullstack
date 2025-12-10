@@ -1,4 +1,4 @@
-import {
+﻿import {
   WebSocketGateway,
   WebSocketServer,
   OnGatewayConnection,
@@ -44,7 +44,7 @@ export class KBProcessingGateway
     this.server.emit('processing:update', payload);
 
     this.logger.log(
-      `📡 Broadcasting update for KB ${payload.knowledgeBaseId}: ${payload.status} ${payload.progress}% (${payload.documentName || 'unnamed'})`,
+      `ðŸ“¡ Broadcasting update for KB ${payload.knowledgeBaseId}: ${payload.status} ${payload.progress}% (${payload.documentName || 'unnamed'})`,
     );
     this.logger.debug(`Full payload: ${JSON.stringify(payload)}`);
   }
@@ -63,3 +63,4 @@ export class KBProcessingGateway
     });
   }
 }
+

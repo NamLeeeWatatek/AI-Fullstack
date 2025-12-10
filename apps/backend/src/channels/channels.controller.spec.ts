@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+﻿import { Test, TestingModule } from '@nestjs/testing';
 import { ChannelsController } from './channels.controller';
 
 describe('ChannelsController', () => {
@@ -16,3 +16,4 @@ describe('ChannelsController', () => {
     expect(controller).toBeDefined();
   });
 });
+

@@ -1,4 +1,4 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+﻿import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 import { EntityDocumentHelper } from '../../../../../utils/document-entity-helper';
 
@@ -16,3 +16,4 @@ export class FileSchemaClass extends EntityDocumentHelper {
 }
 
 export const FileSchema = SchemaFactory.createForClass(FileSchemaClass);
+

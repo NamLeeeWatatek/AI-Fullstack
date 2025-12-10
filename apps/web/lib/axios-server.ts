@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Server-side Axios Configuration with NextAuth v5
  * Use this in server components and API routes
  */
@@ -45,3 +45,4 @@ export async function getAuthenticatedAxios(workspaceId?: string) {
 }
 
 export default axiosServer
+

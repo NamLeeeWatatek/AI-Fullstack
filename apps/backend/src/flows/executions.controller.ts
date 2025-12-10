@@ -1,9 +1,9 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+﻿import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ExecutionService } from './execution.service';
 
 @ApiTags('Executions')
-@Controller({ path: 'executions' })
+@Controller({ path: 'executions', version: '1' })
 export class ExecutionsController {
   constructor(private readonly executionService: ExecutionService) {}
 
@@ -79,3 +79,4 @@ export class ExecutionsController {
     };
   }
 }
+

@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
@@ -156,3 +156,4 @@ export class CreateMessageFeedbackDto {
   @IsString()
   comment?: string | null;
 }
+

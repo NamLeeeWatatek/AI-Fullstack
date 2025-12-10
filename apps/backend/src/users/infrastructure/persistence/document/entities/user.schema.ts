@@ -1,4 +1,4 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+﻿import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { now, HydratedDocument } from 'mongoose';
 
 import { AuthProvidersEnum } from '../../../../../auth/auth-providers.enum';
@@ -75,3 +75,4 @@ export class UserSchemaClass extends EntityDocumentHelper {
 export const UserSchema = SchemaFactory.createForClass(UserSchemaClass);
 
 UserSchema.index({ 'role._id': 1 });
+

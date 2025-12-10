@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 
 import { SessionRepository } from './infrastructure/persistence/session.repository';
 import { Session } from './domain/session';
@@ -43,3 +43,4 @@ export class SessionService {
     return this.sessionRepository.deleteByUserIdWithExclude(conditions);
   }
 }
+

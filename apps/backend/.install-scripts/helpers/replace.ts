@@ -1,4 +1,4 @@
-import fs from 'fs';
+﻿import fs from 'fs';
 
 const replace = (params: {
   path: string;
@@ -22,3 +22,4 @@ const replace = (params: {
 };
 
 export default replace;
+

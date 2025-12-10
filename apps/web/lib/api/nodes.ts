@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Node Management API
  * API calls for managing node types
  */
@@ -10,32 +10,28 @@ import type { NodeType, NodeCategory, CreateNodeTypeDto, UpdateNodeTypeDto } fro
  */
 export async function getNodeTypes(category?: string): Promise<NodeType[]> {
   const url = category ? `/node-types/?category=${category}` : '/node-types/'
-  const response = await axiosClient.get(url)
-  return response.data
+  return axiosClient.get(url)
 }
 
 /**
  * Fetch single node type
  */
 export async function getNodeType(id: string): Promise<NodeType> {
-  const response = await axiosClient.get(`/node-types/${id}`)
-  return response.data
+  return axiosClient.get(`/node-types/${id}`)
 }
 
 /**
  * Create new node type
  */
 export async function createNodeType(data: CreateNodeTypeDto): Promise<NodeType> {
-  const response = await axiosClient.post('/node-types/', data)
-  return response.data
+  return axiosClient.post('/node-types/', data)
 }
 
 /**
  * Update node type using PATCH
  */
 export async function updateNodeType(id: string, data: UpdateNodeTypeDto): Promise<NodeType> {
-  const response = await axiosClient.patch(`/node-types/${id}`, data)
-  return response.data
+  return axiosClient.patch(`/node-types/${id}`, data)
 }
 
 /**
@@ -49,6 +45,6 @@ export async function deleteNodeType(id: string): Promise<void> {
  * Fetch node categories
  */
 export async function getNodeCategories(): Promise<NodeCategory[]> {
-  const response = await axiosClient.get('/node-types/categories')
-  return response.data
+  return axiosClient.get('/node-types/categories')
 }
+

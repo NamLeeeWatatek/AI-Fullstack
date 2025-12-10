@@ -1,4 +1,4 @@
-import {
+﻿import {
   HttpStatus,
   Module,
   UnprocessableEntityException,
@@ -86,3 +86,4 @@ const infrastructurePersistenceModule = (databaseConfig() as DatabaseConfig)
   exports: [FilesS3Service],
 })
 export class FilesS3Module {}
+

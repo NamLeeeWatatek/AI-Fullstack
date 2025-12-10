@@ -1,4 +1,4 @@
-
+﻿
 export interface PaginationParams {
   page: number
   page_size: number
@@ -26,3 +26,4 @@ export interface PaginationMeta {
   has_next: boolean
   has_prev: boolean
 }
+

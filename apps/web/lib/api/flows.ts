@@ -1,99 +1,134 @@
+﻿import axiosClient from '@/lib/axios-client';
 
-import { axiosClient } from '../axios-client'
-import type {
-  Flow,
-  CreateFlowDto,
-  UpdateFlowDto,
-  CreateFlowFromTemplateDto,
-  ExecuteFlowDto,
-  ExecuteFlowResponse,
-  FlowExecution,
-} from '../types/flow'
+export interface Flow {
+    id: string;
+    name: string;
+    description?: string;
+    status: 'draft' | 'published' | 'archived';
+    version?: number;
+    visibility?: 'private' | 'team' | 'public';
+    nodes: Array<{
+        id: string;
+        type: string;
+        position: { x: number; y: number };
+        data?: Record<string, any>;
+        properties?: NodeProperty[]; // Enriched by backend - NodeType properties for form generation
+        nodeTypeInfo?: {
+            id: string;
+            label: string;
+            category: string;
+            icon: string;
+            color: string;
+            description?: string;
+        };
+    }>;
+    edges: Array<{
+        id: string;
+        source: string;
+        target: string;
+        sourceHandle?: string;
+        targetHandle?: string;
+    }>;
 
-/**
- * Get all flows for current user
- */
-export async function getFlows(): Promise<Flow[]> {
-  const response = await axiosClient.get('/flows')
-  return response.data
+    // Backward compatibility
+    data?: {
+        nodes: any[];
+        edges: any[];
+    };
+    templateId?: string;
+    tags?: string[];
+    icon?: string;
+    category?: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
-/**
- * Get flow by ID
- */
-export async function getFlow(id: string): Promise<Flow> {
-  const response = await axiosClient.get(`/flows/${id}`)
-  return response.data
+export interface NodeProperty {
+    name: string;
+    label: string;
+    type: 'string' | 'text' | 'number' | 'boolean' | 'select' | 'multi-select' | 'json' | 'file' | 'files' | 'key-value' | 'dynamic-form';
+    required?: boolean;
+    default?: any;
+    placeholder?: string;
+    description?: string;
+    options?: Array<{ value: string; label: string } | string>;
+    showWhen?: Record<string, any>;
+    min?: number;
+    max?: number;
+    pattern?: string;
+    maxLength?: number;
+    rows?: number;
+    helpText?: string;
+    accept?: string;
+    multiple?: boolean;
+    properties?: NodeProperty[];
 }
 
-/**
- * Create new flow
- */
-export async function createFlow(data: CreateFlowDto): Promise<Flow> {
-  const response = await axiosClient.post('/flows', data)
-  return response.data
+export interface FlowExecution {
+    id: string;
+    flowId: string;
+    status: 'pending' | 'running' | 'completed' | 'failed';
+    input?: any;
+    output?: any;
+    error?: string;
+    startedAt: string;
+    completedAt?: string;
 }
 
-/**
- * Create flow from template
- */
-export async function createFlowFromTemplate(data: CreateFlowFromTemplateDto): Promise<Flow> {
-  const response = await axiosClient.post('/flows/from-template', data)
-  return response.data
+export interface CreateFlowFromTemplateDto {
+    templateId: string;
+    name: string;
+    description?: string;
 }
 
-/**
- * Update flow
- */
-export async function updateFlow(id: string, data: UpdateFlowDto): Promise<Flow> {
-  const response = await axiosClient.patch(`/flows/${id}`, data)
-  return response.data
-}
+export const flowsApi = {
+    /**
+     * Get all flows
+     */
+    async getAll(params?: { published?: boolean }): Promise<Flow[]> {
+        return await axiosClient.get('/flows', { params });
+    },
 
-/**
- * Delete flow
- */
-export async function deleteFlow(id: string): Promise<void> {
-  await axiosClient.delete(`/flows/${id}`)
-}
+    /**
+     * Get flow by ID
+     */
+    async getOne(id: string): Promise<Flow> {
+        return await axiosClient.get(`/flows/${id}`);
+    },
 
-/**
- * Execute flow
- */
-export async function executeFlow(
-  id: string,
-  data?: ExecuteFlowDto
-): Promise<ExecuteFlowResponse> {
-  const response = await axiosClient.post(`/flows/${id}/execute`, data)
-  return response.data
-}
+    /**
+     * Execute flow
+     */
+    async execute(id: string, input?: any): Promise<{ executionId: string; flowId: string; status: string; startedAt: string }> {
+        return await axiosClient.post(`/flows/${id}/execute`, input);
+    },
 
-/**
- * Get all executions for a flow
- */
-export async function getFlowExecutions(flowId: string): Promise<FlowExecution[]> {
-  const response = await axiosClient.get(`/flows/${flowId}/executions`)
-  return response.data
-}
+    /**
+     * Get execution status
+     */
+    async getExecution(executionId: string): Promise<FlowExecution> {
+        return await axiosClient.get(`/flows/executions/${executionId}`);
+    },
 
-/**
- * Get execution details
- */
-export async function getFlowExecution(executionId: string): Promise<FlowExecution> {
-  const response = await axiosClient.get(`/flows/executions/${executionId}`)
-  return response.data
-}
+    /**
+     * Get flow executions
+     */
+    async getExecutions(flowId: string): Promise<FlowExecution[]> {
+        return await axiosClient.get(`/flows/${flowId}/executions`);
+    },
 
-/**
- * @deprecated Use getFlows() instead
- */
-export async function fetchFlows(): Promise<Flow[]> {
-  return getFlows()
-}
+    /**
+     * Update flow
+     */
+    async update(id: string, data: Partial<Flow>): Promise<Flow> {
+        return await axiosClient.patch(`/flows/${id}`, data);
+    },
 
-/**
- * @deprecated Use getFlow() instead
- */
-export async function fetchFlow(id: string): Promise<Flow> {
-  return getFlow(id)
-}
+    /**
+     * Delete flow
+     */
+    async delete(id: string): Promise<void> {
+        await axiosClient.delete(`/flows/${id}`);
+    },
+};
+

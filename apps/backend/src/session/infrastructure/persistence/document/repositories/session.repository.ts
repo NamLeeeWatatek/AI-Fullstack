@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { NullableType } from '../../../../../utils/types/nullable.type';
 import { SessionRepository } from '../../session.repository';
 import { Session } from '../../../../domain/session';
@@ -78,3 +78,4 @@ export class SessionDocumentRepository implements SessionRepository {
     await this.sessionModel.deleteMany(transformedCriteria);
   }
 }
+

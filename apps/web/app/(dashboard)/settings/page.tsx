@@ -1,46 +1,39 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from 'react';
 import { axiosClient } from '@/lib/axios-client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter 
-} from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/Dialog';
+
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/Select';
 import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiEye, FiEyeOff, FiKey, FiZap, FiActivity, FiAlertCircle } from 'react-icons/fi';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/AlertDialog';
+import { Badge } from '@/components/ui/Badge';
 
 interface UserAiProvider {
   id: string;
   provider: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
   displayName: string;
+  apiKeyMasked?: string;
   modelList?: string[];
   isActive: boolean;
   isVerified: boolean;
@@ -51,39 +44,39 @@ interface UserAiProvider {
 }
 
 const PROVIDER_OPTIONS = [
-  { 
-    value: 'google', 
-    label: 'Google Gemini', 
+  {
+    value: 'google',
+    label: 'Google Gemini',
     color: 'from-blue-500 to-cyan-500',
-    icon: '🔷',
+    icon: 'ðŸ”·',
     description: 'Fast and efficient AI models'
   },
-  { 
-    value: 'openai', 
-    label: 'OpenAI', 
+  {
+    value: 'openai',
+    label: 'OpenAI',
     color: 'from-green-500 to-emerald-500',
-    icon: '🤖',
+    icon: 'ðŸ¤–',
     description: 'GPT models for advanced tasks'
   },
-  { 
-    value: 'anthropic', 
-    label: 'Anthropic Claude', 
+  {
+    value: 'anthropic',
+    label: 'Anthropic Claude',
     color: 'from-orange-500 to-amber-500',
-    icon: '🧠',
+    icon: 'ðŸ§ ',
     description: 'Balanced and reliable AI'
   },
-  { 
-    value: 'azure', 
-    label: 'Azure OpenAI', 
+  {
+    value: 'azure',
+    label: 'Azure OpenAI',
     color: 'from-purple-500 to-pink-500',
-    icon: '☁️',
+    icon: 'â˜ï¸',
     description: 'Enterprise-grade AI'
   },
-  { 
-    value: 'custom', 
-    label: 'Custom Provider', 
+  {
+    value: 'custom',
+    label: 'Custom Provider',
     color: 'from-gray-500 to-slate-500',
-    icon: '⚙️',
+    icon: 'âš™ï¸',
     description: 'Your own AI endpoint'
   },
 ];
@@ -94,10 +87,10 @@ export default function AIModelsPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingProvider, setEditingProvider] = useState<UserAiProvider | null>(null);
   const [showApiKey, setShowApiKey] = useState(false);
-  const [isChangingApiKey, setIsChangingApiKey] = useState(false);  // ✅ New state for change key mode
+  const [isChangingApiKey, setIsChangingApiKey] = useState(false);  // âœ… New state for change key mode
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [providerToDelete, setProviderToDelete] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState<{
     provider: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
     displayName: string;
@@ -118,7 +111,7 @@ export default function AIModelsPage() {
     try {
       setLoading(true);
       const providersRes = await axiosClient.get('/ai-providers/user');
-      setProviders(providersRes.data);
+      setProviders(providersRes);
     } catch {
       toast.error('Failed to load data');
     } finally {
@@ -135,7 +128,7 @@ export default function AIModelsPage() {
         apiKey: '',
         modelList: provider.modelList?.join(', ') || '',
       });
-      setIsChangingApiKey(false);  // ✅ Reset change key mode
+      setIsChangingApiKey(false);  // âœ… Reset change key mode
     } else {
       setEditingProvider(null);
       setFormData({
@@ -153,7 +146,7 @@ export default function AIModelsPage() {
   const handleCloseDialog = () => {
     setShowDialog(false);
     setEditingProvider(null);
-    setIsChangingApiKey(false);  // ✅ Reset
+    setIsChangingApiKey(false);  // âœ… Reset
     setFormData({
       provider: 'google',
       displayName: '',
@@ -164,19 +157,19 @@ export default function AIModelsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.displayName.trim()) {
       toast.error('Please enter a display name');
       return;
     }
 
-    // ✅ For create, API key is required
+    // âœ… For create, API key is required
     if (!editingProvider && !formData.apiKey.trim()) {
       toast.error('Please enter an API key');
       return;
     }
 
-    // ✅ For edit, if user enters API key, it must not be empty
+    // âœ… For edit, if user enters API key, it must not be empty
     if (editingProvider && formData.apiKey && !formData.apiKey.trim()) {
       toast.error('API key cannot be empty. Leave it blank to keep current key.');
       return;
@@ -191,7 +184,7 @@ export default function AIModelsPage() {
           : undefined,
       };
 
-      // ✅ Only include apiKey if it's not empty (for both create and update)
+      // âœ… Only include apiKey if it's not empty (for both create and update)
       if (formData.apiKey && formData.apiKey.trim() !== '') {
         payload.apiKey = formData.apiKey.trim();
       }
@@ -200,7 +193,7 @@ export default function AIModelsPage() {
         await axiosClient.patch(`/ai-providers/user/${editingProvider.id}`, payload);
         toast.success('API key updated successfully');
       } else {
-        // ✅ For create, apiKey is required
+        // âœ… For create, apiKey is required
         if (!payload.apiKey) {
           toast.error('API key is required');
           return;
@@ -280,7 +273,7 @@ export default function AIModelsPage() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="max-w-7xl mx-auto p-8">
-        {}
+        { }
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Settings</h1>
           <p className="text-muted-foreground">
@@ -288,7 +281,7 @@ export default function AIModelsPage() {
           </p>
         </div>
 
-        {}
+        { }
         <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
           {tabs.map((tab) => (
             <button
@@ -306,178 +299,178 @@ export default function AIModelsPage() {
           ))}
         </div>
 
-        {}
+        { }
         {activeTab === 'ai-providers' && (
           <div className="space-y-8">
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Providers</CardDescription>
-            <CardTitle className="text-3xl">{providers.length}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FiKey className="size-4" />
-              <span>{activeProviders} active</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Usage</CardDescription>
-            <CardTitle className="text-3xl">{totalUsage.toLocaleString()}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <FiActivity className="size-4" />
-              <span>API requests</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Quick Action</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => handleOpenDialog()} className="w-full">
-              <FiPlus className="mr-2" />
-              Add New Provider
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-            {}
-            {providers.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="size-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
-              <FiKey className="size-10 text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold mb-2">No API Keys Configured</h3>
-            <p className="text-muted-foreground text-center max-w-md mb-6">
-              Add your first AI provider API key to start using AI models in your bots and workflows
-            </p>
-            <Button onClick={() => handleOpenDialog()} size="lg">
-              <FiPlus className="mr-2" />
-              Add Your First API Key
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {providers.map((provider) => {
-            const providerInfo = PROVIDER_OPTIONS.find(p => p.value === provider.provider);
-            return (
-              <Card key={provider.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className={`h-2 bg-gradient-to-r ${providerInfo?.color || 'from-gray-500 to-slate-500'}`} />
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="text-3xl">{providerInfo?.icon || '⚙️'}</div>
-                      <div>
-                        <CardTitle className="text-lg">{provider.displayName}</CardTitle>
-                        <CardDescription>{providerInfo?.label || provider.provider}</CardDescription>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Badge 
-                        variant={provider.isActive ? 'default' : 'secondary'}
-                        className={provider.isActive ? 'bg-green-500' : ''}
-                      >
-                        {provider.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                      {provider.isVerified && (
-                        <Badge variant="outline" className="text-green-600 border-green-600">
-                          <FiCheck className="size-3" />
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardDescription>Total Providers</CardDescription>
+                  <CardTitle className="text-3xl">{providers.length}</CardTitle>
                 </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {}
-                  {provider.modelList && provider.modelList.length > 0 && (
-                    <div>
-                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                        <FiZap className="size-4" />
-                        Configured Models
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {provider.modelList.map((model) => (
-                          <Badge key={model} variant="secondary" className="font-mono text-xs">
-                            {model}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {}
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Usage</p>
-                      <p className="text-lg font-semibold">{provider.quotaUsed.toLocaleString()}</p>
-                    </div>
-                    {provider.lastUsedAt && (
-                      <div className="space-y-1 text-right">
-                        <p className="text-sm text-muted-foreground">Last Used</p>
-                        <p className="text-sm font-medium">{new Date(provider.lastUsedAt).toLocaleDateString()}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {}
-                  <div className="flex gap-2 pt-2">
-                    {!provider.isVerified && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleVerify(provider.id)}
-                        className="flex-1"
-                      >
-                        <FiCheck className="mr-2 size-4" />
-                        Verify
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToggleActive(provider)}
-                      className="flex-1"
-                    >
-                      {provider.isActive ? 'Deactivate' : 'Activate'}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenDialog(provider)}
-                    >
-                      <FiEdit2 className="size-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openDeleteDialog(provider.id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <FiTrash2 className="size-4" />
-                    </Button>
+                <CardContent>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <FiKey className="size-4" />
+                    <span>{activeProviders} active</span>
                   </div>
                 </CardContent>
               </Card>
-            );
-          })}
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardDescription>Total Usage</CardDescription>
+                  <CardTitle className="text-3xl">{totalUsage.toLocaleString()}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <FiActivity className="size-4" />
+                    <span>API requests</span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardDescription>Quick Action</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button onClick={() => handleOpenDialog()} className="w-full">
+                    <FiPlus className="mr-2" />
+                    Add New Provider
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
+
+            { }
+            {providers.length === 0 ? (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <div className="size-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6">
+                    <FiKey className="size-10 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-2">No API Keys Configured</h3>
+                  <p className="text-muted-foreground text-center max-w-md mb-6">
+                    Add your first AI provider API key to start using AI models in your bots and workflows
+                  </p>
+                  <Button onClick={() => handleOpenDialog()} size="lg">
+                    <FiPlus className="mr-2" />
+                    Add Your First API Key
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {providers.map((provider) => {
+                  const providerInfo = PROVIDER_OPTIONS.find(p => p.value === provider.provider);
+                  return (
+                    <Card key={provider.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className={`h-2 bg-gradient-to-r ${providerInfo?.color || 'from-gray-500 to-slate-500'}`} />
+                      <CardHeader>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="text-3xl">{providerInfo?.icon || 'âš™ï¸'}</div>
+                            <div>
+                              <CardTitle className="text-lg">{provider.displayName}</CardTitle>
+                              <CardDescription>{providerInfo?.label || provider.provider}</CardDescription>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Badge
+                              variant={provider.isActive ? 'default' : 'secondary'}
+                              className={provider.isActive ? 'bg-green-500' : ''}
+                            >
+                              {provider.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                            {provider.isVerified && (
+                              <Badge variant="outline" className="text-green-600 border-green-600">
+                                <FiCheck className="size-3" />
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="space-y-4">
+                        { }
+                        {provider.modelList && provider.modelList.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                              <FiZap className="size-4" />
+                              Configured Models
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {provider.modelList.map((model) => (
+                                <Badge key={model} variant="secondary" className="font-mono text-xs">
+                                  {model}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        { }
+                        <div className="flex items-center justify-between pt-4 border-t">
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">Usage</p>
+                            <p className="text-lg font-semibold">{provider.quotaUsed.toLocaleString()}</p>
+                          </div>
+                          {provider.lastUsedAt && (
+                            <div className="space-y-1 text-right">
+                              <p className="text-sm text-muted-foreground">Last Used</p>
+                              <p className="text-sm font-medium">{new Date(provider.lastUsedAt).toLocaleDateString()}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        { }
+                        <div className="flex gap-2 pt-2">
+                          {!provider.isVerified && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleVerify(provider.id)}
+                              className="flex-1"
+                            >
+                              <FiCheck className="mr-2 size-4" />
+                              Verify
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleActive(provider)}
+                            className="flex-1"
+                          >
+                            {provider.isActive ? 'Deactivate' : 'Activate'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenDialog(provider)}
+                          >
+                            <FiEdit2 className="size-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDeleteDialog(provider.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <FiTrash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
 
-        {}
+        { }
         {activeTab === 'account' && (
           <div className="space-y-8">
             <Card>
@@ -546,7 +539,7 @@ export default function AIModelsPage() {
           </div>
         )}
 
-        {}
+        { }
         {activeTab === 'notifications' && (
           <Card>
             <CardHeader>
@@ -559,7 +552,7 @@ export default function AIModelsPage() {
           </Card>
         )}
 
-        {}
+        { }
         {activeTab === 'sharing' && (
           <Card>
             <CardHeader>
@@ -572,7 +565,7 @@ export default function AIModelsPage() {
           </Card>
         )}
 
-        {}
+        { }
         {activeTab === 'billing' && (
           <Card>
             <CardHeader>
@@ -585,7 +578,7 @@ export default function AIModelsPage() {
           </Card>
         )}
 
-        {}
+        { }
         {activeTab === 'questions' && (
           <Card>
             <CardHeader>
@@ -606,7 +599,7 @@ export default function AIModelsPage() {
               {editingProvider ? 'Edit API Key' : 'Add New API Key'}
             </DialogTitle>
             <DialogDescription>
-              {editingProvider 
+              {editingProvider
                 ? 'Update your API key configuration and settings'
                 : 'Connect a new AI provider to unlock powerful models'
               }
@@ -614,7 +607,7 @@ export default function AIModelsPage() {
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {}
+            { }
             {!editingProvider && (
               <div className="space-y-3">
                 <Label>Select Provider</Label>
@@ -624,11 +617,10 @@ export default function AIModelsPage() {
                       key={option.value}
                       type="button"
                       onClick={() => setFormData({ ...formData, provider: option.value as any })}
-                      className={`p-4 rounded-lg border-2 transition-all text-left ${
-                        formData.provider === option.value
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
+                      className={`p-4 rounded-lg border-2 transition-all text-left ${formData.provider === option.value
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:border-primary/50'
+                        }`}
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <span className="text-2xl">{option.icon}</span>
@@ -670,13 +662,12 @@ export default function AIModelsPage() {
 
             <div className="space-y-2">
               <Label htmlFor="apiKey">API Key</Label>
-              
+
               {editingProvider && !isChangingApiKey ? (
-                // ✅ View mode: Show masked key with change button
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
                     <div className="flex-1 font-mono text-sm text-muted-foreground">
-                      {editingProvider.apiKeyMasked || '••••••••••••••••••••'}
+                      {editingProvider.apiKeyMasked || 'â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢'}
                     </div>
                     <Button
                       type="button"
@@ -696,7 +687,7 @@ export default function AIModelsPage() {
                   </p>
                 </div>
               ) : (
-                // ✅ Edit mode: Show input field
+                // âœ… Edit mode: Show input field
                 <div className="space-y-2">
                   {editingProvider && isChangingApiKey && (
                     <div className="flex items-center gap-2 p-2 rounded-md bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900">
@@ -793,3 +784,4 @@ export default function AIModelsPage() {
     </div>
   );
 }
+

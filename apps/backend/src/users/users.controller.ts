@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -144,3 +144,4 @@ export class UsersController {
     return this.usersService.activate(id);
   }
 }
+

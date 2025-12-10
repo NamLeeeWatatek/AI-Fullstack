@@ -1,4 +1,4 @@
-import { Module, OnModuleInit, forwardRef } from '@nestjs/common';
+﻿import { Module, OnModuleInit, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChannelsController } from './channels.controller';
 import { ChannelsService } from './channels.service';
@@ -15,7 +15,7 @@ import {
 } from '../integrations/infrastructure/persistence/relational/entities';
 import {
   ConversationEntity,
-  MessageEntity
+  MessageEntity,
 } from '../conversations/infrastructure/persistence/relational/entities/conversation.entity';
 import { BotsModule } from '../bots/bots.module';
 import { ConversationsModule } from '../conversations/conversations.module';
@@ -35,7 +35,11 @@ import { FacebookConversationSyncService } from './services/facebook-conversatio
     ]),
     forwardRef(() => ConversationsModule),
   ],
-  controllers: [ChannelsController, WebhooksController, FacebookOAuthController],
+  controllers: [
+    ChannelsController,
+    WebhooksController,
+    FacebookOAuthController,
+  ],
   providers: [
     ChannelsService,
     ChannelStrategy,
@@ -49,7 +53,12 @@ import { FacebookConversationSyncService } from './services/facebook-conversatio
     FacebookWebhookProcessor,
     WebhookLoggerInterceptor,
   ],
-  exports: [ChannelStrategy, ChannelsService, FacebookOAuthService, ChannelEventListener],
+  exports: [
+    ChannelStrategy,
+    ChannelsService,
+    FacebookOAuthService,
+    ChannelEventListener,
+  ],
 })
 export class ChannelsModule implements OnModuleInit {
   constructor(
@@ -57,7 +66,7 @@ export class ChannelsModule implements OnModuleInit {
     private readonly facebookProvider: FacebookProvider,
     private readonly googleProvider: GoogleProvider,
     private readonly omiProvider: OmiProvider,
-  ) { }
+  ) {}
 
   onModuleInit() {
     this.strategy.register('facebook', this.facebookProvider);
@@ -65,3 +74,4 @@ export class ChannelsModule implements OnModuleInit {
     this.strategy.register('omi', this.omiProvider);
   }
 }
+

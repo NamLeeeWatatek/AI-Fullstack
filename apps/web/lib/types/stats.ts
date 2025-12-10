@@ -1,4 +1,4 @@
-
+﻿
 export interface TimeSeriesDataPoint {
     date: string
     value: number
@@ -81,3 +81,4 @@ export interface StatsQueryParams {
     endDate?: string
     includeTrend?: boolean
 }
+

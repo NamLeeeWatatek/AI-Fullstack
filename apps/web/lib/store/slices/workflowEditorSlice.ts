@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Workflow Editor Redux Slice
  * Manages workflow editor state (nodes, edges, etc.)
  */
@@ -160,3 +160,4 @@ export const {
 } = workflowEditorSlice.actions
 
 export default workflowEditorSlice.reducer
+

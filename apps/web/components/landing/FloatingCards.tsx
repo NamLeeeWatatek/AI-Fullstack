@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import { FiCheck, FiCpu } from "react-icons/fi";
@@ -16,10 +16,10 @@ export default function FloatingCards() {
           <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600">
             <FiCheck />
           </div>
-          <span className="font-semibold text-slate-800 text-sm">Tin nhắn đã gửi</span>
+          <span className="font-semibold text-slate-800 text-sm">Tin nháº¯n Ä‘Ã£ gá»­i</span>
         </div>
         <div className="text-2xl font-bold text-slate-900">1,420</div>
-        <div className="text-xs text-slate-500">tin nhắn hôm nay</div>
+        <div className="text-xs text-slate-500">tin nháº¯n hÃ´m nay</div>
       </motion.div>
 
       {}
@@ -33,11 +33,12 @@ export default function FloatingCards() {
             <FiCpu />
           </div>
           <div>
-            <div className="font-semibold text-slate-800 text-sm">AI đang xử lý</div>
-            <div className="text-xs text-slate-500">Phân tích ngữ cảnh...</div>
+            <div className="font-semibold text-slate-800 text-sm">AI Ä‘ang xá»­ lÃ½</div>
+            <div className="text-xs text-slate-500">PhÃ¢n tÃ­ch ngá»¯ cáº£nh...</div>
           </div>
         </div>
       </motion.div>
     </>
   );
 }
+

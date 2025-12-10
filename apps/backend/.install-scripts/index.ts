@@ -1,4 +1,4 @@
-import prompts from 'prompts';
+﻿import prompts from 'prompts';
 import removeFacebookAuth from './scripts/remove-auth-facebook';
 import removeGoogleAuth from './scripts/remove-auth-google';
 import removeAppleAuth from './scripts/remove-auth-apple';
@@ -89,3 +89,4 @@ import removeRelationalPropertyGeneration from './scripts/property-generation-sc
   removeInstallScripts();
   process.exit(0);
 })();
+

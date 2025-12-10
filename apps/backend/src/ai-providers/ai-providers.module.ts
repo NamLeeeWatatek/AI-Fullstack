@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AiProvidersController } from './ai-providers.controller';
 import { AiProvidersService } from './ai-providers.service';
@@ -21,4 +21,5 @@ import { EncryptionUtil } from '../common/utils/encryption.util';
   providers: [AiProvidersService, EncryptionUtil],
   exports: [AiProvidersService],
 })
-export class AiProvidersModule { }
+export class AiProvidersModule {}
+

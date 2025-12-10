@@ -1,0 +1,61 @@
+﻿'use client'
+
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from '@radix-ui/react-alert-dialog'
+import { ReactNode } from 'react'
+import { AlertDialogHeader, AlertDialogFooter } from './AlertDialog'
+
+interface AlertDialogConfirmProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description?: string | ReactNode
+  confirmText?: string
+  cancelText?: string
+  onConfirm: () => void | Promise<void>
+  variant?: 'default' | 'destructive'
+}
+
+export function AlertDialogConfirm({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmText = 'Continue',
+  cancelText = 'Cancel',
+  onConfirm,
+  variant = 'default'
+}: AlertDialogConfirmProps) {
+  const handleConfirm = async () => {
+    try {
+      await onConfirm()
+      if (open) {
+        onOpenChange(false)
+      }
+    } catch {
+
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          {description && (
+            <AlertDialogDescription>{description}</AlertDialogDescription>
+          )}
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{cancelText}</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirm}
+            className={variant === 'destructive' ? 'bg-red-500 hover:bg-red-600' : ''}
+          >
+            {confirmText}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
+

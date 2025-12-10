@@ -1,14 +1,21 @@
-
+﻿
 export interface Flow {
   id: string
   name: string
   description?: string
   status: 'draft' | 'published' | 'archived'
+  version: number
+  nodes: WorkflowNode[]
+  edges: WorkflowEdge[]
   templateId?: string
-  data: Record<string, any>
   channelId?: string
   visibility?: 'private' | 'public'
-  userId: string
+  category?: string
+  ownerId?: string
+  userId?: string
+  teamId?: string
+  published: boolean
+  tags?: string[]
   createdAt: string
   updatedAt: string
 }
@@ -17,20 +24,29 @@ export interface CreateFlowDto {
   name: string
   description?: string
   status?: 'draft' | 'published'
+  version?: number
+  nodes?: WorkflowNode[]
+  edges?: WorkflowEdge[]
   templateId?: string
-  data?: Record<string, any>
   channelId?: string
   visibility?: 'private' | 'public'
+  category?: string
+  published?: boolean
+  tags?: string[]
 }
 
 export interface UpdateFlowDto {
   name?: string
   description?: string
   status?: 'draft' | 'published' | 'archived'
+  version?: number
+  nodes?: WorkflowNode[]
+  edges?: WorkflowEdge[]
   templateId?: string
-  data?: Record<string, any>
   channelId?: string
   visibility?: 'private' | 'public'
+  published?: boolean
+  tags?: string[]
 }
 
 export interface CreateFlowFromTemplateDto {
@@ -98,16 +114,32 @@ export interface GetExecutionResponse {
 
 export interface WorkflowNode {
   id: string
-  type: string
+  type: string // For ReactFlow: 'custom', For Backend: NodeType.id
   position: { x: number; y: number }
-  data: {
-    type: string
-    label: string
+  data: Record<string, any> | {
+    type?: string // NodeType.id
+    label?: string
+    nodeType?: string // NodeType.id (alternative field)
     config?: Record<string, any>
-    icon?: string
     color?: string
     description?: string
   }
+  properties?: Array<{
+    name: string
+    type: string
+    label?: string
+    required?: boolean
+    default?: any
+    defaultValue?: any
+    placeholder?: string
+    description?: string
+    options?: Array<{ value: string; label: string }>
+    accept?: string
+    multiple?: boolean
+    min?: number
+    max?: number
+    showWhen?: Record<string, any>
+  }>
 }
 
 export interface WorkflowEdge {
@@ -126,3 +158,4 @@ export interface ExecutionStatus {
   completedAt?: string
   error?: string
 }
+

@@ -1,4 +1,4 @@
-import 'reflect-metadata';
+﻿import 'reflect-metadata';
 import { DataSource, DataSourceOptions } from 'typeorm';
 
 export const AppDataSource = new DataSource({
@@ -38,3 +38,4 @@ export const AppDataSource = new DataSource({
         : undefined,
   },
 } as DataSourceOptions);
+

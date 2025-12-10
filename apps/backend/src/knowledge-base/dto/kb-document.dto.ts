@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsArray } from 'class-validator';
+﻿import { IsString, IsOptional, IsUUID, IsArray } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateDocumentDto {
@@ -179,3 +179,4 @@ export class CrawlSitemapDto {
   @IsOptional()
   maxPages?: number;
 }
+

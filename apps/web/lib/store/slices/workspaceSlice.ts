@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Workspace Redux Slice
  */
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
@@ -85,3 +85,4 @@ export const {
 } = workspaceSlice.actions;
 
 export default workspaceSlice.reducer;
+

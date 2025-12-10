@@ -30,6 +30,7 @@
     "app:config": "ts-node -r tsconfig-paths/register ./.install-scripts/index.ts && npm install && npm run lint -- --fix",
     "seed:run:relational": "ts-node -r tsconfig-paths/register ./src/database/seeds/relational/run-seed.ts",
     "seed:run:document": "ts-node -r tsconfig-paths/register ./src/database/seeds/document/run-seed.ts",
+    "seed:node-types": "ts-node -r tsconfig-paths/register ./src/database/seeds/run-node-types-seed.ts",
     "test:facebook": "ts-node -r tsconfig-paths/register ./scripts/test-facebook.ts",
     "send:facebook": "ts-node -r tsconfig-paths/register ./scripts/send-facebook-message.ts",
     "get:page-token": "ts-node -r tsconfig-paths/register ./scripts/get-page-token.ts",

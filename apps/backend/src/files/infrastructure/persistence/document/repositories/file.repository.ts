@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 
 import { FileRepository } from '../../file.repository';
 import { FileSchemaClass } from '../entities/file.schema';
@@ -32,3 +32,4 @@ export class FileDocumentRepository implements FileRepository {
     return fileObjects.map((fileObject) => FileMapper.toDomain(fileObject));
   }
 }
+

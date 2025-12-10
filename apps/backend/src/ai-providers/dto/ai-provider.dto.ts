@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
@@ -24,10 +24,10 @@ export class CreateUserAiProviderDto {
   @IsString()
   apiKey: string;
 
-  @ApiPropertyOptional({ 
-    type: [String], 
+  @ApiPropertyOptional({
+    type: [String],
     example: ['gpt-4', 'gpt-3.5-turbo', 'gemini-2.5-flash'],
-    description: 'List of model names supported by this provider'
+    description: 'List of model names supported by this provider',
   })
   @IsOptional()
   @IsArray()
@@ -115,3 +115,4 @@ export class VerifyApiKeyDto {
   @IsEnum(['openai', 'anthropic', 'google', 'azure', 'custom'])
   provider: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
 }
+

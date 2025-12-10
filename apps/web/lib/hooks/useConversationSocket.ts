@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+﻿import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 interface UseConversationSocketOptions {
@@ -98,3 +98,4 @@ export function useConversationSocket({
         disconnect,
     };
 }
+

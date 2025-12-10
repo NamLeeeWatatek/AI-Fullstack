@@ -1,2 +1,3 @@
-export { BotDialog } from './bot-dialog'
-export { BotKBLinkDialog } from './bot-kb-link-dialog'
+﻿export { BotDialog } from './BotDialog'
+export { BotKBLinkDialog } from './BotKbLinkDialog'
+

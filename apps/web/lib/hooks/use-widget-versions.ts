@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import useSWR from 'swr';
 import { useState } from 'react';
@@ -337,3 +337,4 @@ export function useWidgetVersionActions(botId: string) {
         isSubmitting,
     };
 }
+

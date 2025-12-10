@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Enterprise Notification System
  * Inspired by: Slack, Intercom, Microsoft Teams
  */
@@ -136,3 +136,4 @@ export function useNotifications(): UseNotificationsReturn {
         isSupported,
     };
 }
+

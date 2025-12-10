@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsString,
@@ -34,3 +34,4 @@ export class CreateWorkspaceDto {
   @IsEnum(['free', 'starter', 'pro', 'enterprise'])
   plan?: 'free' | 'starter' | 'pro' | 'enterprise';
 }
+

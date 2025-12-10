@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PermissionEntity } from '../../../../permissions/infrastructure/persistence/relational/entities/permission.entity';
@@ -216,6 +216,6 @@ export class PermissionSeedService {
         await this.repository.save(this.repository.create(permission));
       }
     }
-
   }
 }
+

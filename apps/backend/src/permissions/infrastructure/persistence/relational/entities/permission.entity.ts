@@ -1,4 +1,4 @@
-import {
+﻿import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
@@ -35,3 +35,4 @@ export class PermissionEntity extends EntityRelationalHelper {
   @UpdateDateColumn()
   updatedAt: Date;
 }
+

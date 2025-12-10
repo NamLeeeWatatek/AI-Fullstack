@@ -1,4 +1,4 @@
-
+﻿
 /**
  * Generate execution reference string
  * @example "WF-123-EX-456"
@@ -114,3 +114,4 @@ export function getExecutionProgress(completedNodes: number, totalNodes: number)
   if (totalNodes === 0) return 0
   return Math.round((completedNodes / totalNodes) * 100)
 }
+

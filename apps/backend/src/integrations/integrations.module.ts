@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { IntegrationsController } from './integrations.controller';
 import { IntegrationsService } from './integrations.service';
@@ -23,3 +23,4 @@ import { ChannelsModule } from '../channels/channels.module';
   exports: [IntegrationsService, OAuthService],
 })
 export class IntegrationsModule {}
+

@@ -1,4 +1,4 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+﻿import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 /**
  * Decorator to extract workspaceId from request
@@ -23,3 +23,4 @@ export const WorkspaceId = createParamDecorator(
     return undefined;
   },
 );
+

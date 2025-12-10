@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -45,3 +45,4 @@ export class ChannelCredentialEntity extends EntityRelationalHelper {
   @UpdateDateColumn()
   updatedAt: Date;
 }
+

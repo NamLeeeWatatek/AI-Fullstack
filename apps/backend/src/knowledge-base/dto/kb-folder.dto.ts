@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsInt, IsUUID } from 'class-validator';
+﻿import { IsString, IsOptional, IsInt, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateFolderDto {
@@ -67,3 +67,4 @@ export class UpdateFolderDto {
   @IsOptional()
   order?: number;
 }
+

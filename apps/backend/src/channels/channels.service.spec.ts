@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+﻿import { Test, TestingModule } from '@nestjs/testing';
 import { ChannelsService } from './channels.service';
 
 describe('ChannelsService', () => {
@@ -16,3 +16,4 @@ describe('ChannelsService', () => {
     expect(service).toBeDefined();
   });
 });
+

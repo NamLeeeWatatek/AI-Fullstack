@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FileEntity } from '../entities/file.entity';
 import { In, Repository } from 'typeorm';
@@ -44,3 +44,4 @@ export class FileRelationalRepository implements FileRepository {
     return entities.map((entity) => FileMapper.toDomain(entity));
   }
 }
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
     formatDistanceToNow,
     format,
     isToday,
@@ -128,3 +128,4 @@ export function sortConversationsByTime<T extends { lastMessageAt: string | Date
         return timeB - timeA;  // DESC: newest first
     });
 }
+

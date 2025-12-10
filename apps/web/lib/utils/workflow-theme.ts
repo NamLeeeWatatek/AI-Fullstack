@@ -1,4 +1,4 @@
-
+﻿
 export const workflowTheme = {
   node: {
     minWidth: '200px',
@@ -115,3 +115,4 @@ export function getIconStyle(color?: string) {
 export function getCategoryColor(category: string): string {
   return workflowTheme.categories[category as keyof typeof workflowTheme.categories] || '#6b7280'
 }
+

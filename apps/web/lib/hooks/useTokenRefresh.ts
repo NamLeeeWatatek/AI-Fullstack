@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react'
+﻿import { useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 
 const REFRESH_INTERVAL = 4 * 60 * 1000
@@ -92,3 +92,4 @@ export function useTokenRefresh() {
     isRefreshing: false,
   }
 }
+

@@ -1,4 +1,4 @@
-
+﻿
 export type Role =
   | 'super_admin'
   | 'admin'
@@ -136,3 +136,4 @@ export interface PermissionButtonProps {
   type?: 'button' | 'submit' | 'reset'
   variant?: 'default' | 'destructive' | 'outline' | 'ghost'
 }
+

@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsUUID, IsNumber } from 'class-validator';
 
 export class CreateFolderDto {
@@ -35,3 +35,4 @@ export class CreateFolderDto {
   @IsNumber()
   order?: number;
 }
+

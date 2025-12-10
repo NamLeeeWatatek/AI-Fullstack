@@ -1,4 +1,4 @@
-import {
+﻿import {
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
@@ -12,13 +12,17 @@ import { Logger, UseGuards } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_DOMAIN || process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin:
+      process.env.FRONTEND_DOMAIN ||
+      process.env.FRONTEND_URL ||
+      'http://localhost:3000',
     credentials: true,
   },
   namespace: '/conversations',
 })
 export class ConversationsGateway
-  implements OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -34,15 +38,16 @@ export class ConversationsGateway
 
   /**
    * Client joins a conversation room to receive real-time updates
-   * ✅ Use dash for consistency with frontend
+   * âœ… Use dash for consistency with frontend
    */
   @SubscribeMessage('join-conversation')
   handleJoinConversation(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { conversationId: string } | string,
   ) {
-    // ✅ Support both object and string format
-    const conversationId = typeof data === 'string' ? data : data.conversationId;
+    // âœ… Support both object and string format
+    const conversationId =
+      typeof data === 'string' ? data : data.conversationId;
     client.join(`conversation:${conversationId}`);
     this.logger.log(
       `Client ${client.id} joined conversation ${conversationId}`,
@@ -52,62 +57,61 @@ export class ConversationsGateway
 
   /**
    * Client leaves a conversation room
-   * ✅ Use dash for consistency with frontend
+   * âœ… Use dash for consistency with frontend
    */
   @SubscribeMessage('leave-conversation')
   handleLeaveConversation(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { conversationId: string } | string,
   ) {
-    // ✅ Support both object and string format
-    const conversationId = typeof data === 'string' ? data : data.conversationId;
+    // âœ… Support both object and string format
+    const conversationId =
+      typeof data === 'string' ? data : data.conversationId;
     client.leave(`conversation:${conversationId}`);
-    this.logger.log(
-      `Client ${client.id} left conversation ${conversationId}`,
-    );
+    this.logger.log(`Client ${client.id} left conversation ${conversationId}`);
     return { event: 'left', conversationId };
   }
 
   /**
    * Emit new message to all clients in a conversation room
    * Called from ConversationsService when new message is created
-   * ✅ Use dash for consistency with frontend
+   * âœ… Use dash for consistency with frontend
    */
   emitNewMessage(conversationId: string, message: any) {
     this.server
       .to(`conversation:${conversationId}`)
-      .emit('new-message', message); // ✅ Changed from 'new_message' to 'new-message'
-    this.logger.log(
-      `Emitted new message to conversation ${conversationId}`,
-    );
+      .emit('new-message', message); // âœ… Changed from 'new_message' to 'new-message'
+    this.logger.log(`Emitted new message to conversation ${conversationId}`);
   }
 
   /**
    * Emit conversation update to specific room (for conversation detail page)
-   * ✅ Use dash for consistency with frontend
+   * âœ… Use dash for consistency with frontend
    */
   emitConversationUpdate(conversationId: string, data: any) {
     this.server
       .to(`conversation:${conversationId}`)
-      .emit('conversation-updated', data); // ✅ Changed from 'conversation_updated' to 'conversation-updated'
+      .emit('conversation-updated', data); // âœ… Changed from 'conversation_updated' to 'conversation-updated'
   }
 
   /**
    * Broadcast conversation update to ALL clients (for conversations list page)
    * Use this when a new conversation is created or updated from webhook
-   * ✅ Format conversation data before emitting
+   * âœ… Format conversation data before emitting
    */
   broadcastConversationUpdate(conversation: any) {
-    // ✅ Ensure all required fields are present
+    // âœ… Ensure all required fields are present
     const formattedConversation = {
       id: conversation.id,
       externalId: conversation.externalId,
       channelId: conversation.channelId,
       channelType: conversation.channelType,
       channelName: conversation.channelName || conversation.channelType,
-      contactName: conversation.contactName || conversation.customerName || 'Unknown',
+      contactName:
+        conversation.contactName || conversation.customerName || 'Unknown',
       contactAvatar: conversation.contactAvatar || conversation.customerAvatar,
-      customerName: conversation.contactName || conversation.customerName || 'Unknown', // ✅ Alias for frontend
+      customerName:
+        conversation.contactName || conversation.customerName || 'Unknown', // âœ… Alias for frontend
       customerAvatar: conversation.contactAvatar || conversation.customerAvatar,
       lastMessage: conversation.lastMessage || 'New message',
       lastMessageAt: conversation.lastMessageAt || new Date().toISOString(),
@@ -124,19 +128,21 @@ export class ConversationsGateway
 
   /**
    * Broadcast new conversation to ALL clients
-   * ✅ Format conversation data before emitting
+   * âœ… Format conversation data before emitting
    */
   broadcastNewConversation(conversation: any) {
-    // ✅ Ensure all required fields are present
+    // âœ… Ensure all required fields are present
     const formattedConversation = {
       id: conversation.id,
       externalId: conversation.externalId,
       channelId: conversation.channelId,
       channelType: conversation.channelType,
       channelName: conversation.channelName || conversation.channelType,
-      contactName: conversation.contactName || conversation.customerName || 'Unknown',
+      contactName:
+        conversation.contactName || conversation.customerName || 'Unknown',
       contactAvatar: conversation.contactAvatar || conversation.customerAvatar,
-      customerName: conversation.contactName || conversation.customerName || 'Unknown', // ✅ Alias for frontend
+      customerName:
+        conversation.contactName || conversation.customerName || 'Unknown', // âœ… Alias for frontend
       customerAvatar: conversation.contactAvatar || conversation.customerAvatar,
       lastMessage: conversation.lastMessage || 'New conversation',
       lastMessageAt: conversation.lastMessageAt || new Date().toISOString(),
@@ -151,3 +157,4 @@ export class ConversationsGateway
     );
   }
 }
+

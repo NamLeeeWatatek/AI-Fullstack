@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FileEntity } from './entities/file.entity';
 import { FileRepository } from '../file.repository';
@@ -15,3 +15,4 @@ import { FileRelationalRepository } from './repositories/file.repository';
   exports: [FileRepository],
 })
 export class RelationalFilePersistenceModule {}
+

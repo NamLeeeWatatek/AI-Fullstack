@@ -1,4 +1,4 @@
-
+﻿
 export interface Execution {
   id: string | number
   flowId?: number
@@ -71,3 +71,4 @@ export interface NodeExecutionCardProps {
     error?: string
   }
 }
+

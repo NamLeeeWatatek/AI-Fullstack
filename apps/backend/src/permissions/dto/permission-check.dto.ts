@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 import { IsArray, IsString } from 'class-validator';
 
 export class PermissionCheckRequestDto {
@@ -15,3 +15,4 @@ export class PermissionCheckResponseDto {
   @ApiProperty({ type: [String] })
   missingPermissions: string[];
 }
+

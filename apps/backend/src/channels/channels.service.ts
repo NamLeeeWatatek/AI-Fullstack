@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChannelConnectionEntity } from '../integrations/infrastructure/persistence/relational/entities/channel-connection.entity';
@@ -37,15 +37,18 @@ export class ChannelsService {
     });
   }
 
-  async findByExternalId(externalId: string): Promise<ChannelConnectionEntity | null> {
+  async findByExternalId(
+    externalId: string,
+  ): Promise<ChannelConnectionEntity | null> {
     const channels = await this.connectionRepository.find({
       where: { status: 'active' },
       relations: ['credential'],
     });
-    
-    return channels.find(channel => 
-      channel.metadata?.pageId === externalId
-    ) || null;
+
+    return (
+      channels.find((channel) => channel.metadata?.pageId === externalId) ||
+      null
+    );
   }
 
   async findByType(
@@ -106,14 +109,16 @@ export class ChannelsService {
 
   async delete(id: string, userId?: string): Promise<void> {
     try {
-      // ✅ FIX: Update conversations first to prevent orphaned references
+      // âœ… FIX: Update conversations first to prevent orphaned references
       // Use snake_case column names as they appear in database
       const updateResult = await this.connectionRepository.manager.query(
         `UPDATE conversation SET channel_id = NULL, channel_type = 'internal' WHERE channel_id = $1`,
         [id],
       );
 
-      console.log(`✅ Updated ${updateResult[1] || 0} conversations before deleting channel ${id}`);
+      console.log(
+        `âœ… Updated ${updateResult[1] || 0} conversations before deleting channel ${id}`,
+      );
 
       // Then delete the channel
       const where: any = { id };
@@ -122,10 +127,11 @@ export class ChannelsService {
       }
       await this.connectionRepository.delete(where);
 
-      console.log(`✅ Deleted channel ${id}`);
+      console.log(`âœ… Deleted channel ${id}`);
     } catch (error) {
-      console.error(`❌ Error deleting channel ${id}:`, error);
+      console.error(`âŒ Error deleting channel ${id}:`, error);
       throw error;
     }
   }
 }
+

@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
   IsNotEmpty,
@@ -137,12 +137,12 @@ export class CreateBotDto {
   @IsBoolean()
   showTimestamp?: boolean;
 
-  @ApiPropertyOptional({ example: 'Xin chào! Tôi có thể giúp gì cho bạn?' })
+  @ApiPropertyOptional({ example: 'Xin chÃ o! TÃ´i cÃ³ thá»ƒ giÃºp gÃ¬ cho báº¡n?' })
   @IsOptional()
   @IsString()
   welcomeMessage?: string | null;
 
-  @ApiPropertyOptional({ example: 'Nhập tin nhắn...' })
+  @ApiPropertyOptional({ example: 'Nháº­p tin nháº¯n...' })
   @IsOptional()
   @IsString()
   placeholderText?: string | null;
@@ -162,3 +162,4 @@ export class CreateBotDto {
   @IsString()
   icon?: string;
 }
+

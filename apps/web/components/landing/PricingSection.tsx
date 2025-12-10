@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { FiCheck } from "react-icons/fi";
 
 interface PricingPlan {
@@ -17,48 +17,48 @@ const pricingPlans: PricingPlan[] = [
   {
     name: "Starter",
     price: 0,
-    description: "Hoàn hảo để dùng thử WataOmi",
-    cta: "Dùng thử miễn phí",
+    description: "HoÃ n háº£o Ä‘á»ƒ dÃ¹ng thá»­ WataOmi",
+    cta: "DÃ¹ng thá»­ miá»…n phÃ­",
     featured: false,
     features: [
       "1 bot",
-      "100 cuộc hội thoại/tháng",
-      "2 kênh",
-      "Phân tích cơ bản",
-      "Hỗ trợ cộng đồng",
+      "100 cuá»™c há»™i thoáº¡i/thÃ¡ng",
+      "2 kÃªnh",
+      "PhÃ¢n tÃ­ch cÆ¡ báº£n",
+      "Há»— trá»£ cá»™ng Ä‘á»“ng",
     ],
   },
   {
     name: "Pro",
     price: 49,
-    description: "Cho doanh nghiệp đang phát triển",
-    cta: "Dùng thử Pro",
+    description: "Cho doanh nghiá»‡p Ä‘ang phÃ¡t triá»ƒn",
+    cta: "DÃ¹ng thá»­ Pro",
     featured: true,
     features: [
       "10 bots",
-      "10,000 cuộc hội thoại/tháng",
-      "Không giới hạn kênh",
-      "Phân tích nâng cao",
-      "Tích hợp n8n",
-      "Hỗ trợ ưu tiên",
-      "Tùy chỉnh thương hiệu",
+      "10,000 cuá»™c há»™i thoáº¡i/thÃ¡ng",
+      "KhÃ´ng giá»›i háº¡n kÃªnh",
+      "PhÃ¢n tÃ­ch nÃ¢ng cao",
+      "TÃ­ch há»£p n8n",
+      "Há»— trá»£ Æ°u tiÃªn",
+      "TÃ¹y chá»‰nh thÆ°Æ¡ng hiá»‡u",
     ],
   },
   {
     name: "Enterprise",
     price: 299,
-    description: "Cho tổ chức lớn",
-    cta: "Liên hệ tư vấn",
+    description: "Cho tá»• chá»©c lá»›n",
+    cta: "LiÃªn há»‡ tÆ° váº¥n",
     featured: false,
     features: [
-      "Không giới hạn bots",
-      "Không giới hạn cuộc hội thoại",
-      "Không giới hạn kênh",
-      "Tính năng AI nâng cao",
-      "Quản lý tài khoản riêng",
-      "Cam kết SLA",
-      "Tích hợp tùy chỉnh",
-      "Triển khai on-premise",
+      "KhÃ´ng giá»›i háº¡n bots",
+      "KhÃ´ng giá»›i háº¡n cuá»™c há»™i thoáº¡i",
+      "KhÃ´ng giá»›i háº¡n kÃªnh",
+      "TÃ­nh nÄƒng AI nÃ¢ng cao",
+      "Quáº£n lÃ½ tÃ i khoáº£n riÃªng",
+      "Cam káº¿t SLA",
+      "TÃ­ch há»£p tÃ¹y chá»‰nh",
+      "Triá»ƒn khai on-premise",
     ],
   },
 ];
@@ -69,10 +69,10 @@ export default function PricingSection() {
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-slate-900 mb-4">
-            Bảng giá đơn giản, minh bạch
+            Báº£ng giÃ¡ Ä‘Æ¡n giáº£n, minh báº¡ch
           </h2>
           <p className="text-xl text-slate-600">
-            Không phí cài đặt, không phí ẩn
+            KhÃ´ng phÃ­ cÃ i Ä‘áº·t, khÃ´ng phÃ­ áº©n
           </p>
         </div>
 
@@ -129,3 +129,4 @@ export default function PricingSection() {
     </section>
   );
 }
+

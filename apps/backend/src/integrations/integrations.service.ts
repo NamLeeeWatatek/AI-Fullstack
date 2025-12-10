@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChannelCredentialEntity } from './infrastructure/persistence/relational/entities/channel-credential.entity';
@@ -61,3 +61,4 @@ export class IntegrationsService {
     await this.credentialRepository.delete(id);
   }
 }
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   HttpStatus,
   Module,
   UnprocessableEntityException,
@@ -69,3 +69,4 @@ const infrastructurePersistenceModule = (databaseConfig() as DatabaseConfig)
   exports: [FilesLocalService],
 })
 export class FilesLocalModule {}
+

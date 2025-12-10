@@ -1,4 +1,4 @@
-
+﻿
 export interface AIModelInfo {
   model_name: string;
   display_name: string;
@@ -49,3 +49,4 @@ export type GetModelsResponse = AIProviderGroup[];
 export type GetDefaultModelResponse = DefaultModelResponse;
 export type PostChatResponse = ChatResponse;
 export type PostChatWithHistoryResponse = ChatResponse;
+

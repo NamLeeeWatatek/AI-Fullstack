@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import { MdAutoAwesome } from "react-icons/md";
 import { FiArrowRight } from "react-icons/fi";
 import Link from "next/link";
@@ -39,7 +39,7 @@ export default function Navigation({ scrolled }: NavigationProps) {
                 scrolled ? "text-slate-600" : "text-white/90"
               }`}
             >
-              Tính năng
+              TÃ­nh nÄƒng
             </a>
             <a
               href="#pricing"
@@ -47,7 +47,7 @@ export default function Navigation({ scrolled }: NavigationProps) {
                 scrolled ? "text-slate-600" : "text-white/90"
               }`}
             >
-              Bảng giá
+              Báº£ng giÃ¡
             </a>
             <a
               href="#"
@@ -55,7 +55,7 @@ export default function Navigation({ scrolled }: NavigationProps) {
                 scrolled ? "text-slate-600" : "text-white/90"
               }`}
             >
-              Tài liệu
+              TÃ i liá»‡u
             </a>
             <Link href="/dashboard">
               <Button
@@ -63,7 +63,7 @@ export default function Navigation({ scrolled }: NavigationProps) {
                 size="sm"
                 className={scrolled ? "text-slate-700" : "text-white hover:bg-white/10"}
               >
-                Đăng nhập
+                ÄÄƒng nháº­p
               </Button>
             </Link>
             <Link href="/dashboard">
@@ -75,7 +75,7 @@ export default function Navigation({ scrolled }: NavigationProps) {
                     : "bg-white text-primary hover:bg-white/90"
                 }
               >
-                Bắt đầu
+                Báº¯t Ä‘áº§u
                 <FiArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
@@ -85,3 +85,4 @@ export default function Navigation({ scrolled }: NavigationProps) {
     </nav>
   );
 }
+

@@ -1,7 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Notification domain entity - theo schema mới
+ * Notification domain entity - theo schema má»›i
  * Table: notifications
  */
 export class Notification {
@@ -33,3 +33,4 @@ export class Notification {
   @ApiProperty()
   createdAt: Date;
 }
+

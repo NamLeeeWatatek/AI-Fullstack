@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional } from 'class-validator';
 
 export class CreateConnectionDto {
@@ -32,3 +32,4 @@ export class CreateConnectionDto {
   @IsOptional()
   metadata?: Record<string, any>;
 }
+

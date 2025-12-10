@@ -1,28 +1,48 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Card } from '@/components/ui/Card'
+
+
 import axiosClient from '@/lib/axios-client'
 import toast from '@/lib/toast'
-import ReactFlow, { Background, Controls, MiniMap, BackgroundVariant } from 'reactflow'
+import ReactFlow, {
+    Background,
+    Controls,
+    MiniMap,
+    BackgroundVariant,
+    addEdge,
+    useReactFlow,
+    ReactFlowProvider,
+    type Connection,
+    type Edge,
+    type Node,
+    Panel
+} from 'reactflow'
 import 'reactflow/dist/style.css'
-import { useAppSelector } from '@/lib/store/hooks'
-import CustomNode from '@/components/features/workflow/custom-node'
+import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
+
+import type { NodeType } from '@/lib/store/slices/nodeTypesSlice'
+import { useExecutionWebSocket } from '@/lib/hooks/use-execution-websocket'
+import {
+    setNodes,
+    updateNodesWithoutDirty,
+    setEdges,
+    updateEdgesWithoutDirty,
+    addNode as addNodeAction,
+    updateNode as updateNodeAction,
+    setSelectedNodeId,
+    setWorkflowName,
+    setSelectedChannelId,
+    setHasUnsavedChanges,
+    setIsExecuting,
+    setIsTesting,
+    clearDraftTemplate,
+    loadWorkflow,
+    resetEditor
+} from '@/lib/store/slices/workflowEditorSlice'
 import {
     FiEdit,
     FiPlay,
@@ -35,14 +55,28 @@ import {
     FiTrendingUp,
     FiActivity,
     FiLoader,
-    FiSave
+    FiSave,
+    FiArrowLeft,
+    FiX,
+    FiMoreVertical,
+    FiEye
 } from 'react-icons/fi'
 import { getExecutionReference } from '@/lib/utils/execution'
+import CustomNode from '@/components/features/workflow/CustomNode'
+import { ExecuteFlowModal } from '@/components/features/workflow/ExecuteFlowModal'
+import { NodeContextMenu } from '@/components/features/workflow/NodeContextMenu'
+import { NodePalette } from '@/components/features/workflow/NodePalette'
+import NodeProperties from '@/components/features/workflow/NodeProperties'
+import { TestNodePanel } from '@/components/features/workflow/TestNodePanel'
+import { AlertDialogConfirm } from '@/components/ui/AlertDialogConfirm'
+import { Button } from '@/components/ui/Button'
+import { Textarea } from '@/components/ui/Textarea'
+import { Dialog, DialogContent } from '@radix-ui/react-dialog'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@radix-ui/react-select'
+import { Input } from 'postcss'
 
-function FlowPreview({ nodes, edges }: { nodes: any[], edges: any[] }) {
-    const { items: allNodeTypes = [] } = useAppSelector((state: any) => state.nodeTypes || {})
-
-    const nodeTypes = useMemo(() => {
+function FlowPreview({ nodes, edges, allNodeTypes }: { nodes: any[], edges: any[], allNodeTypes: any[] }) {
+    const previewNodeTypes = useMemo(() => {
         const types: Record<string, any> = { custom: CustomNode }
         allNodeTypes.forEach((t: any) => {
             types[t.id] = CustomNode
@@ -52,26 +86,47 @@ function FlowPreview({ nodes, edges }: { nodes: any[], edges: any[] }) {
 
     const safeNodes = useMemo(() => {
         return nodes.map(node => {
-            const originalType = node.data?.type || node.type
+            // Handle both backend format and ReactFlow format
+            const isBackendFormat = node.type !== 'custom' && !node.data?.type
 
-            return {
-                ...node,
-                type: 'custom',
-                data: {
-                    ...node.data,
-                    type: originalType,
-                    label: node.data?.label || node.data?.name || originalType
+            if (isBackendFormat) {
+                // Backend format: { id, type: 'webhook', position, data: {...config} }
+                const nodeType = allNodeTypes.find((nt: any) => nt.id === node.type)
+                return {
+                    id: node.id,
+                    type: 'custom',
+                    position: node.position || { x: 0, y: 0 },
+                    data: {
+                        type: node.type,
+                        nodeType: node.type,
+                        label: nodeType?.label || node.type,
+                        config: node.data || {},
+                        color: nodeType?.color
+                    }
+                }
+            } else {
+                // ReactFlow format: { id, type: 'custom', position, data: { type, label, config } }
+                const originalType = node.data?.type || node.data?.nodeType || node.type
+                return {
+                    ...node,
+                    type: 'custom',
+                    data: {
+                        ...node.data,
+                        type: originalType,
+                        nodeType: originalType,
+                        label: node.data?.label || node.data?.name || originalType
+                    }
                 }
             }
         })
-    }, [nodes])
+    }, [nodes, allNodeTypes])
 
     return (
         <div className="h-[600px] bg-background rounded-lg border border-border overflow-hidden relative shadow-sm group">
             <ReactFlow
                 nodes={safeNodes}
                 edges={edges}
-                nodeTypes={nodeTypes}
+                nodeTypes={previewNodeTypes}
                 fitView
                 proOptions={{ hideAttribution: true }}
                 nodesDraggable={false}
@@ -93,7 +148,7 @@ function FlowPreview({ nodes, edges }: { nodes: any[], edges: any[] }) {
     )
 }
 
-function VersionsTab({ flowId, onUpdate }: { flowId: number, onUpdate: () => void }) {
+function VersionsTab({ flowId, onUpdate }: { flowId: string, onUpdate: () => void }) {
     const [versions, setVersions] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -104,7 +159,7 @@ function VersionsTab({ flowId, onUpdate }: { flowId: number, onUpdate: () => voi
     const loadVersions = async () => {
         try {
             setLoading(true)
-            const data = await (await axiosClient.get(`/flows/${flowId}/versions`)).data
+            const data = await axiosClient.get(`/flows/${flowId}/versions`)
             setVersions(data)
         } catch (e: any) {
 
@@ -115,10 +170,10 @@ function VersionsTab({ flowId, onUpdate }: { flowId: number, onUpdate: () => voi
     }
 
     const handleCreateVersion = async () => {
-        const createPromise = (await axiosClient.post(`/flows/${flowId}/versions`, {
+        const createPromise = axiosClient.post(`/flows/${flowId}/versions`, {
             name: `Version ${versions.length + 1}`,
             description: 'Manual version snapshot'
-        })).data.then(() => {
+        }).then(() => {
             loadVersions()
             onUpdate()
         })
@@ -260,12 +315,12 @@ function SettingsTab({
             <div className="space-y-6">
                 <div>
                     <label className="block text-sm font-medium mb-2">Workflow Name</label>
-                    <Input
+                    {/* <Input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter workflow name"
-                    />
+                    /> */}
                 </div>
 
                 <div>
@@ -341,37 +396,639 @@ function SettingsTab({
     )
 }
 
-export default function WorkflowDetailPage({ params }: { params: { id: string } }) {
+const nodeTypes = {
+    custom: CustomNode
+}
+
+interface Channel {
+    id: number
+    name: string
+}
+
+// Inner component that uses ReactFlow hooks
+function WorkflowDetailPageInner({ params }: { params: { id: string } }) {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const dispatch = useAppDispatch()
+    const reactFlowWrapper = useRef<HTMLDivElement>(null)
+    const { screenToFlowPosition } = useReactFlow()
+
+    // Check if we're in edit mode from URL
+    const isEditModeFromUrl = searchParams.get('mode') === 'edit'
+    const [isEditMode, setIsEditMode] = useState(isEditModeFromUrl)
+
     const [activeTab, setActiveTab] = useState<'overview' | 'executions' | 'versions' | 'settings'>('overview')
     const [flow, setFlow] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
-    const { items: nodeTypes = [] } = useAppSelector((state: any) => state.nodeTypes || {})
+    // Editor state from Redux
+    const editorNodes = useAppSelector((state: any) => state.workflowEditor?.nodes || [])
+    const editorEdges = useAppSelector((state: any) => state.workflowEditor?.edges || [])
+    const selectedNodeId = useAppSelector((state: any) => state.workflowEditor?.selectedNodeId)
+    const workflowName = useAppSelector((state: any) => state.workflowEditor?.workflowName || 'Untitled Workflow')
+    const selectedChannelId = useAppSelector((state: any) => state.workflowEditor?.selectedChannelId)
+    const hasUnsavedChanges = useAppSelector((state: any) => state.workflowEditor?.hasUnsavedChanges || false)
+    const isExecuting = useAppSelector((state: any) => state.workflowEditor?.isExecuting || false)
+    const isTesting = useAppSelector((state: any) => state.workflowEditor?.isTesting || false)
+    const draftTemplate = useAppSelector((state: any) => state.workflowEditor?.draftTemplate)
+
+    // Editor UI state
+    const [showProperties, setShowProperties] = useState(false)
+    const [showTestPanel, setShowTestPanel] = useState(false)
+    const [showExecuteModal, setShowExecuteModal] = useState(false)
+    const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId: string } | null>(null)
+    const [isSaving, setIsSaving] = useState(false)
+    const [channels, setChannels] = useState<Channel[]>([])
+    const [savedState, setSavedState] = useState<string>('')
+    const templateSavedRef = useRef(false)
+
+    const { items: allNodeTypes = [] } = useAppSelector((state: any) => state.nodeTypes || {})
+
+    // Sync edit mode with URL
+    useEffect(() => {
+        setIsEditMode(isEditModeFromUrl)
+    }, [isEditModeFromUrl])
 
     useEffect(() => {
-        loadFlow()
+        if (isEditMode) {
+            loadChannels()
+        }
+    }, [isEditMode])
+
+    useEffect(() => {
+        if (params.id === 'new') {
+            // Handle new flow creation
+            setLoading(false)
+            setFlow({ name: 'Untitled Workflow', status: 'draft', nodes: [], edges: [] })
+
+            if (isEditMode) {
+                if (draftTemplate && !templateSavedRef.current) {
+                    templateSavedRef.current = true
+                    const migratedNodes = migrateNodes(draftTemplate.nodes || [])
+                    const templateName = draftTemplate.name || 'Untitled Workflow'
+                    const templateEdges = draftTemplate.edges || []
+
+                    dispatch(clearDraftTemplate())
+                    dispatch(setNodes(migratedNodes))
+                    dispatch(setEdges(templateEdges))
+                    dispatch(setWorkflowName(templateName))
+
+                    // Auto-save new flow from template
+                    const createFlowFromTemplate = async () => {
+                        try {
+                            setIsSaving(true)
+
+                            // Convert to backend format
+                            const backendNodes = migratedNodes.map((node: any) => {
+                                const nodeType = node.data?.type || node.data?.nodeType || node.type
+                                return {
+                                    id: node.id,
+                                    type: nodeType === 'custom' ? (node.data?.type || node.data?.nodeType) : nodeType,
+                                    position: node.position,
+                                    data: node.data?.config || {}
+                                }
+                            })
+
+                            const flowData = {
+                                name: templateName,
+                                description: '',
+                                channelId: null,
+                                nodes: backendNodes,
+                                edges: templateEdges
+                            }
+
+                            const created: any = await axiosClient.post('/flows/', flowData)
+
+                            if (!created || !created.id) {
+                                throw new Error('Failed to create flow: No ID returned')
+                            }
+
+                            setFlow(created)
+                            router.replace(`/flows/${created.id}?mode=edit`)
+                        } catch (error) {
+                            console.error('[Flow Create from Template] Error:', error)
+                            toast.error('Failed to save template as new flow')
+                        } finally {
+                            setIsSaving(false)
+                        }
+                    }
+
+                    createFlowFromTemplate()
+                } else {
+                    dispatch(setNodes([]))
+                    dispatch(setEdges([]))
+                    dispatch(setWorkflowName('Untitled Workflow'))
+                    dispatch(setSelectedChannelId(null))
+                    dispatch(setHasUnsavedChanges(false))
+                }
+            }
+        } else {
+            loadFlow()
+        }
     }, [params.id])
+
+    // Separate effect to handle edit mode changes
+    useEffect(() => {
+        if (params.id !== 'new' && flow && isEditMode && !loading) {
+            // Load flow data into editor when entering edit mode
+            // Use new structure: flow.nodes and flow.edges directly (already at top level from API)
+            const nodes = Array.isArray(flow.nodes) ? flow.nodes : []
+            const edges = Array.isArray(flow.edges) ? flow.edges : []
+
+            // Convert backend nodes to ReactFlow format
+            const reactFlowNodes = nodes.map((node: any) => {
+                const nodeTypeInfo = allNodeTypes.find((nt: any) => nt.id === node.type)
+                return {
+                    id: node.id,
+                    type: 'custom', // ReactFlow type
+                    position: node.position || { x: 0, y: 0 },
+                    data: {
+                        type: node.type, // NodeType.id
+                        nodeType: node.type, // Backup reference
+                        label: nodeTypeInfo?.label || node.type,
+                        config: node.data || {}, // User config
+                        color: nodeTypeInfo?.color
+                    }
+                }
+            })
+
+            console.log('[Edit Mode] ReactFlow nodes count:', reactFlowNodes.length)
+            if (reactFlowNodes.length > 0) {
+                console.log('[Edit Mode] Sample ReactFlow node:', reactFlowNodes[0])
+            }
+
+            dispatch(loadWorkflow({
+                name: flow.name || 'Untitled Workflow',
+                description: flow.description || '',
+                nodes: reactFlowNodes,
+                edges: edges,
+                channelId: flow.channel_id || flow.channelId || null
+            }))
+
+            const cleanNodes = reactFlowNodes.map((node: any) => {
+                if (!node) return null
+                const { executionStatus, executionError, executionOutput, ...cleanData } = node.data || {}
+                return {
+                    id: node.id,
+                    type: node.type,
+                    position: node.position ? {
+                        x: Math.round(node.position.x || 0),
+                        y: Math.round(node.position.y || 0)
+                    } : { x: 0, y: 0 },
+                    data: cleanData
+                }
+            }).filter(Boolean)
+
+            const initialState = JSON.stringify({
+                name: flow.name || 'Untitled Workflow',
+                channel_id: flow.channel_id || flow.channelId || null,
+                nodes: cleanNodes,
+                edges: edges
+            })
+            setSavedState(initialState)
+            dispatch(setHasUnsavedChanges(false))
+        }
+    }, [isEditMode, flow, loading, allNodeTypes])
+
+    const loadChannels = async () => {
+        try {
+            const channels: any = await axiosClient.get('/channels/')
+            setChannels(channels)
+        } catch (e: any) {
+            // Silent fail
+        }
+    }
+
+    const migrateNodes = (nodes: Node[]) => {
+        return nodes.map(node => {
+            const originalType = node.data?.type || node.type
+            return {
+                ...node,
+                type: 'custom',
+                data: {
+                    ...node.data,
+                    type: originalType,
+                    nodeType: originalType,
+                    label: node.data?.label || node.data?.name || originalType
+                }
+            }
+        })
+    }
 
     const loadFlow = async () => {
         try {
             setLoading(true)
-            const data = await (await axiosClient.get(`/flows/${params.id}`)).data
-            setFlow(data)
+            const flowObject: any = await axiosClient.get(`/flows/${params.id}`)
+
+            console.log('[Load Flow] Raw response:', flowObject)
+            console.log('[Load Flow] Has top-level nodes:', Array.isArray(flowObject.nodes))
+            console.log('[Load Flow] Has top-level edges:', Array.isArray(flowObject.edges))
+            console.log('[Load Flow] Nodes count:', flowObject.nodes?.length || 0)
+            console.log('[Load Flow] Edges count:', flowObject.edges?.length || 0)
+
+            // Backend returns both formats for compatibility:
+            // - nodes/edges at top level (new, preferred)
+            // - data.nodes/edges (legacy, for backward compatibility)
+            // We use top-level directly
+
+            if (!Array.isArray(flowObject.nodes)) {
+                flowObject.nodes = []
+                console.warn('[Load Flow] No nodes array, initialized empty')
+            }
+
+            if (!Array.isArray(flowObject.edges)) {
+                flowObject.edges = []
+                console.warn('[Load Flow] No edges array, initialized empty')
+            }
+
+            setFlow(flowObject)
         } catch (e: any) {
+            console.error('[Load Flow] Error:', e)
             setError(e.message)
         } finally {
             setLoading(false)
         }
     }
 
+    // Editor handlers
+    const handleNodesChange = useCallback((changes: any) => {
+        let updatedNodes = [...editorNodes]
+        let shouldMarkDirty = false
+
+        changes.forEach((change: any) => {
+            if (change.type === 'position') {
+                updatedNodes = updatedNodes.map(n =>
+                    n.id === change.id
+                        ? { ...n, position: change.position || n.position }
+                        : n
+                )
+                if (change.dragging === false) {
+                    shouldMarkDirty = true
+                }
+            } else if (change.type === 'dimensions') {
+                updatedNodes = updatedNodes.map(n =>
+                    n.id === change.id
+                        ? { ...n, width: change.dimensions?.width, height: change.dimensions?.height }
+                        : n
+                )
+            } else if (change.type === 'select') {
+                updatedNodes = updatedNodes.map(n =>
+                    n.id === change.id
+                        ? { ...n, selected: change.selected }
+                        : n
+                )
+            } else if (change.type === 'remove') {
+                updatedNodes = updatedNodes.filter(n => n.id !== change.id)
+                shouldMarkDirty = true
+            }
+        })
+
+        if (shouldMarkDirty) {
+            dispatch(setNodes(updatedNodes))
+        } else {
+            dispatch(updateNodesWithoutDirty(updatedNodes))
+        }
+    }, [editorNodes, dispatch])
+
+    const handleEdgesChange = useCallback((changes: any) => {
+        let updatedEdges = [...editorEdges]
+        let shouldMarkDirty = false
+
+        changes.forEach((change: any) => {
+            if (change.type === 'remove') {
+                updatedEdges = updatedEdges.filter(e => e.id !== change.id)
+                shouldMarkDirty = true
+            } else if (change.type === 'select') {
+                updatedEdges = updatedEdges.map(e =>
+                    e.id === change.id
+                        ? { ...e, selected: change.selected }
+                        : e
+                )
+            }
+        })
+
+        if (shouldMarkDirty) {
+            dispatch(setEdges(updatedEdges))
+        } else {
+            dispatch(updateEdgesWithoutDirty(updatedEdges))
+        }
+    }, [editorEdges, dispatch])
+
+    const { execute: executeWithWebSocket, isExecuting: isWebSocketExecuting } = useExecutionWebSocket(
+        (updater: any) => {
+            const newNodes = typeof updater === 'function' ? updater(editorNodes) : updater
+            dispatch(updateNodesWithoutDirty(newNodes))
+        }
+    )
+
+    const selectedNode = useMemo(() =>
+        editorNodes.find((n: Node) => n.id === selectedNodeId) || null
+        , [editorNodes, selectedNodeId])
+
+    const onConnect = useCallback(
+        (params: Edge | Connection) => {
+            const newEdge = addEdge(params, editorEdges)
+            dispatch(setEdges(newEdge))
+        },
+        [editorEdges, dispatch]
+    )
+
+    const onDragOver = useCallback((event: React.DragEvent) => {
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'move'
+    }, [])
+
+    const onDrop = useCallback(
+        (event: React.DragEvent) => {
+            event.preventDefault()
+            const nodeTypeData = event.dataTransfer.getData('application/reactflow')
+            if (!nodeTypeData) return
+
+            const nodeType: NodeType = JSON.parse(nodeTypeData)
+            const position = screenToFlowPosition({
+                x: event.clientX,
+                y: event.clientY,
+            })
+
+            const newNode: Node = {
+                id: `${nodeType.id}-${Date.now()}`,
+                type: 'custom',
+                position,
+                data: {
+                    label: nodeType.label,
+                    type: nodeType.id,
+                    nodeType: nodeType.id,
+                    config: {}
+                }
+            }
+
+            dispatch(addNodeAction(newNode))
+        },
+        [screenToFlowPosition, dispatch]
+    )
+
+    const handleAddNode = useCallback((nodeType: NodeType) => {
+        const position = {
+            x: Math.random() * 400 + 100,
+            y: Math.random() * 400 + 100
+        }
+
+        const newNode: Node = {
+            id: `${nodeType.id}-${Date.now()}`,
+            type: 'custom',
+            position,
+            data: {
+                label: nodeType.label,
+                type: nodeType.id,
+                nodeType: nodeType.id,
+                config: {}
+            }
+        }
+
+        dispatch(addNodeAction(newNode))
+    }, [dispatch])
+
+    const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+        if (node.data?.executionStatus) {
+            const cleanNode = {
+                ...node,
+                data: {
+                    ...node.data,
+                    executionStatus: undefined,
+                    executionError: undefined
+                }
+            }
+            const cleanNodes = editorNodes.map((n: Node) => n.id === node.id ? cleanNode : n)
+            dispatch(updateNodesWithoutDirty(cleanNodes))
+        }
+
+        dispatch(setSelectedNodeId(node.id))
+        setShowProperties(true)
+        setShowTestPanel(false)
+    }, [editorNodes, dispatch])
+
+    const onNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+        event.preventDefault()
+        setContextMenu({
+            x: event.clientX,
+            y: event.clientY,
+            nodeId: node.id
+        })
+        dispatch(setSelectedNodeId(node.id))
+    }, [dispatch])
+
+    const handleContextMenuTest = () => {
+        setShowTestPanel(true)
+        setShowProperties(false)
+    }
+
+    const handleContextMenuEdit = () => {
+        setShowProperties(true)
+        setShowTestPanel(false)
+    }
+
+    const handleContextMenuDuplicate = useCallback(() => {
+        const nodeToDuplicate = editorNodes.find((n: Node) => n.id === contextMenu?.nodeId)
+        if (nodeToDuplicate) {
+            const newNode: Node = {
+                ...nodeToDuplicate,
+                id: `${nodeToDuplicate.data.type}-${Date.now()}`,
+                position: {
+                    x: nodeToDuplicate.position.x + 50,
+                    y: nodeToDuplicate.position.y + 50
+                },
+                selected: false
+            }
+            dispatch(addNodeAction(newNode))
+        }
+    }, [editorNodes, contextMenu, dispatch])
+
+    const handleContextMenuDelete = useCallback(() => {
+        if (contextMenu?.nodeId) {
+            const newNodes = editorNodes.filter((n: Node) => n.id !== contextMenu.nodeId)
+            const newEdges = editorEdges.filter((e: Edge) => e.source !== contextMenu.nodeId && e.target !== contextMenu.nodeId)
+
+            dispatch(setNodes(newNodes))
+            dispatch(setEdges(newEdges))
+            setShowProperties(false)
+            setShowTestPanel(false)
+            dispatch(setSelectedNodeId(null))
+        }
+    }, [contextMenu, editorNodes, editorEdges, dispatch])
+
+    const handleNodeUpdate = useCallback((updatedNode: Node) => {
+        dispatch(updateNodeAction({ id: updatedNode.id, data: updatedNode.data }))
+    }, [dispatch])
+
+    const handleSave = async () => {
+        const savePromise = (async () => {
+            setIsSaving(true)
+
+            // Convert ReactFlow nodes to backend format
+            const backendNodes = editorNodes.map((node: any) => {
+                const nodeType = node.data?.type || node.data?.nodeType || node.type
+                return {
+                    id: node.id,
+                    type: nodeType === 'custom' ? (node.data?.type || node.data?.nodeType) : nodeType,
+                    position: node.position,
+                    data: node.data?.config || {}
+                }
+            })
+
+            const backendEdges = editorEdges.map((edge: any) => ({
+                id: edge.id,
+                source: edge.source,
+                target: edge.target,
+                sourceHandle: edge.sourceHandle,
+                targetHandle: edge.targetHandle
+            }))
+
+            const flowData = {
+                name: workflowName,
+                description: flow?.description || '',
+                channelId: selectedChannelId,
+                nodes: backendNodes,
+                edges: backendEdges
+            }
+
+            console.log('[Save] Flow data to send:', flowData)
+
+            let result: any
+            if (params.id === 'new') {
+                // Create new flow
+                result = await axiosClient.post('/flows/', flowData)
+
+                if (!result || !result.id) {
+                    throw new Error('Failed to create flow: No ID returned')
+                }
+
+                console.log('[Save] Created new flow:', result)
+                setFlow(result)
+                router.replace(`/flows/${result.id}?mode=edit`)
+            } else {
+                // Update existing flow
+                console.log('[Save] Updating flow:', params.id)
+                result = await axiosClient.patch(`/flows/${params.id}`, flowData)
+
+                console.log('[Save] Update result:', result)
+                setFlow(result)
+                // DO NOT redirect on update - stay on same page
+            }
+
+            const cleanNodes = editorNodes.map((node: any) => {
+                if (!node) return null
+                const { executionStatus, executionError, executionOutput, ...cleanData } = node.data || {}
+                return {
+                    id: node.id,
+                    type: node.type,
+                    position: node.position ? {
+                        x: Math.round(node.position.x || 0),
+                        y: Math.round(node.position.y || 0)
+                    } : { x: 0, y: 0 },
+                    data: cleanData
+                }
+            }).filter(Boolean)
+
+            const newState = JSON.stringify({
+                name: workflowName,
+                channel_id: selectedChannelId,
+                nodes: cleanNodes,
+                edges: editorEdges
+            })
+            setSavedState(newState)
+            dispatch(setHasUnsavedChanges(false))
+
+            return result
+        })()
+
+        toast.promise(savePromise, {
+            loading: 'Saving workflow...',
+            success: params.id === 'new'
+                ? 'Workflow created! You can continue editing.'
+                : 'Workflow saved successfully!',
+            error: (err) => `Failed to save: ${err.message}`
+        })
+
+        savePromise.finally(() => setIsSaving(false))
+    }
+
+    const handleTestRun = async () => {
+        if (editorNodes.length === 0) {
+            toast.error('Add some nodes first!')
+            return
+        }
+
+        if (hasUnsavedChanges) {
+            toast.error('Please save your changes before testing')
+            return
+        }
+
+        if (editorNodes.length > 1 && editorEdges.length === 0) {
+            toast.error('Please connect your nodes before testing')
+            return
+        }
+
+        dispatch(setIsTesting(true))
+        try {
+            await executeWithWebSocket(params.id, {})
+            toast.success('Test run completed!')
+        } catch (error: any) {
+            toast.error(`Test run failed: ${error.message}`)
+        } finally {
+            dispatch(setIsTesting(false))
+        }
+    }
+
+    const handleExecute = () => {
+        if (editorNodes.length === 0) {
+            toast.error('Add some nodes first!')
+            return
+        }
+
+        if (hasUnsavedChanges) {
+            toast.error('Please save your changes before executing')
+            return
+        }
+
+        if (editorNodes.length > 1 && editorEdges.length === 0) {
+            toast.error('Please connect your nodes before executing')
+            return
+        }
+
+        setShowExecuteModal(true)
+    }
+
+    const handleExecuteWithData = async (inputData: Record<string, any>) => {
+        dispatch(setIsExecuting(true))
+        setShowExecuteModal(false)
+
+        try {
+            await executeWithWebSocket(params.id, inputData)
+            toast.success('Workflow executed successfully!')
+        } catch (error: any) {
+            toast.error(`Execution failed: ${error.message}`)
+        } finally {
+            dispatch(setIsExecuting(false))
+        }
+    }
+
+    const toggleEditMode = () => {
+        if (isEditMode && hasUnsavedChanges) {
+            if (!confirm('You have unsaved changes. Are you sure you want to exit edit mode?')) {
+                return
+            }
+        }
+        const newMode = !isEditMode
+        setIsEditMode(newMode)
+        router.push(`/flows/${params.id}${newMode ? '?mode=edit' : ''}`)
+    }
+
     const handleDuplicate = async () => {
         const duplicatePromise = axiosClient.post(`/flows/${params.id}/duplicate`)
-            .then((response) => {
-                const dup = response.data || response
-                router.push(`/flows/${dup.id}/edit`)
+            .then((dup: any) => {
+                router.push(`/flows/${dup.id}?mode=edit`)
                 return dup
             })
 
@@ -450,7 +1107,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
     const loadRecentExecutions = async () => {
         try {
             setExecutionsLoading(true)
-            const data = await (await axiosClient.get(`/executions/?flow_id=${params.id}&limit=5`)).data
+            const data = await (await axiosClient.get(`/executions/?flow_id=${params.id}&limit=5`))
             setRecentExecutions(data)
         } catch (e: any) {
 
@@ -461,7 +1118,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
 
     const loadStats = async () => {
         try {
-            const allExecutions = await (await axiosClient.get(`/executions/?flow_id=${params.id}&limit=100`)).data
+            const allExecutions = await axiosClient.get(`/executions/?flow_id=${params.id}&limit=100`)
 
             const totalExecutions = allExecutions.length
             const completedExecutions = allExecutions.filter((e: any) => e.status === 'completed')
@@ -523,9 +1180,164 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
         )
     }
 
+    // Render edit mode
+    if (isEditMode) {
+        return (
+            <div className="h-screen flex flex-col">
+                {/* Editor Header */}
+                <div className="h-16 border-b border-border/40 flex items-center justify-between px-6 bg-background">
+                    <div className="flex items-center gap-4 flex-1">
+                        <Link href="/flows">
+                            <Button variant="ghost" size="icon">
+                                <FiArrowLeft className="w-5 h-5" />
+                            </Button>
+                        </Link>
+                        <input
+                            type="text"
+                            value={workflowName}
+                            onChange={(e) => dispatch(setWorkflowName(e.target.value))}
+                            className="text-xl font-bold bg-transparent border-none focus:outline-none focus:ring-0 max-w-md"
+                            placeholder="Workflow name"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {hasUnsavedChanges && (
+                            <span className="text-sm text-amber-500 flex items-center gap-1">
+                                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                                Unsaved changes
+                            </span>
+                        )}
+
+                        <Button
+                            variant="outline"
+                            onClick={handleTestRun}
+                            disabled={isTesting}
+                            title="Test run with real-time node updates"
+                        >
+                            {isTesting ? (
+                                <FiLoader className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <FiPlay className="w-4 h-4 mr-2" />
+                            )}
+                            Test Run
+                        </Button>
+
+                        <Button
+                            onClick={handleExecute}
+                            disabled={isExecuting}
+                            title="Execute with input data"
+                        >
+                            {isExecuting ? (
+                                <FiLoader className="w-4 h-4 mr-2 animate-spin" />
+                            ) : (
+                                <FiPlay className="w-4 h-4 mr-2" />
+                            )}
+                            Execute
+                        </Button>
+
+                        {hasUnsavedChanges && (
+                            <Button onClick={handleSave} disabled={isSaving} variant="default">
+                                {isSaving ? (
+                                    <FiLoader className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                    <FiSave className="w-4 h-4 mr-2" />
+                                )}
+                                Save
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Editor Canvas */}
+                <div className="flex-1 flex overflow-hidden">
+                    <div className="flex-1 relative" ref={reactFlowWrapper}>
+                        <ReactFlow
+                            nodes={editorNodes}
+                            edges={editorEdges}
+                            onNodesChange={handleNodesChange}
+                            onEdgesChange={handleEdgesChange}
+                            onConnect={onConnect}
+                            onNodeClick={onNodeClick}
+                            onNodeContextMenu={onNodeContextMenu}
+                            onDragOver={onDragOver}
+                            onDrop={onDrop}
+                            nodeTypes={nodeTypes}
+                            fitView
+                        >
+                            <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+                            <Controls />
+                            <MiniMap />
+                            <Panel position="top-left">
+                                <NodePalette onAddNode={handleAddNode} />
+                            </Panel>
+                            {contextMenu && (
+                                <NodeContextMenu
+                                    x={contextMenu.x}
+                                    y={contextMenu.y}
+                                    onClose={() => setContextMenu(null)}
+                                    onTest={handleContextMenuTest}
+                                    onEdit={handleContextMenuEdit}
+                                    onDuplicate={handleContextMenuDuplicate}
+                                    onDelete={handleContextMenuDelete}
+                                    canTest={true}
+                                />
+                            )}
+                        </ReactFlow>
+                    </div>
+
+                    {/* Properties Panel */}
+                    {showProperties && selectedNode && !showTestPanel && (
+                        <div className="w-80 border-l border-border/40 bg-background flex flex-col h-full z-10">
+                            <div className="p-4 border-b border-border/40 flex items-center justify-between">
+                                <h3 className="font-semibold">Node Properties</h3>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => setShowProperties(false)}
+                                >
+                                    <FiX className="w-4 h-4" />
+                                </Button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-4">
+                                <NodeProperties
+                                    node={selectedNode}
+                                    onUpdate={handleNodeUpdate}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Test Panel Dialog */}
+                <Dialog open={showTestPanel} onOpenChange={setShowTestPanel}>
+                    <DialogContent className="max-w-2xl h-[80vh] p-0 overflow-hidden bg-background">
+                        {selectedNode && (
+                            <TestNodePanel
+                                node={selectedNode}
+                                onClose={() => setShowTestPanel(false)}
+                                flowId={params.id}
+                                className="w-full border-0"
+                            />
+                        )}
+                    </DialogContent>
+                </Dialog>
+
+                {/* Execute Modal */}
+                <ExecuteFlowModal
+                    isOpen={showExecuteModal}
+                    onClose={() => setShowExecuteModal(false)}
+                    onExecute={handleExecuteWithData}
+                    nodes={editorNodes}
+                    isExecuting={isExecuting}
+                />
+            </div>
+        )
+    }
+
     return (
         <div className="h-full">
-            {}
+            {/* View Header */}
             <div className="page-header">
                 <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -533,7 +1345,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                         <p className="text-muted-foreground">{flow.description || 'No description'}</p>
                     </div>
 
-                    {}
+                    {/* Status Badge */}
                     <div>
                         {flow.status === 'published' ? (
                             <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-green-500/10 text-green-500 border border-green-500/20">
@@ -552,20 +1364,12 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                     </div>
                 </div>
 
-                {}
+                {/* Actions */}
                 <div className="flex items-center gap-3">
-                    <Link href={`/flows/${flow.id}/edit`}>
-                        <Button>
-                            <FiEdit className="w-4 h-4 mr-2" />
-                            Edit Workflow
-                        </Button>
-                    </Link>
-                    <Link href={`/flows/${flow.id}/edit`}>
-                        <Button variant="outline">
-                            <FiPlay className="w-4 h-4 mr-2" />
-                            Test Run
-                        </Button>
-                    </Link>
+                    <Button onClick={toggleEditMode}>
+                        <FiEdit className="w-4 h-4 mr-2" />
+                        Edit Workflow
+                    </Button>
                     <Button variant="outline" onClick={handleDuplicate}>
                         <FiCopy className="w-4 h-4 mr-2" />
                         Duplicate
@@ -584,7 +1388,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                 </div>
             </div>
 
-            {}
+            { }
             <div className="content-section">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card className="p-6">
@@ -628,7 +1432,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                 </div>
             </div>
 
-            {}
+            { }
             <div className="content-section">
                 <Card className="flex items-center gap-1 p-1 w-fit">
                     {(['overview', 'executions', 'versions', 'settings'] as const).map((tab) => (
@@ -646,14 +1450,14 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                 </Card>
             </div>
 
-            {}
+            { }
             {activeTab === 'overview' && (
                 <div className="space-y-6">
-                    {}
+                    { }
                     <Card className="p-6">
                         <h3 className="text-lg font-semibold mb-4">Workflow Diagram</h3>
-                        {flow.data?.nodes ? (
-                            <FlowPreview nodes={flow.data.nodes} edges={flow.data.edges || []} />
+                        {flow.nodes && flow.nodes.length > 0 ? (
+                            <FlowPreview nodes={flow.nodes} edges={flow.edges || []} allNodeTypes={allNodeTypes} />
                         ) : (
                             <div className="h-96 bg-muted/20 rounded-lg flex items-center justify-center border border-border/40">
                                 <p className="text-muted-foreground">No diagram data available</p>
@@ -661,7 +1465,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                         )}
                     </Card>
 
-                    {}
+                    { }
                     <Card className="p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-semibold">Recent Executions</h3>
@@ -728,12 +1532,10 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                 <Card className="p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-lg font-semibold">All Executions</h3>
-                        <Link href={`/flows/${flow.id}/edit`}>
-                            <Button size="sm">
-                                <FiPlay className="w-4 h-4 mr-2" />
-                                Run Workflow
-                            </Button>
-                        </Link>
+                        <Button size="sm" onClick={toggleEditMode}>
+                            <FiPlay className="w-4 h-4 mr-2" />
+                            Run Workflow
+                        </Button>
                     </div>
 
                     {executionsLoading ? (
@@ -745,12 +1547,10 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                             <FiActivity className="w-16 h-16 mx-auto mb-4 opacity-30" />
                             <p className="text-lg font-medium mb-2">No executions yet</p>
                             <p className="text-sm mb-4">Run this workflow to see execution history</p>
-                            <Link href={`/flows/${flow.id}/edit`}>
-                                <Button>
-                                    <FiPlay className="w-4 h-4 mr-2" />
-                                    Run Workflow
-                                </Button>
-                            </Link>
+                            <Button onClick={toggleEditMode}>
+                                <FiPlay className="w-4 h-4 mr-2" />
+                                Run Workflow
+                            </Button>
                         </div>
                     ) : (
                         <div className="space-y-3">
@@ -792,7 +1592,7 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                                         </div>
                                     </div>
 
-                                    {}
+                                    { }
                                     <div className="mb-2">
                                         <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                                             <span>Progress</span>
@@ -836,7 +1636,6 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                 />
             )}
 
-            {}
             <AlertDialogConfirm
                 open={showDeleteDialog}
                 onOpenChange={setShowDeleteDialog}
@@ -848,5 +1647,14 @@ export default function WorkflowDetailPage({ params }: { params: { id: string } 
                 variant="destructive"
             />
         </div>
+    )
+}
+
+// Wrapper component with ReactFlowProvider
+export default function WorkflowDetailPage({ params }: { params: { id: string } }) {
+    return (
+        <ReactFlowProvider>
+            <WorkflowDetailPageInner params={params} />
+        </ReactFlowProvider>
     )
 }

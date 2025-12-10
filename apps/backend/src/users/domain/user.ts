@@ -1,12 +1,6 @@
-import { Exclude, Expose } from 'class-transformer';
+﻿import { Exclude, Expose } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/**
- * User domain entity - theo schema mới
- * Table: users
- * Fields: id, email, name, avatar_url, password_hash, provider, provider_id,
- *         email_verified_at, is_active, deleted_at, created_at, updated_at
- */
 export class User {
   @ApiProperty({ type: String })
   id: string;
@@ -85,3 +79,4 @@ export class User {
   @ApiPropertyOptional()
   deletedAt?: Date | null;
 }
+

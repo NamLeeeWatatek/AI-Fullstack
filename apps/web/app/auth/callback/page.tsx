@@ -1,9 +1,9 @@
-'use client'
+﻿'use client'
 
 import { useEffect, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
-import { LoadingLogo } from '@/components/ui/loading-logo'
+import { LoadingLogo } from '@/components/ui/LoadingLogo'
 import axios from 'axios'
 
 function CasdoorCallbackContent() {
@@ -103,7 +103,7 @@ function CasdoorCallbackContent() {
                 
                 const data = await response.json()
                 
-                console.log('✅ Backend response received:', data)
+                console.log('âœ… Backend response received:', data)
 
                 console.log('Calling NextAuth signIn with credentials...')
                 const result = await signIn('credentials', {
@@ -116,12 +116,12 @@ function CasdoorCallbackContent() {
                 console.log('NextAuth signIn result:', result)
 
                 if (result?.error) {
-                    console.error('❌ NextAuth signIn error:', result.error)
+                    console.error('âŒ NextAuth signIn error:', result.error)
                     router.push('/login?error=signin_failed')
                     return
                 }
 
-                console.log('✅ Login successful! Redirecting to dashboard...')
+                console.log('âœ… Login successful! Redirecting to dashboard...')
                 router.push('/dashboard')
             } catch (error) {
                 console.error('Callback error:', error)
@@ -171,3 +171,4 @@ export default function CasdoorCallbackPage() {
         </Suspense>
     )
 }
+

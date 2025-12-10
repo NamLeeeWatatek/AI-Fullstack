@@ -1,4 +1,4 @@
-import { registerAs } from '@nestjs/config';
+﻿import { registerAs } from '@nestjs/config';
 
 import {
   IsString,
@@ -61,3 +61,4 @@ export default registerAs<MailConfig>('mail', () => {
     requireTLS: process.env.MAIL_REQUIRE_TLS === 'true',
   };
 });
+

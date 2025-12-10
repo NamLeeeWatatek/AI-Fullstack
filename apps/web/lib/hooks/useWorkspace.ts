@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Workspace Context Hook
  * Provides easy access to current workspace from session
  */
@@ -30,3 +30,4 @@ export function useWorkspace() {
 }
 
 export type UseWorkspaceReturn = ReturnType<typeof useWorkspace>
+

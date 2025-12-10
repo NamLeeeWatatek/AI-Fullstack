@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
@@ -28,7 +28,7 @@ export class UserSeedService {
       await this.repository.save(
         this.repository.create({
           name: 'Super Admin',
-          email: 'admin@example.com',
+          email: 'admin1@example.com',
           password,
           role: 'admin',
           isActive: true,
@@ -58,3 +58,4 @@ export class UserSeedService {
     }
   }
 }
+

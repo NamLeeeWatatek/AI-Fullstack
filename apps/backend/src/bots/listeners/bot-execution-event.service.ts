@@ -1,10 +1,13 @@
-import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
+﻿import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BotMessageProcessingEvent } from '../../shared/events';
 import { BotEntity } from '../infrastructure/persistence/relational/entities/bot.entity';
-import { ConversationEntity, MessageEntity } from '../../conversations/infrastructure/persistence/relational/entities/conversation.entity';
+import {
+  ConversationEntity,
+  MessageEntity,
+} from '../../conversations/infrastructure/persistence/relational/entities/conversation.entity';
 import { MessageBufferService } from '../services/message-buffer.service';
 import { KBRagService } from '../../knowledge-base/services/kb-rag.service';
 import { MessengerService } from '../../channels/providers/messenger.service';
@@ -39,7 +42,7 @@ export class BotExecutionEventService {
     );
 
     try {
-      // Thêm tin nhắn vào buffer
+      // ThÃªm tin nháº¯n vÃ o buffer
       this.messageBufferService.addMessage(
         event.conversationId,
         event.messageContent,
@@ -47,7 +50,7 @@ export class BotExecutionEventService {
         event.channelType,
         event.senderId,
         event.metadata,
-        // Callback khi buffer được flush
+        // Callback khi buffer Ä‘Æ°á»£c flush
         async (messages, context) => {
           await this.processBufferedMessages(messages, context);
         },
@@ -59,9 +62,8 @@ export class BotExecutionEventService {
       );
 
       this.logger.log(
-        `📦 Message buffered (${bufferSize} messages waiting) for conversation ${event.conversationId}`,
+        `ðŸ“¦ Message buffered (${bufferSize} messages waiting) for conversation ${event.conversationId}`,
       );
-
     } catch (error) {
       this.logger.error(
         `Error handling bot message processing: ${error.message}`,
@@ -71,7 +73,7 @@ export class BotExecutionEventService {
   }
 
   /**
-   * Xử lý tất cả tin nhắn đã được buffer
+   * Xá»­ lÃ½ táº¥t cáº£ tin nháº¯n Ä‘Ã£ Ä‘Æ°á»£c buffer
    */
   private async processBufferedMessages(
     messages: Array<{ content: string; timestamp: Date; metadata?: any }>,
@@ -84,10 +86,10 @@ export class BotExecutionEventService {
   ): Promise<void> {
     try {
       this.logger.log(
-        `🤖 Processing ${messages.length} buffered messages for conversation ${context.conversationId}`,
+        `ðŸ¤– Processing ${messages.length} buffered messages for conversation ${context.conversationId}`,
       );
 
-      // Lấy thông tin bot
+      // Láº¥y thÃ´ng tin bot
       const bot = await this.botRepository.findOne({
         where: { id: context.botId, isActive: true },
       });
@@ -97,17 +99,17 @@ export class BotExecutionEventService {
         return;
       }
 
-      // Gộp tất cả tin nhắn thành một câu hỏi hoàn chỉnh
+      // Gá»™p táº¥t cáº£ tin nháº¯n thÃ nh má»™t cÃ¢u há»i hoÃ n chá»‰nh
       const combinedMessage = messages
         .map((msg) => msg.content)
         .join('\n')
         .trim();
 
       this.logger.log(
-        `📝 Combined message (${messages.length} parts):\n"${combinedMessage}"`,
+        `ðŸ“ Combined message (${messages.length} parts):\n"${combinedMessage}"`,
       );
 
-      // Lấy conversation để có context
+      // Láº¥y conversation Ä‘á»ƒ cÃ³ context
       const conversation = await this.conversationRepository.findOne({
         where: { id: context.conversationId },
         relations: ['messages'],
@@ -118,12 +120,12 @@ export class BotExecutionEventService {
         return;
       }
 
-      // Tạo system prompt
+      // Táº¡o system prompt
       const systemPrompt = bot.systemPrompt || bot.description || undefined;
 
-      // Gọi AI để trả lời
+      // Gá»i AI Ä‘á»ƒ tráº£ lá»i
       this.logger.log(
-        `🧠 Querying AI for bot ${bot.name} with combined message...`,
+        `ðŸ§  Querying AI for bot ${bot.name} with combined message...`,
       );
 
       const result = await this.kbRagService.generateAnswerForAgent(
@@ -136,11 +138,9 @@ export class BotExecutionEventService {
 
       const answer = result.answer;
 
-      this.logger.log(
-        `✅ AI response generated (${answer.length} chars)`,
-      );
+      this.logger.log(`âœ… AI response generated (${answer.length} chars)`);
 
-      // ✅ Save bot response to conversation history using TypeORM
+      // âœ… Save bot response to conversation history using TypeORM
       try {
         const messageEntity = this.messageRepository.create({
           conversationId: context.conversationId,
@@ -154,9 +154,11 @@ export class BotExecutionEventService {
         });
 
         const savedMessage = await this.messageRepository.save(messageEntity);
-        this.logger.log(`💾 Bot response saved to database: ${savedMessage.id}`);
+        this.logger.log(
+          `ðŸ’¾ Bot response saved to database: ${savedMessage.id}`,
+        );
 
-        // ✅ Emit WebSocket event for realtime UI update
+        // âœ… Emit WebSocket event for realtime UI update
         try {
           this.conversationsGateway.emitNewMessage(context.conversationId, {
             id: savedMessage.id,
@@ -166,47 +168,55 @@ export class BotExecutionEventService {
             metadata: savedMessage.metadata,
             sentAt: savedMessage.sentAt,
           });
-          this.logger.log(`📡 WebSocket event emitted for bot response`);
+          this.logger.log(`ðŸ“¡ WebSocket event emitted for bot response`);
         } catch (wsError) {
-          this.logger.warn(`Failed to emit WebSocket event: ${wsError.message}`);
+          this.logger.warn(
+            `Failed to emit WebSocket event: ${wsError.message}`,
+          );
         }
       } catch (saveError) {
         this.logger.error(`Failed to save bot response: ${saveError.message}`);
       }
 
-      // Gửi response qua channel
-      await this.sendResponse(
-        context.channelType,
-        context.senderId,
-        answer,
-      );
+      // Gá»­i response qua channel
+      await this.sendResponse(context.channelType, context.senderId, answer);
 
       this.logger.log(
-        `✅ Bot response sent to ${context.senderId} on ${context.channelType}`,
+        `âœ… Bot response sent to ${context.senderId} on ${context.channelType}`,
       );
-
     } catch (error) {
       this.logger.error(
         `Error processing buffered messages: ${error.message}`,
         error.stack,
       );
 
-      // Gửi error message với thông tin chi tiết hơn
+      // Gá»­i error message vá»›i thÃ´ng tin chi tiáº¿t hÆ¡n
       try {
-        let errorMessage = 'Xin lỗi, tôi gặp lỗi khi xử lý tin nhắn của bạn.';
-        
-        // Phân loại lỗi để đưa ra message phù hợp
-        if (error.message.includes('fetch failed') || error.message.includes('ECONNREFUSED')) {
-          errorMessage = 'Xin lỗi, hệ thống đang gặp sự cố kết nối. Vui lòng thử lại sau ít phút. 🔧';
-          this.logger.error('🚨 Connection error detected - likely Qdrant or network issue');
-        } else if (error.message.includes('API key') || error.message.includes('authentication')) {
-          errorMessage = 'Xin lỗi, hệ thống AI đang gặp vấn đề xác thực. Vui lòng liên hệ quản trị viên. 🔑';
-          this.logger.error('🚨 Authentication error detected');
+        let errorMessage = 'Xin lá»—i, tÃ´i gáº·p lá»—i khi xá»­ lÃ½ tin nháº¯n cá»§a báº¡n.';
+
+        // PhÃ¢n loáº¡i lá»—i Ä‘á»ƒ Ä‘Æ°a ra message phÃ¹ há»£p
+        if (
+          error.message.includes('fetch failed') ||
+          error.message.includes('ECONNREFUSED')
+        ) {
+          errorMessage =
+            'Xin lá»—i, há»‡ thá»‘ng Ä‘ang gáº·p sá»± cá»‘ káº¿t ná»‘i. Vui lÃ²ng thá»­ láº¡i sau Ã­t phÃºt. ðŸ”§';
+          this.logger.error(
+            'ðŸš¨ Connection error detected - likely Qdrant or network issue',
+          );
+        } else if (
+          error.message.includes('API key') ||
+          error.message.includes('authentication')
+        ) {
+          errorMessage =
+            'Xin lá»—i, há»‡ thá»‘ng AI Ä‘ang gáº·p váº¥n Ä‘á» xÃ¡c thá»±c. Vui lÃ²ng liÃªn há»‡ quáº£n trá»‹ viÃªn. ðŸ”‘';
+          this.logger.error('ðŸš¨ Authentication error detected');
         } else if (error.message.includes('timeout')) {
-          errorMessage = 'Xin lỗi, yêu cầu của bạn mất quá nhiều thời gian. Vui lòng thử lại. ⏱️';
-          this.logger.error('🚨 Timeout error detected');
+          errorMessage =
+            'Xin lá»—i, yÃªu cáº§u cá»§a báº¡n máº¥t quÃ¡ nhiá»u thá»i gian. Vui lÃ²ng thá»­ láº¡i. â±ï¸';
+          this.logger.error('ðŸš¨ Timeout error detected');
         } else {
-          errorMessage = `Xin lỗi, đã xảy ra lỗi: ${error.message.substring(0, 100)}. Vui lòng thử lại hoặc liên hệ hỗ trợ. 💬`;
+          errorMessage = `Xin lá»—i, Ä‘Ã£ xáº£y ra lá»—i: ${error.message.substring(0, 100)}. Vui lÃ²ng thá»­ láº¡i hoáº·c liÃªn há»‡ há»— trá»£. ðŸ’¬`;
         }
 
         await this.sendResponse(
@@ -214,18 +224,16 @@ export class BotExecutionEventService {
           context.senderId,
           errorMessage,
         );
-        
-        this.logger.log(`📤 Error message sent to user: "${errorMessage}"`);
+
+        this.logger.log(`ðŸ“¤ Error message sent to user: "${errorMessage}"`);
       } catch (sendError) {
-        this.logger.error(
-          `Failed to send error message: ${sendError.message}`,
-        );
+        this.logger.error(`Failed to send error message: ${sendError.message}`);
       }
     }
   }
 
   /**
-   * Gửi response qua channel tương ứng
+   * Gá»­i response qua channel tÆ°Æ¡ng á»©ng
    */
   private async sendResponse(
     channelType: string,
@@ -262,10 +270,10 @@ export class BotExecutionEventService {
 
     if (result.success) {
       this.logger.log(
-        `✅ Facebook message sent to ${recipientId}: ${result.messageId}`,
+        `âœ… Facebook message sent to ${recipientId}: ${result.messageId}`,
       );
     } else {
-      this.logger.error(`❌ Failed to send Facebook message: ${result.error}`);
+      this.logger.error(`âŒ Failed to send Facebook message: ${result.error}`);
       throw new Error(result.error);
     }
   }
@@ -281,10 +289,10 @@ export class BotExecutionEventService {
 
     if (result.success) {
       this.logger.log(
-        `✅ Instagram message sent to ${recipientId}: ${result.messageId}`,
+        `âœ… Instagram message sent to ${recipientId}: ${result.messageId}`,
       );
     } else {
-      this.logger.error(`❌ Failed to send Instagram message: ${result.error}`);
+      this.logger.error(`âŒ Failed to send Instagram message: ${result.error}`);
       throw new Error(result.error);
     }
   }
@@ -300,11 +308,12 @@ export class BotExecutionEventService {
 
     if (result.success) {
       this.logger.log(
-        `✅ Telegram message sent to ${recipientId}: ${result.messageId}`,
+        `âœ… Telegram message sent to ${recipientId}: ${result.messageId}`,
       );
     } else {
-      this.logger.error(`❌ Failed to send Telegram message: ${result.error}`);
+      this.logger.error(`âŒ Failed to send Telegram message: ${result.error}`);
       throw new Error(result.error);
     }
   }
 }
+

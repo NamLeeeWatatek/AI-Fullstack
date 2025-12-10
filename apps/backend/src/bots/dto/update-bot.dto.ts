@@ -1,4 +1,4 @@
-import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateBotDto } from './create-bot.dto';
 import {
   IsString,
@@ -93,7 +93,9 @@ export class UpdateBotDto extends PartialType(CreateBotDto) {
   @IsString()
   primaryColor?: string | null;
 
-  @ApiPropertyOptional({ enum: ['bottom-right', 'bottom-left', 'top-right', 'top-left'] })
+  @ApiPropertyOptional({
+    enum: ['bottom-right', 'bottom-left', 'top-right', 'top-left'],
+  })
   @IsOptional()
   @IsEnum(['bottom-right', 'bottom-left', 'top-right', 'top-left'])
   widgetPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
@@ -103,12 +105,12 @@ export class UpdateBotDto extends PartialType(CreateBotDto) {
   @IsEnum(['small', 'medium', 'large'])
   widgetButtonSize?: 'small' | 'medium' | 'large';
 
-  @ApiPropertyOptional({ example: 'Xin chào! Tôi có thể giúp gì cho bạn?' })
+  @ApiPropertyOptional({ example: 'Xin chÃ o! TÃ´i cÃ³ thá»ƒ giÃºp gÃ¬ cho báº¡n?' })
   @IsOptional()
   @IsString()
   welcomeMessage?: string | null;
 
-  @ApiPropertyOptional({ example: 'Nhập tin nhắn...' })
+  @ApiPropertyOptional({ example: 'Nháº­p tin nháº¯n...' })
   @IsOptional()
   @IsString()
   placeholderText?: string | null;
@@ -171,3 +173,4 @@ export class LinkKnowledgeBaseDto {
   @IsObject()
   ragSettings?: Record<string, any> | null;
 }
+

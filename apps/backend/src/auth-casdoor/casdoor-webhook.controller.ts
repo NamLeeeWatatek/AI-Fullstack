@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Post,
   Body,
@@ -71,3 +71,4 @@ export class CasdoorWebhookController {
     return this.casdoorSyncService.getSyncStatus();
   }
 }
+

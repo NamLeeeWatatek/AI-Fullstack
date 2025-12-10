@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty } from 'class-validator';
 
 export class UserDto {
@@ -9,3 +9,4 @@ export class UserDto {
   @IsNotEmpty()
   id: string | number;
 }
+

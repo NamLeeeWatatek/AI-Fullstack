@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Query,
@@ -19,7 +19,7 @@ export class OAuthController {
     private readonly oauthService: OAuthService,
     private readonly channelsService: ChannelsService,
     private readonly integrationsService: IntegrationsService,
-  ) { }
+  ) {}
 
   @Get('login/:provider')
   @ApiOperation({ summary: 'Start OAuth flow' })
@@ -153,8 +153,7 @@ export class OAuthController {
               },
               userId,
             );
-          } catch {
-          }
+          } catch {}
         }
       } else {
         await this.channelsService.create(
@@ -188,3 +187,4 @@ export class OAuthController {
     }
   }
 }
+

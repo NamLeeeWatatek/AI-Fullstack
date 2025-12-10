@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -74,3 +74,4 @@ export class IntegrationsController {
     return { success: true };
   }
 }
+

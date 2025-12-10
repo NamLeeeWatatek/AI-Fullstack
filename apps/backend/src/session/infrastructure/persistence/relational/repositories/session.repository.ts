@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { SessionEntity } from '../entities/session.entity';
@@ -86,3 +86,4 @@ export class SessionRelationalRepository implements SessionRepository {
     });
   }
 }
+

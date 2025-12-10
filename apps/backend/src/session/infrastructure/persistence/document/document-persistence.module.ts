@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { SessionSchema, SessionSchemaClass } from './entities/session.schema';
 import { SessionRepository } from '../session.repository';
@@ -19,3 +19,4 @@ import { SessionDocumentRepository } from './repositories/session.repository';
   exports: [SessionRepository],
 })
 export class DocumentSessionPersistenceModule {}
+

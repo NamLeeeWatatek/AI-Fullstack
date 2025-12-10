@@ -1,7 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Channel domain entity - theo schema mới
+ * Channel domain entity - theo schema má»›i
  * Table: channels
  * Fields: id, bot_id, type, name, config, is_active, connected_at, created_by, created_at, updated_at
  */
@@ -50,3 +50,4 @@ export class Channel {
   @ApiProperty()
   updatedAt: Date;
 }
+

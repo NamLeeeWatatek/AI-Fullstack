@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import MobileChatMockup from "./MobileChatMockup";
@@ -20,3 +20,4 @@ export default function HeroDeviceMockup() {
     </motion.div>
   );
 }
+

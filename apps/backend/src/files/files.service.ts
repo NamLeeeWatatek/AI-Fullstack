@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 
 import { FileRepository } from './infrastructure/persistence/file.repository';
 import { FileType } from './domain/file';
@@ -16,3 +16,4 @@ export class FilesService {
     return this.fileRepository.findByIds(ids);
   }
 }
+

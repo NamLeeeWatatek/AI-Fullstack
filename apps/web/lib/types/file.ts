@@ -1,4 +1,4 @@
-
+﻿
 export interface UploadResponse {
   file: {
     id: string
@@ -47,3 +47,4 @@ export interface MediaUploaderProps {
   maxSize?: number
   bucket?: 'images' | 'documents' | 'avatars'
 }
+

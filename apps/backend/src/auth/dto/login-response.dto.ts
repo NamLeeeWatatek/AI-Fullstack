@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { User } from '../../users/domain/user';
 import { Workspace } from '../../workspaces/domain/workspace';
 
@@ -29,3 +29,4 @@ export class LoginResponseDto {
   })
   workspaces?: Workspace[];
 }
+

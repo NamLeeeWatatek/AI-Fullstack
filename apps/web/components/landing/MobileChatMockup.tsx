@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import { FiMessageSquare, FiZap } from "react-icons/fi";
@@ -29,7 +29,7 @@ export default function MobileChatMockup() {
                 <div className="text-white font-semibold text-sm">WataOmi Bot</div>
                 <div className="text-indigo-100 text-xs flex items-center gap-1">
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  Đang hoạt động
+                  Äang hoáº¡t Ä‘á»™ng
                 </div>
               </div>
             </div>
@@ -48,7 +48,7 @@ export default function MobileChatMockup() {
                 <MdAutoAwesome className="text-indigo-600 text-xs" />
               </div>
               <div className="bg-white p-3 rounded-2xl rounded-tl-sm shadow-sm max-w-[75%]">
-                <p className="text-xs text-slate-700">Xin chào! Tôi có thể giúp gì cho bạn?</p>
+                <p className="text-xs text-slate-700">Xin chÃ o! TÃ´i cÃ³ thá»ƒ giÃºp gÃ¬ cho báº¡n?</p>
               </div>
             </motion.div>
 
@@ -60,7 +60,7 @@ export default function MobileChatMockup() {
               className="flex justify-end"
             >
               <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-3 rounded-2xl rounded-tr-sm shadow-sm max-w-[75%]">
-                <p className="text-xs text-white">Tôi muốn biết về sản phẩm</p>
+                <p className="text-xs text-white">TÃ´i muá»‘n biáº¿t vá» sáº£n pháº©m</p>
               </div>
             </motion.div>
 
@@ -108,15 +108,15 @@ export default function MobileChatMockup() {
               <div className="space-y-2 max-w-[75%]">
                 <div className="bg-white p-3 rounded-2xl rounded-tl-sm shadow-sm">
                   <p className="text-xs text-slate-700">
-                    Chúng tôi có nhiều sản phẩm tuyệt vời! Bạn quan tâm đến:
+                    ChÃºng tÃ´i cÃ³ nhiá»u sáº£n pháº©m tuyá»‡t vá»i! Báº¡n quan tÃ¢m Ä‘áº¿n:
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <div className="bg-indigo-50 border border-indigo-200 px-3 py-1.5 rounded-full text-xs text-indigo-700 font-medium">
-                    💬 Chatbot AI
+                    ðŸ’¬ Chatbot AI
                   </div>
                   <div className="bg-purple-50 border border-purple-200 px-3 py-1.5 rounded-full text-xs text-purple-700 font-medium">
-                    🤖 Tự động hóa
+                    ðŸ¤– Tá»± Ä‘á»™ng hÃ³a
                   </div>
                 </div>
               </div>
@@ -127,7 +127,7 @@ export default function MobileChatMockup() {
           <div className="absolute bottom-0 left-0 right-0 p-3 bg-white border-t border-slate-200">
             <div className="flex items-center gap-2 bg-slate-100 rounded-full px-4 py-2">
               <FiMessageSquare className="text-slate-400 text-sm" />
-              <div className="flex-1 text-xs text-slate-400">Nhập tin nhắn...</div>
+              <div className="flex-1 text-xs text-slate-400">Nháº­p tin nháº¯n...</div>
               <FiZap className="text-indigo-600 text-sm" />
             </div>
           </div>
@@ -136,3 +136,4 @@ export default function MobileChatMockup() {
     </motion.div>
   );
 }
+

@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react'
+﻿import { useState, useCallback } from 'react'
 import type { Node } from 'reactflow'
 import { useSession } from 'next-auth/react'
 import { wsService } from '@/lib/services/websocket-service'
 
 interface UseExecutionWebSocketReturn {
-    execute: (flowId: number, inputData?: any) => Promise<void>
+    execute: (flowId: string, inputData?: any) => Promise<void>
     isExecuting: boolean
     error: string | null
 }
@@ -40,7 +40,7 @@ export function useExecutionWebSocket(
         )
     }, [setNodes])
 
-    const execute = useCallback(async (flowId: number, inputData: any = {}) => {
+    const execute = useCallback(async (flowId: string, inputData: any = {}) => {
         return new Promise<void>(async (resolve, reject) => {
             setIsExecuting(true)
             setError(null)
@@ -152,3 +152,4 @@ export function useExecutionWebSocket(
         error
     }
 }
+

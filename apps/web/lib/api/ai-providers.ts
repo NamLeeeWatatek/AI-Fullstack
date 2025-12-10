@@ -1,10 +1,10 @@
-import { axiosClient } from '../axios-client';
+﻿import { axiosClient } from '../axios-client';
 
 export interface UserAiProvider {
   id: string;
   provider: 'openai' | 'anthropic' | 'google' | 'azure' | 'custom';
   displayName: string;
-  apiKeyMasked?: string;  // ✅ Masked API key for display (e.g., "sk-...xyz123")
+  apiKeyMasked?: string;  // âœ… Masked API key for display (e.g., "sk-...xyz123")
   modelList?: string[];
   isActive: boolean;
   isVerified: boolean;
@@ -52,3 +52,4 @@ export const aiProvidersApi = {
   getAvailableModels: () => 
     axiosClient.get('/ai-providers/models'),
 };
+

@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 import { Allow, IsNotEmpty } from 'class-validator';
 
 export class Tokens {
@@ -10,3 +10,4 @@ export class Tokens {
   @ApiProperty()
   token2?: string;
 }
+

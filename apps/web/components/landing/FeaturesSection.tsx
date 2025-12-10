@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import {
@@ -23,51 +23,51 @@ interface Feature {
 const features: Feature[] = [
   {
     icon: FiMessageSquare,
-    title: "Đa kênh thống nhất",
+    title: "Äa kÃªnh thá»‘ng nháº¥t",
     description:
-      "Kết nối WhatsApp, Messenger, Instagram, Telegram và nhiều kênh khác trong một nền tảng duy nhất.",
+      "Káº¿t ná»‘i WhatsApp, Messenger, Instagram, Telegram vÃ  nhiá»u kÃªnh khÃ¡c trong má»™t ná»n táº£ng duy nháº¥t.",
   },
   {
     icon: FiZap,
-    title: "Xây dựng Flow không code",
+    title: "XÃ¢y dá»±ng Flow khÃ´ng code",
     description:
-      "Tạo các luồng hội thoại phức tạp với công cụ kéo thả trực quan WataFlow.",
+      "Táº¡o cÃ¡c luá»“ng há»™i thoáº¡i phá»©c táº¡p vá»›i cÃ´ng cá»¥ kÃ©o tháº£ trá»±c quan WataFlow.",
   },
   {
     icon: MdAutoAwesome,
-    title: "Trả lời tự động bằng AI",
+    title: "Tráº£ lá»i tá»± Ä‘á»™ng báº±ng AI",
     description:
-      "Để AI xử lý câu hỏi khách hàng một cách thông minh với khả năng hiểu ngữ cảnh.",
+      "Äá»ƒ AI xá»­ lÃ½ cÃ¢u há»i khÃ¡ch hÃ ng má»™t cÃ¡ch thÃ´ng minh vá»›i kháº£ nÄƒng hiá»ƒu ngá»¯ cáº£nh.",
   },
   {
     icon: FiGitMerge,
-    title: "Tích hợp n8n",
+    title: "TÃ­ch há»£p n8n",
     description:
-      "Kết nối liền mạch với n8n workflows để mở rộng khả năng tự động hóa không giới hạn.",
+      "Káº¿t ná»‘i liá»n máº¡ch vá»›i n8n workflows Ä‘á»ƒ má»Ÿ rá»™ng kháº£ nÄƒng tá»± Ä‘á»™ng hÃ³a khÃ´ng giá»›i háº¡n.",
   },
   {
     icon: FiBarChart2,
-    title: "Phân tích & Báo cáo",
+    title: "PhÃ¢n tÃ­ch & BÃ¡o cÃ¡o",
     description:
-      "Theo dõi hiệu suất, đo lường tương tác và tối ưu hóa trải nghiệm khách hàng.",
+      "Theo dÃµi hiá»‡u suáº¥t, Ä‘o lÆ°á»ng tÆ°Æ¡ng tÃ¡c vÃ  tá»‘i Æ°u hÃ³a tráº£i nghiá»‡m khÃ¡ch hÃ ng.",
   },
   {
     icon: FiShield,
-    title: "Bảo mật doanh nghiệp",
+    title: "Báº£o máº­t doanh nghiá»‡p",
     description:
-      "Mã hóa cấp ngân hàng và tuân thủ các tiêu chuẩn GDPR, SOC 2, ISO.",
+      "MÃ£ hÃ³a cáº¥p ngÃ¢n hÃ ng vÃ  tuÃ¢n thá»§ cÃ¡c tiÃªu chuáº©n GDPR, SOC 2, ISO.",
   },
   {
     icon: FiSmartphone,
-    title: "Tối ưu di động",
+    title: "Tá»‘i Æ°u di Ä‘á»™ng",
     description:
-      "Quản lý doanh nghiệp mọi lúc mọi nơi với dashboard responsive hoàn toàn.",
+      "Quáº£n lÃ½ doanh nghiá»‡p má»i lÃºc má»i nÆ¡i vá»›i dashboard responsive hoÃ n toÃ n.",
   },
   {
     icon: FiGlobe,
-    title: "Hạ tầng toàn cầu",
+    title: "Háº¡ táº§ng toÃ n cáº§u",
     description:
-      "Triển khai trên mạng lưới edge toàn cầu để đảm bảo tốc độ phản hồi nhanh chóng.",
+      "Triá»ƒn khai trÃªn máº¡ng lÆ°á»›i edge toÃ n cáº§u Ä‘á»ƒ Ä‘áº£m báº£o tá»‘c Ä‘á»™ pháº£n há»“i nhanh chÃ³ng.",
   },
 ];
 
@@ -78,17 +78,17 @@ export default function FeaturesSection() {
         <div className="grid md:grid-cols-2 gap-16 items-center mb-24">
           <div>
             <h2 className="text-indigo-600 font-semibold mb-2 tracking-wide uppercase text-sm">
-              Nền tảng thống nhất
+              Ná»n táº£ng thá»‘ng nháº¥t
             </h2>
             <h3 className="text-4xl font-bold text-slate-900 mb-6">
-              Giải pháp toàn diện cho <br />
-              chăm sóc khách hàng tự động
+              Giáº£i phÃ¡p toÃ n diá»‡n cho <br />
+              chÄƒm sÃ³c khÃ¡ch hÃ ng tá»± Ä‘á»™ng
             </h3>
             <p className="text-xl text-slate-600 leading-relaxed">
-              Giảm chi phí, tăng doanh thu và vận hành doanh nghiệp hiệu quả hơn
-              với nền tảng AI tích hợp đầy đủ. Sử dụng WataOmi để quản lý tất cả
-              kênh giao tiếp, tự động hóa quy trình bán hàng và chăm sóc khách
-              hàng 24/7.
+              Giáº£m chi phÃ­, tÄƒng doanh thu vÃ  váº­n hÃ nh doanh nghiá»‡p hiá»‡u quáº£ hÆ¡n
+              vá»›i ná»n táº£ng AI tÃ­ch há»£p Ä‘áº§y Ä‘á»§. Sá»­ dá»¥ng WataOmi Ä‘á»ƒ quáº£n lÃ½ táº¥t cáº£
+              kÃªnh giao tiáº¿p, tá»± Ä‘á»™ng hÃ³a quy trÃ¬nh bÃ¡n hÃ ng vÃ  chÄƒm sÃ³c khÃ¡ch
+              hÃ ng 24/7.
             </p>
           </div>
           <div className="relative flex justify-center">
@@ -122,3 +122,4 @@ export default function FeaturesSection() {
     </section>
   );
 }
+

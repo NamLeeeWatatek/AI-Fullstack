@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Redux Store Configuration
  */
 import { configureStore } from '@reduxjs/toolkit'
@@ -10,6 +10,7 @@ import knowledgeBaseReducer from './slices/knowledgeBaseSlice'
 import { listenerMiddleware } from './middleware/listenerMiddleware'
 
 import workspaceReducer from './slices/workspaceSlice'
+import notificationsReducer from './slices/notificationsSlice'
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +20,7 @@ export const store = configureStore({
     ui: uiReducer,
     knowledgeBase: knowledgeBaseReducer,
     workspace: workspaceReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -41,3 +43,4 @@ export const store = configureStore({
 
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
+

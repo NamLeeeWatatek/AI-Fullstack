@@ -1,4 +1,4 @@
-import ms from 'ms';
+﻿import ms from 'ms';
 
 export type AuthConfig = {
   secret?: string;
@@ -10,3 +10,4 @@ export type AuthConfig = {
   confirmEmailSecret?: string;
   confirmEmailExpires?: ms.StringValue;
 };
+

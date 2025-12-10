@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+﻿import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   ConversationEntity,
@@ -25,7 +25,18 @@ import { ChannelsModule } from '../channels/channels.module';
     forwardRef(() => ChannelsModule),
   ],
   controllers: [ConversationsController, AiConversationsController],
-  providers: [ConversationsService, AiConversationsService, ConversationsGateway, ConversationEventListener],
-  exports: [ConversationsService, AiConversationsService, ConversationsGateway, ConversationEventListener],
+  providers: [
+    ConversationsService,
+    AiConversationsService,
+    ConversationsGateway,
+    ConversationEventListener,
+  ],
+  exports: [
+    ConversationsService,
+    AiConversationsService,
+    ConversationsGateway,
+    ConversationEventListener,
+  ],
 })
-export class ConversationsModule { }
+export class ConversationsModule {}
+

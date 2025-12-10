@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TokenRefreshService } from './token-refresh.service';
@@ -32,3 +32,4 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
   exports: [AuthService, TokenRefreshService],
 })
 export class AuthModule {}
+

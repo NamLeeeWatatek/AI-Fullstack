@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   PlanEntity,
@@ -23,3 +23,4 @@ import { SubscriptionsController } from './subscriptions.controller';
   exports: [SubscriptionsService],
 })
 export class SubscriptionsModule {}
+

@@ -1,4 +1,4 @@
-import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateWorkspaceDto } from './create-workspace.dto';
 import { IsOptional, IsString, IsEnum, Matches } from 'class-validator';
 
@@ -43,3 +43,4 @@ export class UpdateMemberRoleDto {
   @IsEnum(['admin', 'member'])
   role: 'admin' | 'member';
 }
+

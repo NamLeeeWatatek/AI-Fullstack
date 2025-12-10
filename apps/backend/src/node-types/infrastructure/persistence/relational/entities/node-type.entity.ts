@@ -1,43 +1,46 @@
-import {
-  Entity,
+﻿import {
   Column,
-  PrimaryColumn,
   CreateDateColumn,
+  Entity,
+  PrimaryColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { EntityRelationalHelper } from '../../../../../utils/relational-entity-helper';
+import {
+  NodeCategoryId,
+  NodeProperty,
+} from '../../../../types';
 
 @Entity({ name: 'node_type' })
-export class NodeTypeEntity extends EntityRelationalHelper {
-  @PrimaryColumn()
+export class NodeTypeEntity {
+  @PrimaryColumn({ type: 'varchar', length: 100 })
   id: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   label: string;
 
-  @Column()
-  category: string;
+  @Column({ type: 'varchar' })
+  category: NodeCategoryId;
 
-  @Column()
+  @Column({ type: 'varchar' })
   icon: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   color: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description?: string;
 
-  @Column({ type: 'jsonb', nullable: true })
-  properties: NodeProperty[];
-
-  @Column({ default: false })
-  isPremium: boolean;
-
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   isActive: boolean;
+
+  @Column({ type: 'jsonb', default: [] })
+  properties: NodeProperty[];
 
   @Column({ type: 'int', default: 0 })
   sortOrder: number;
+
+  @Column({ type: 'jsonb', nullable: true })
+  outputSchema?: Record<string, any>;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -46,28 +49,3 @@ export class NodeTypeEntity extends EntityRelationalHelper {
   updatedAt: Date;
 }
 
-export interface NodeProperty {
-  name: string;
-  label: string;
-  type:
-    | 'text'
-    | 'url'
-    | 'textarea'
-    | 'json'
-    | 'select'
-    | 'boolean'
-    | 'number'
-    | 'file'
-    | 'image'
-    | 'key-value'
-    | 'multi-select'
-    | 'dynamic-form';
-  required?: boolean;
-  placeholder?: string;
-  description?: string;
-  options?: Array<{ value: string; label: string } | string>;
-  default?: any;
-  showWhen?: Record<string, any>;
-  accept?: string;
-  multiple?: boolean;
-}

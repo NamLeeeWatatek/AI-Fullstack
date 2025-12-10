@@ -1,7 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Conversation domain entity - theo schema mới
+ * Conversation domain entity - theo schema má»›i
  * Table: conversations
  * Fields: id, bot_id, channel_type, channel_id, contact_name, contact_avatar,
  *         metadata, status, last_message_at, handover_ticket_id, deleted_at, created_at, updated_at
@@ -58,7 +58,7 @@ export class Conversation {
 }
 
 /**
- * Message domain entity - theo schema mới
+ * Message domain entity - theo schema má»›i
  * Table: messages
  * Fields: id, conversation_id, role, content, attachments, metadata,
  *         sources, tool_calls, feedback, feedback_comment, sent_at
@@ -127,7 +127,7 @@ export class Message {
 }
 
 /**
- * MessageFeedback domain entity - theo schema mới
+ * MessageFeedback domain entity - theo schema má»›i
  * Table: message_feedback
  * Fields: message_id, rating, comment, created_at
  */
@@ -144,3 +144,4 @@ export class MessageFeedback {
   @ApiProperty()
   createdAt: Date;
 }
+

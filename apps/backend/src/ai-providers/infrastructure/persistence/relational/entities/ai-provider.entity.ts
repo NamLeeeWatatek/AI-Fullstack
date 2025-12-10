@@ -1,4 +1,4 @@
-import {
+﻿import {
   Column,
   CreateDateColumn,
   Entity,
@@ -134,3 +134,4 @@ export class AiUsageLogEntity extends EntityRelationalHelper {
   @JoinColumn({ name: 'user_id' })
   user?: UserEntity;
 }
+

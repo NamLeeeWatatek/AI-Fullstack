@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BotEntity } from './infrastructure/persistence/relational/entities/bot.entity';
@@ -101,16 +101,20 @@ export class BotExecutionService {
         timestamp: new Date().toISOString(),
       };
 
+      const flowData = {
+        nodes: flow.nodes || [],
+        edges: flow.edges || [],
+      };
+
       const executionId = await this.executionService.executeFlow(
         bot.flowId.toString(),
-        flow.data,
+        flowData,
         flowInput,
       );
 
       this.logger.log(
         `Flow execution started: ${executionId} for bot ${bot.name}`,
       );
-
     } catch (error) {
       this.logger.error(
         `Error executing bot flow: ${error.message}`,
@@ -159,10 +163,10 @@ export class BotExecutionService {
 
     if (result.success) {
       this.logger.log(
-        `✅ Facebook message sent to ${recipientId}: ${result.messageId}`,
+        `âœ… Facebook message sent to ${recipientId}: ${result.messageId}`,
       );
     } else {
-      this.logger.error(`❌ Failed to send Facebook message: ${result.error}`);
+      this.logger.error(`âŒ Failed to send Facebook message: ${result.error}`);
     }
   }
 
@@ -177,10 +181,10 @@ export class BotExecutionService {
 
     if (result.success) {
       this.logger.log(
-        `✅ Instagram message sent to ${recipientId}: ${result.messageId}`,
+        `âœ… Instagram message sent to ${recipientId}: ${result.messageId}`,
       );
     } else {
-      this.logger.error(`❌ Failed to send Instagram message: ${result.error}`);
+      this.logger.error(`âŒ Failed to send Instagram message: ${result.error}`);
     }
   }
 
@@ -195,10 +199,10 @@ export class BotExecutionService {
 
     if (result.success) {
       this.logger.log(
-        `✅ Telegram message sent to ${recipientId}: ${result.messageId}`,
+        `âœ… Telegram message sent to ${recipientId}: ${result.messageId}`,
       );
     } else {
-      this.logger.error(`❌ Failed to send Telegram message: ${result.error}`);
+      this.logger.error(`âŒ Failed to send Telegram message: ${result.error}`);
     }
   }
 
@@ -230,7 +234,7 @@ export class BotExecutionService {
       );
 
       this.logger.log(
-        `✅ Knowledge base answer sent to ${incomingMessage.senderId}`,
+        `âœ… Knowledge base answer sent to ${incomingMessage.senderId}`,
       );
     } catch (error) {
       this.logger.error(
@@ -245,3 +249,4 @@ export class BotExecutionService {
     }
   }
 }
+

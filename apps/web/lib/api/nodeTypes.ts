@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Node Types API
  * Fetch node types from backend
  * @deprecated Use lib/api/nodes.ts and lib/types/node.ts instead
@@ -14,8 +14,7 @@ export type { NodeProperty, NodeType as NodeTypeAPI, NodeCategory }
  */
 export async function fetchNodeTypes(category?: string): Promise<NodeType[]> {
     const url = category ? `/node-types/?category=${category}` : '/node-types/'
-    const response = await axiosClient.get(url)
-    return response.data
+    return axiosClient.get(url)
 }
 
 /**
@@ -23,8 +22,7 @@ export async function fetchNodeTypes(category?: string): Promise<NodeType[]> {
  * @deprecated Use getNodeCategories from lib/api/nodes.ts
  */
 export async function fetchNodeCategories(): Promise<NodeCategory[]> {
-    const response = await axiosClient.get('/node-types/categories')
-    return response.data
+    return axiosClient.get('/node-types/categories')
 }
 
 /**
@@ -32,6 +30,6 @@ export async function fetchNodeCategories(): Promise<NodeCategory[]> {
  * @deprecated Use getNodeType from lib/api/nodes.ts
  */
 export async function fetchNodeType(nodeId: string): Promise<NodeType> {
-    const response = await axiosClient.get(`/node-types/${nodeId}`)
-    return response.data
+    return axiosClient.get(`/node-types/${nodeId}`)
 }
+

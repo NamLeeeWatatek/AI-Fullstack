@@ -1,4 +1,4 @@
-import { Strategy } from 'passport-anonymous';
+﻿import { Strategy } from 'passport-anonymous';
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 
@@ -12,3 +12,4 @@ export class AnonymousStrategy extends PassportStrategy(Strategy) {
     return request;
   }
 }
+

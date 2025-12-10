@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AuthCasdoorController } from './auth-casdoor.controller';
@@ -25,3 +25,4 @@ import { WorkspacesModule } from '../workspaces/workspaces.module';
   exports: [AuthCasdoorService, CasdoorApiClient, CasdoorSyncService],
 })
 export class AuthCasdoorModule {}
+

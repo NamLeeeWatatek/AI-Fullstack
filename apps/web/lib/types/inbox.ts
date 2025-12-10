@@ -1,4 +1,4 @@
-
+﻿
 export interface InboxMessage {
   id: string
   conversation_id: string
@@ -19,3 +19,4 @@ export interface InboxConversation {
   unread_count: number
   status: string
 }
+

@@ -3,20 +3,16 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, MoreVertical, Phone, Video, Archive, Trash2 } from 'lucide-react';
-import { ChatInterface } from '@/components/chat/chat-interface';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Spinner } from '@/components/ui/spinner';
+import { ChatInterface } from '@/components/chat/ChatInterface';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
+
 import axiosClient from '@/lib/axios-client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Spinner } from '@/components/ui/Spinner';
+import { Button } from '@/components/ui/Button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/DropdownMenu';
+import { Badge } from '@/components/ui/Badge';
 
 interface ConversationDetails {
     id: string;
@@ -43,7 +39,7 @@ export default function ConversationPage() {
     const loadConversation = async () => {
         try {
             setLoading(true);
-            const data = await (await axiosClient.get(`/conversations/${conversationId}`)).data;
+            const data = await axiosClient.get(`/conversations/${conversationId}`);
             setConversation(data);
         } catch (error) {
             toast.error('Failed to load conversation');

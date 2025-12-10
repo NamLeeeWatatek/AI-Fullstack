@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   NodeExecutor,
@@ -24,3 +24,4 @@ export class NodeExecutorStrategy {
     return executor.execute(input);
   }
 }
+

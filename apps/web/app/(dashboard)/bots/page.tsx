@@ -1,29 +1,27 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Spinner } from '@/components/ui/spinner'
-import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
-import { IconPicker } from '@/components/ui/icon-picker'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
+import { Label } from '@/components/ui/Label'
+import { Spinner } from '@/components/ui/Spinner'
+import { IconPicker } from '@/components/ui/IconPicker'
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogFooter,
-} from '@/components/ui/dialog'
+} from '@/components/ui/Dialog'
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/Select'
 import axiosClient from '@/lib/axios-client'
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import { fetchFlows } from '@/lib/store/slices/flowsSlice'
@@ -39,6 +37,8 @@ import {
     FiActivity
 } from 'react-icons/fi'
 import { botsApi, type Bot } from '@/lib/api/bots'
+import { AlertDialogConfirm } from '@/components/ui/AlertDialogConfirm'
+import { Badge } from '@/components/ui/Badge'
 
 interface Flow {
     id: string
@@ -215,7 +215,7 @@ export default function BotsPage() {
                             <Card key={bot.id} className="p-6">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex items-center gap-3">
-                                        {}
+                                        { }
                                         <div className="relative group">
                                             <div className="w-12 h-12 rounded-xl bg-gradient-wata flex items-center justify-center cursor-pointer">
                                                 <BotIcon className="w-6 h-6 text-white" />
@@ -283,7 +283,7 @@ export default function BotsPage() {
                 </div>
             )}
 
-            {}
+            { }
             <Dialog open={showModal} onOpenChange={setShowModal}>
                 <DialogContent>
                     <DialogHeader>
@@ -345,7 +345,7 @@ export default function BotsPage() {
                 </DialogContent>
             </Dialog>
 
-            {}
+            { }
             <AlertDialogConfirm
                 open={deleteId !== null}
                 onOpenChange={(open) => !open && setDeleteId(null)}
@@ -359,3 +359,4 @@ export default function BotsPage() {
         </div>
     )
 }
+

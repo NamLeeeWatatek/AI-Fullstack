@@ -1,4 +1,4 @@
-import {
+﻿import {
   HttpStatus,
   UnprocessableEntityException,
   ValidationError,
@@ -31,3 +31,4 @@ const validationOptions: ValidationPipeOptions = {
 };
 
 export default validationOptions;
+

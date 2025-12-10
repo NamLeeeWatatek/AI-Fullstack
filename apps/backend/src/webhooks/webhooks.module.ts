@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { WebhookEventEntity } from './infrastructure/persistence/relational/entities/webhook.entity';
 import { WebhooksService } from './webhooks.service';
@@ -11,3 +11,4 @@ import { WebhooksController } from './webhooks.controller';
   exports: [WebhooksService],
 })
 export class WebhooksModule {}
+

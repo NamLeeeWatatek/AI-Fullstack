@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+﻿import { NestFactory } from '@nestjs/core';
 import { UserSeedService } from './user/user-seed.service';
 
 import { SeedModule } from './seed.module';
@@ -12,3 +12,4 @@ const runSeed = async () => {
 };
 
 void runSeed();
+

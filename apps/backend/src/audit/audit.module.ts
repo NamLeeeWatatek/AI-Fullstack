@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   AuditLogEntity,
@@ -14,3 +14,4 @@ import { AuditController } from './audit.controller';
   exports: [AuditService],
 })
 export class AuditModule {}
+

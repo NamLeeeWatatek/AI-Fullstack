@@ -1,9 +1,9 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Spinner } from "@/components/ui/spinner"
+import { Button } from "@/components/ui/Button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card"
+import { Spinner } from "@/components/ui/Spinner"
 import { FiActivity, FiMessageSquare, FiUsers, FiZap, FiTrendingUp, FiTrendingDown } from "react-icons/fi"
 import axiosClient from "@/lib/axios-client"
 import type { DashboardStats } from "@/lib/types"
@@ -15,7 +15,7 @@ export default function DashboardPage() {
     useEffect(() => {
         const loadStats = async () => {
             try {
-                const data = await axiosClient.get("/stats/dashboard").then(r => r.data)
+                const data = await axiosClient.get("/stats/dashboard")
                 setStats(data)
 
             } catch {
@@ -57,9 +57,9 @@ export default function DashboardPage() {
                 <Button>Download Report</Button>
             </div>
 
-            {}
+            { }
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                {}
+                { }
                 <Card className="relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/8 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-blue-600/15" />
                     <CardContent className="p-6 relative z-10">
@@ -72,12 +72,12 @@ export default function DashboardPage() {
                         <h3 className="text-2xl font-bold mb-1">{stats?.users?.total || 0}</h3>
                         <p className="text-sm text-muted-foreground">Total Users</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                            {stats?.users?.active || 0} active · {stats?.users?.newUsers || 0} new
+                            {stats?.users?.active || 0} active Â· {stats?.users?.newUsers || 0} new
                         </p>
                     </CardContent>
                 </Card>
 
-                {}
+                { }
                 <Card className="relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-green-600/8 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-green-600/15" />
                     <CardContent className="p-6 relative z-10">
@@ -90,12 +90,12 @@ export default function DashboardPage() {
                         <h3 className="text-2xl font-bold mb-1">{stats?.bots?.total || 0}</h3>
                         <p className="text-sm text-muted-foreground">Total Bots</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                            {stats?.bots?.active || 0} active · {stats?.bots?.avgSuccessRate?.toFixed(1) || 0}% success
+                            {stats?.bots?.active || 0} active Â· {stats?.bots?.avgSuccessRate?.toFixed(1) || 0}% success
                         </p>
                     </CardContent>
                 </Card>
 
-                {}
+                { }
                 <Card className="relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-600/8 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-cyan-600/15" />
                     <CardContent className="p-6 relative z-10">
@@ -108,12 +108,12 @@ export default function DashboardPage() {
                         <h3 className="text-2xl font-bold mb-1">{stats?.conversations?.total || 0}</h3>
                         <p className="text-sm text-muted-foreground">Conversations</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                            {stats?.conversations?.active || 0} active · {stats?.conversations?.avgMessagesPerConversation?.toFixed(1) || 0} avg msgs
+                            {stats?.conversations?.active || 0} active Â· {stats?.conversations?.avgMessagesPerConversation?.toFixed(1) || 0} avg msgs
                         </p>
                     </CardContent>
                 </Card>
 
-                {}
+                { }
                 <Card className="relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/8 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-indigo-600/15" />
                     <CardContent className="p-6 relative z-10">
@@ -126,15 +126,15 @@ export default function DashboardPage() {
                         <h3 className="text-2xl font-bold mb-1">{stats?.flows?.totalExecutions || 0}</h3>
                         <p className="text-sm text-muted-foreground">Flow Executions</p>
                         <p className="text-xs text-muted-foreground mt-2">
-                            {stats?.flows?.successRate?.toFixed(1) || 0}% success · {stats?.flows?.avgExecutionTime?.toFixed(1) || 0}s avg
+                            {stats?.flows?.successRate?.toFixed(1) || 0}% success Â· {stats?.flows?.avgExecutionTime?.toFixed(1) || 0}s avg
                         </p>
                     </CardContent>
                 </Card>
             </div>
 
-            {}
+            { }
             <div className="grid gap-6 lg:grid-cols-2 mt-6">
-                {}
+                { }
                 <Card>
                     <CardHeader className="border-b border-border/40">
                         <CardTitle className="text-xl">Top Performing Bots</CardTitle>
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                                         <div className="flex-1 space-y-1">
                                             <p className="text-sm font-medium">{bot.name}</p>
                                             <p className="text-xs text-muted-foreground">
-                                                {bot.count} conversations · {bot.metric?.toFixed(1)}% success
+                                                {bot.count} conversations Â· {bot.metric?.toFixed(1)}% success
                                             </p>
                                         </div>
                                     </div>
@@ -163,7 +163,7 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                {}
+                { }
                 <Card>
                     <CardHeader className="border-b border-border/40">
                         <CardTitle className="text-xl">Most Used Flows</CardTitle>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                                         <div className="flex-1 space-y-1">
                                             <p className="text-sm font-medium">{flow.name}</p>
                                             <p className="text-xs text-muted-foreground">
-                                                {flow.count} executions · {flow.metric?.toFixed(1)}% success
+                                                {flow.count} executions Â· {flow.metric?.toFixed(1)}% success
                                             </p>
                                         </div>
                                     </div>
@@ -193,7 +193,7 @@ export default function DashboardPage() {
                 </Card>
             </div>
 
-            {}
+            { }
             <Card className="mt-6">
                 <CardHeader>
                     <CardTitle className="text-xl">Workspace Overview</CardTitle>
@@ -220,3 +220,4 @@ export default function DashboardPage() {
         </div>
     )
 }
+

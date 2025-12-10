@@ -1,8 +1,9 @@
-import { SetMetadata } from '@nestjs/common';
+﻿import { SetMetadata } from '@nestjs/common';
 
 /**
- * Roles decorator - hỗ trợ cả string và number roles
- * @param roles - 'admin' | 'user' hoặc RoleEnum values
+ * Roles decorator - há»— trá»£ cáº£ string vÃ  number roles
+ * @param roles - 'admin' | 'user' hoáº·c RoleEnum values
  */
 export const Roles = (...roles: (string | number)[]) =>
   SetMetadata('roles', roles);
+

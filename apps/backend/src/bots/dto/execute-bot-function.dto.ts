@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsObject, IsOptional } from 'class-validator';
 
 export class ExecuteBotFunctionDto {
@@ -28,3 +28,4 @@ export class ExecuteBotFunctionDto {
   @IsObject()
   context?: Record<string, any>;
 }
+

@@ -1,4 +1,4 @@
-
+﻿
 import { getKBDocumentDownloadUrl } from '../api/knowledge-base'
 import toast from '../toast'
 
@@ -66,3 +66,4 @@ export function canPreviewDocument(mimeType?: string | null): boolean {
 
   return previewableMimeTypes.includes(mimeType)
 }
+

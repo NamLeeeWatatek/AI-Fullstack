@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+﻿import { ApiProperty } from '@nestjs/swagger';
 import { FileType } from '../../../../domain/file';
 
 export class FileResponseDto {
@@ -12,3 +12,4 @@ export class FileResponseDto {
   })
   uploadSignedUrl: string;
 }
+

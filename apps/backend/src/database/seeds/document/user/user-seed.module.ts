@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UserSeedService } from './user-seed.service';
 import {
@@ -19,3 +19,4 @@ import {
   exports: [UserSeedService],
 })
 export class UserSeedModule {}
+

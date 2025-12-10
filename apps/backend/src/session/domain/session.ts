@@ -1,4 +1,4 @@
-import { User } from '../../users/domain/user';
+﻿import { User } from '../../users/domain/user';
 
 export class Session {
   id: string;
@@ -8,3 +8,4 @@ export class Session {
   updatedAt: Date;
   deletedAt: Date;
 }
+

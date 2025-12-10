@@ -1,4 +1,4 @@
-import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { PartialType, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateUserDto } from './create-user.dto';
 import { Transform } from 'class-transformer';
 import {
@@ -76,3 +76,4 @@ export class UpdateUserDto extends PartialType(CreateUserDto) {
   @IsString()
   socialId?: string | null;
 }
+

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Post,
   Get,
@@ -60,3 +60,4 @@ export class KBSyncController {
     return result;
   }
 }
+

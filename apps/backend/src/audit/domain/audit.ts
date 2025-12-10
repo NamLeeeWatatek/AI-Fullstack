@@ -1,7 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * AuditLog domain entity - theo schema mới
+ * AuditLog domain entity - theo schema má»›i
  * Table: audit_logs
  */
 export class AuditLog {
@@ -37,7 +37,7 @@ export class AuditLog {
 }
 
 /**
- * DataAccessLog domain entity - theo schema mới
+ * DataAccessLog domain entity - theo schema má»›i
  * Table: data_access_logs
  */
 export class DataAccessLog {
@@ -62,3 +62,4 @@ export class DataAccessLog {
   @ApiProperty()
   createdAt: Date;
 }
+

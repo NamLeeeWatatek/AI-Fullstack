@@ -1,4 +1,4 @@
-import { User } from '../../../users/domain/user';
+﻿import { User } from '../../../users/domain/user';
 import { NullableType } from '../../../utils/types/nullable.type';
 import { Session } from '../../domain/session';
 
@@ -25,3 +25,4 @@ export abstract class SessionRepository {
     excludeSessionId: Session['id'];
   }): Promise<void>;
 }
+

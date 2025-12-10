@@ -2,28 +2,7 @@
 
 import { useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Spinner } from '@/components/ui/spinner'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+
 import {
     KBStatsCards,
     KBBreadcrumbs,
@@ -103,6 +82,15 @@ import {
 import { queryKnowledgeBase, generateKBAnswer, updateKnowledgeBase } from '@/lib/api/knowledge-base'
 import type { KBFolder, KBDocument } from '@/lib/types/knowledge-base'
 import { useState } from 'react'
+import { AlertDialogConfirm } from '@/components/ui/AlertDialogConfirm'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Checkbox } from '@/components/ui/Checkbox'
+import { Spinner } from '@/components/ui/Spinner'
+import { TableHeader, TableRow, TableHead, TableBody, TableCell, Table } from '@/components/ui/Table'
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@radix-ui/react-dropdown-menu'
+import { Input } from '@/components/ui/Input'
+import { Badge } from '@/components/ui/Badge'
 
 export default function KnowledgeBaseDetailPageRedux() {
     const params = useParams()
@@ -424,7 +412,7 @@ export default function KnowledgeBaseDetailPageRedux() {
 
     return (
         <div className="h-full flex flex-col">
-            {}
+            { }
             <div className="page-header flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" onClick={() => router.push('/knowledge-base/collections')}>
@@ -467,13 +455,13 @@ export default function KnowledgeBaseDetailPageRedux() {
                 </div>
             </div>
 
-            {}
+            { }
             {stats && <KBStatsCards stats={stats} />}
 
-            {}
+            { }
             <KBProcessingStatus knowledgeBaseId={kbId} />
 
-            {}
+            { }
             <KBBreadcrumbs
                 rootName={kb.name}
                 breadcrumbs={breadcrumbs}
@@ -482,7 +470,7 @@ export default function KnowledgeBaseDetailPageRedux() {
                 dragOverId={dragOverFolder}
             />
 
-            {}
+            { }
             <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="flex items-center gap-2 flex-wrap">
                     <Button variant="outline" onClick={() => setFolderDialogOpen(true)}>
@@ -550,7 +538,7 @@ export default function KnowledgeBaseDetailPageRedux() {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="flex-1 overflow-auto">
                 {loading ? (
                     <div className="flex justify-center py-20">
@@ -872,7 +860,7 @@ export default function KnowledgeBaseDetailPageRedux() {
                 )}
             </div>
 
-            {}
+            { }
             <KBFolderDialog
                 open={folderDialogOpen}
                 onOpenChange={setFolderDialogOpen}

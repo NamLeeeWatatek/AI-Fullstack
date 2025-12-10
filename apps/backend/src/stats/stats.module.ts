@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { StatsController } from './stats.controller';
 import { StatsService } from './stats.service';
@@ -31,3 +31,4 @@ import { WorkspaceEntity } from '../workspaces/infrastructure/persistence/relati
   exports: [StatsService],
 })
 export class StatsModule {}
+

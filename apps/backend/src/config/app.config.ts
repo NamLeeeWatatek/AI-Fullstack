@@ -1,4 +1,4 @@
-import { registerAs } from '@nestjs/config';
+﻿import { registerAs } from '@nestjs/config';
 import { AppConfig } from './app-config.type';
 import validateConfig from '.././utils/validate-config';
 import {
@@ -68,3 +68,4 @@ export default registerAs<AppConfig>('app', () => {
     headerLanguage: process.env.APP_HEADER_LANGUAGE || 'x-custom-lang',
   };
 });
+

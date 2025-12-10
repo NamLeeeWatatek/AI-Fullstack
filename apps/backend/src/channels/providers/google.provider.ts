@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   ChannelProvider,
@@ -47,3 +47,4 @@ export class GoogleProvider implements ChannelProvider {
     };
   }
 }
+

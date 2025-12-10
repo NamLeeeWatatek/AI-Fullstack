@@ -1,4 +1,4 @@
-import { User } from '../../../../domain/user';
+﻿import { User } from '../../../../domain/user';
 import { UserEntity } from '../entities/user.entity';
 
 export class UserMapper {
@@ -75,3 +75,4 @@ export class UserMapper {
     return persistenceEntity;
   }
 }
+

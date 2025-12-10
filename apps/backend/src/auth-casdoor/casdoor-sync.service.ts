@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CasdoorApiClient } from './casdoor-api.client';
 import { UsersService } from '../users/users.service';
@@ -171,3 +171,4 @@ export class CasdoorSyncService {
     return { isSyncing: this.isSyncing };
   }
 }
+

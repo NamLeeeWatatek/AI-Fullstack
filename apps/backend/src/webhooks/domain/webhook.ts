@@ -1,7 +1,7 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * WebhookEvent domain entity - theo schema mới
+ * WebhookEvent domain entity - theo schema má»›i
  * Table: webhook_events
  * Fields: id, channel_id, raw_payload, status, error_message, processed_at, received_at
  */
@@ -31,3 +31,4 @@ export class WebhookEvent {
   @ApiProperty()
   receivedAt: Date;
 }
+

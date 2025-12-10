@@ -1,4 +1,4 @@
-
+﻿
 import { axiosClient } from '../axios-client'
 import type {
   GetConversationsResponse,
@@ -60,86 +60,76 @@ export interface GetConversationsParams {
  * const active = await getBotConversations({ botId: 'bot-id', status: 'active' })
  */
 export async function getBotConversations(params?: GetConversationsParams): Promise<GetConversationsResponse> {
-  const response = await axiosClient.get('/conversations', { params })
-  return response.data
+  return axiosClient.get('/conversations', { params })
 }
 
 /**
  * Get conversation by ID
  */
 export async function getBotConversation(id: string): Promise<GetConversationResponse> {
-  const response = await axiosClient.get(`/conversations/${id}`)
-  return response.data
+  return axiosClient.get(`/conversations/${id}`)
 }
 
 /**
  * Create conversation
  */
 export async function createBotConversation(data: CreateConversationDto): Promise<CreateConversationResponse> {
-  const response = await axiosClient.post('/conversations', data)
-  return response.data
+  return axiosClient.post('/conversations', data)
 }
 
 /**
  * Get messages in conversation
  */
 export async function getBotConversationMessages(conversationId: string): Promise<GetMessagesResponse> {
-  const response = await axiosClient.get(`/conversations/${conversationId}/messages`)
-  return response.data
+  return axiosClient.get(`/conversations/${conversationId}/messages`)
 }
 
 /**
  * Add message to conversation
  */
 export async function addBotConversationMessage(conversationId: string, data: CreateMessageDto): Promise<AddMessageResponse> {
-  const response = await axiosClient.post(`/conversations/${conversationId}/messages`, data)
-  return response.data
+  return axiosClient.post(`/conversations/${conversationId}/messages`, data)
 }
 
 /**
  * Get all AI conversations
  */
 export async function getAIConversations(): Promise<GetAiConversationsResponse> {
-  const response = await axiosClient.get('/ai-conversations')
-  return response.data
+  return axiosClient.get('/ai-conversations')
 }
 
 /**
  * Get AI conversation by ID
  */
 export async function getAIConversation(id: string): Promise<GetAiConversationResponse> {
-  const response = await axiosClient.get(`/ai-conversations/${id}`)
-  return response.data
+  return axiosClient.get(`/ai-conversations/${id}`)
 }
 
 /**
  * Create AI conversation
  */
 export async function createAIConversation(data: CreateAiConversationDto): Promise<CreateAiConversationResponse> {
-  const response = await axiosClient.post('/ai-conversations', data)
-  return response.data
+  return axiosClient.post('/ai-conversations', data)
 }
 
 /**
  * Update AI conversation
  */
 export async function updateAIConversation(id: string, data: UpdateAiConversationDto): Promise<UpdateAiConversationResponse> {
-  const response = await axiosClient.patch(`/ai-conversations/${id}`, data)
-  return response.data
+  return axiosClient.patch(`/ai-conversations/${id}`, data)
 }
 
 /**
  * Delete AI conversation
  */
 export async function deleteAIConversation(id: string): Promise<DeleteAiConversationResponse> {
-  const response = await axiosClient.delete(`/ai-conversations/${id}`)
-  return response.data
+  return axiosClient.delete(`/ai-conversations/${id}`)
 }
 
 /**
  * Add message to AI conversation
  */
 export async function addAIConversationMessage(id: string, data: AddAiMessageDto): Promise<AddAiMessageResponse> {
-  const response = await axiosClient.post(`/ai-conversations/${id}/messages`, data)
-  return response.data
+  return axiosClient.post(`/ai-conversations/${id}/messages`, data)
 }
+

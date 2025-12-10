@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Optimized login response - only essential data
@@ -22,6 +22,7 @@ export class LoginResponseOptimizedDto {
     role: 'admin' | 'user';
   };
 
-  @ApiPropertyOptional({ description: 'User\'s default workspace ID' })
+  @ApiPropertyOptional({ description: "User's default workspace ID" })
   defaultWorkspaceId?: string;
 }
+

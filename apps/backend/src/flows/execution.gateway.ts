@@ -1,4 +1,4 @@
-import {
+﻿import {
   WebSocketGateway,
   WebSocketServer,
   OnGatewayConnection,
@@ -19,11 +19,9 @@ export class ExecutionGateway
   @WebSocketServer()
   server: Server;
 
-  handleConnection(client: any) {
-  }
+  handleConnection(client: any) {}
 
-  handleDisconnect(client: any) {
-  }
+  handleDisconnect(client: any) {}
 
   emitExecutionStart(executionId: string, flowId: string) {
     this.server.emit('execution:start', {
@@ -90,3 +88,4 @@ export class ExecutionGateway
     });
   }
 }
+

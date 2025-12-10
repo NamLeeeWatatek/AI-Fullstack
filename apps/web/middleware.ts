@@ -1,4 +1,4 @@
-import { auth } from "@/auth"
+﻿import { auth } from "@/auth"
 import { NextResponse } from "next/server"
 
 export default auth((req) => {
@@ -50,3 +50,4 @@ export const config = {
     "/test-auth",
   ],
 };
+

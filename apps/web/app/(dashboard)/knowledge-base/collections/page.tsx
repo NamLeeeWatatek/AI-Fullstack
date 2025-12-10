@@ -1,13 +1,11 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Spinner } from '@/components/ui/spinner'
-import { Badge } from '@/components/ui/badge'
-import { Checkbox } from '@/components/ui/checkbox'
-import { AlertDialogConfirm } from '@/components/ui/alert-dialog-confirm'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { Spinner } from '@/components/ui/Spinner'
+import { Checkbox } from '@/components/ui/Checkbox'
 import { KBCollectionDialog } from '@/components/features/knowledge-base'
 import {
     Table,
@@ -16,14 +14,14 @@ import {
     TableHead,
     TableHeader,
     TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/Table'
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui/DropdownMenu'
 import {
     getKnowledgeBases,
     createKnowledgeBase,
@@ -50,6 +48,8 @@ import {
 } from 'react-icons/fi'
 
 import { useWorkspace } from '@/lib/hooks/useWorkspace'
+import { AlertDialogConfirm } from '@/components/ui/AlertDialogConfirm'
+import { Badge } from '@/components/ui/Badge'
 
 export default function KnowledgeBaseCollectionsPage() {
     const router = useRouter()
@@ -198,7 +198,7 @@ export default function KnowledgeBaseCollectionsPage() {
 
     return (
         <div className="h-full">
-            {}
+            { }
             <div className="page-header flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold mb-2">Knowledge Base Collections</h1>
@@ -222,7 +222,7 @@ export default function KnowledgeBaseCollectionsPage() {
                 </div>
             </div>
 
-            {}
+            { }
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <Card className="p-4 hover:shadow-lg transition-shadow">
                     <div className="flex items-center gap-3">
@@ -270,7 +270,7 @@ export default function KnowledgeBaseCollectionsPage() {
                 </Card>
             </div>
 
-            {}
+            { }
             <div className="flex flex-col md:flex-row gap-4 mb-6">
                 <div className="flex-1 relative">
                     <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -308,7 +308,7 @@ export default function KnowledgeBaseCollectionsPage() {
                 </div>
             </div>
 
-            {}
+            { }
             {loading ? (
                 <div className="flex justify-center items-center py-20">
                     <Spinner className="w-8 h-8" />
@@ -522,7 +522,7 @@ export default function KnowledgeBaseCollectionsPage() {
                 </div>
             )}
 
-            {}
+            { }
             <KBCollectionDialog
                 open={dialogOpen}
                 onOpenChange={setDialogOpen}
@@ -530,7 +530,7 @@ export default function KnowledgeBaseCollectionsPage() {
                 onSubmit={handleSubmit}
             />
 
-            {}
+            { }
             <AlertDialogConfirm
                 open={deleteKBId !== null}
                 onOpenChange={(open) => !open && setDeleteKBId(null)}
@@ -542,7 +542,7 @@ export default function KnowledgeBaseCollectionsPage() {
                 variant="destructive"
             />
 
-            {}
+            { }
             <AlertDialogConfirm
                 open={showBulkDelete}
                 onOpenChange={setShowBulkDelete}
@@ -556,3 +556,4 @@ export default function KnowledgeBaseCollectionsPage() {
         </div>
     )
 }
+

@@ -1,4 +1,4 @@
-
+﻿
 export interface ModelConfig {
   id: string
   name: string
@@ -66,3 +66,4 @@ export interface AIFloatingButtonProps {
   onOpen: () => void
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 }
+

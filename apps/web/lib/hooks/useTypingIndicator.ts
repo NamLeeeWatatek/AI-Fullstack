@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Typing Indicator Hook
  * Shows "User is typing..." like Slack, WhatsApp, Messenger
  */
@@ -97,3 +97,4 @@ export function useTypingIndicator(socket?: Socket | null): UseTypingIndicatorRe
         stopTyping,
     };
 }
+

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { User } from '../users/domain/user';
 import { RoleEnum } from '../roles/roles.enum';
 import { UserCapabilitiesDto } from './dto/user-capabilities.dto';
@@ -134,3 +134,4 @@ export class PermissionsService {
     return ['flows:read', 'flows:write', 'templates:read', 'bots:read'];
   }
 }
+

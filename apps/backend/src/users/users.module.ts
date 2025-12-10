@@ -1,4 +1,4 @@
-import { Module, forwardRef, OnModuleInit } from '@nestjs/common';
+﻿import { Module, forwardRef, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -8,8 +8,7 @@ import databaseConfig from '../database/config/database.config';
 
 const infrastructurePersistenceModule = (databaseConfig() as DatabaseConfig)
   .isDocumentDatabase
-  ?
-    RelationalUserPersistenceModule
+  ? RelationalUserPersistenceModule
   : RelationalUserPersistenceModule;
 
 @Module({
@@ -38,7 +37,7 @@ export class UsersModule implements OnModuleInit {
       });
       const usersService = this.moduleRef.get(UsersService);
       usersService.setCasdoorSyncService(casdoorSyncService);
-    } catch {
-    }
+    } catch {}
   }
 }
+

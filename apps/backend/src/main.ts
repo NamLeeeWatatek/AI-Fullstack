@@ -1,4 +1,4 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import {
   ClassSerializerInterceptor,
   ValidationPipe,
@@ -23,15 +23,18 @@ async function bootstrap() {
     },
   });
 
-  // ✅ FIX: Add raw body middleware for webhook signature verification
+  // âœ… FIX: Add raw body middleware for webhook signature verification
   // This must be BEFORE any other body parsing middleware
-  app.use('/api/v1/webhooks', bodyParser.json({
-    verify: (req: any, res, buf) => {
-      req.rawBody = buf.toString('utf8');
-    }
-  }));
-  
-  // ✅ Add default body parser for all other routes
+  app.use(
+    '/api/v1/webhooks',
+    bodyParser.json({
+      verify: (req: any, res, buf) => {
+        req.rawBody = buf.toString('utf8');
+      },
+    }),
+  );
+
+  // âœ… Add default body parser for all other routes
   app.use(bodyParser.json({ limit: '10mb' }));
   app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -86,3 +89,4 @@ async function bootstrap() {
   await app.listen(configService.getOrThrow('app.port', { infer: true }));
 }
 void bootstrap();
+

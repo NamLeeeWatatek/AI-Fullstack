@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   HttpCode,
@@ -37,3 +37,4 @@ export class AuthAppleController {
     return this.authService.validateSocialLogin('apple', socialData);
   }
 }
+

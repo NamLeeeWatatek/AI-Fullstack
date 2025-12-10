@@ -1,7 +1,8 @@
-export interface OAuthProviderInterface {
-    getOAuthUrl(redirectUri: string, state?: string): string;
+﻿export interface OAuthProviderInterface {
+  getOAuthUrl(redirectUri: string, state?: string): string;
 
-    exchangeCodeForToken(code: string, redirectUri: string): Promise<any>;
+  exchangeCodeForToken(code: string, redirectUri: string): Promise<any>;
 
-    getConnectableAccounts(accessToken: string): Promise<any[]>;
+  getConnectableAccounts(accessToken: string): Promise<any[]>;
 }
+

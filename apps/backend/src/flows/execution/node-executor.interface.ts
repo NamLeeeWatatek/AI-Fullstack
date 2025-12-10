@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Input for node execution
  */
 export interface NodeExecutionInput {
@@ -28,3 +28,4 @@ export interface NodeExecutionOutput {
 export interface NodeExecutor {
   execute(input: NodeExecutionInput): Promise<NodeExecutionOutput>;
 }
+

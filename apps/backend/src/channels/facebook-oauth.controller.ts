@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -28,16 +28,20 @@ export class FacebookOAuthController {
     private readonly channelStrategy: ChannelStrategy,
     private readonly facebookSyncService: FacebookSyncService,
     private readonly facebookConversationSyncService: FacebookConversationSyncService,
-  ) { }
+  ) {}
 
   @Get('oauth/url')
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get Facebook OAuth URL' })
-  async getOAuthUrl(@Request() req, @Query('redirect_uri') redirectUri?: string) {
+  async getOAuthUrl(
+    @Request() req,
+    @Query('redirect_uri') redirectUri?: string,
+  ) {
     const workspaceId = req.user.workspaceId || req.user.id;
 
-    const credential = await this.facebookOAuthService.getCredential(workspaceId);
+    const credential =
+      await this.facebookOAuthService.getCredential(workspaceId);
 
     if (!credential) {
       throw new HttpException(
@@ -72,7 +76,7 @@ export class FacebookOAuthController {
     @Query('error') error?: string,
     @Query('error_description') errorDescription?: string,
   ) {
-    // ✅ Handle Facebook OAuth errors
+    // âœ… Handle Facebook OAuth errors
     if (error) {
       throw new HttpException(
         errorDescription || 'Facebook OAuth failed',
@@ -100,8 +104,8 @@ export class FacebookOAuthController {
       }
 
       const redirectUri = `${process.env.FRONTEND_DOMAIN}/channels/callback?provider=facebook`;
-      
-      // ✅ Exchange code for token (may fail if code already used)
+
+      // âœ… Exchange code for token (may fail if code already used)
       const accessToken = await this.facebookOAuthService.exchangeCodeForToken(
         code,
         redirectUri,
@@ -114,7 +118,7 @@ export class FacebookOAuthController {
       return {
         success: true,
         state: state,
-        pages: pages.map(page => ({
+        pages: pages.map((page) => ({
           id: page.id,
           name: page.name,
           category: page.category,
@@ -123,10 +127,10 @@ export class FacebookOAuthController {
         tempToken: accessToken,
       };
     } catch (error) {
-      // ✅ Better error handling
+      // âœ… Better error handling
       const statusCode = error.status || HttpStatus.INTERNAL_SERVER_ERROR;
       const message = error.message || 'Failed to process OAuth callback';
-      
+
       throw new HttpException(message, statusCode);
     }
   }
@@ -137,7 +141,8 @@ export class FacebookOAuthController {
   @ApiOperation({ summary: 'Connect a Facebook Page' })
   async connectPage(
     @Request() req,
-    @Body() body: {
+    @Body()
+    body: {
       pageId: string;
       pageName: string;
       userAccessToken: string;
@@ -153,7 +158,7 @@ export class FacebookOAuthController {
         body.userAccessToken,
       );
 
-      const page = pages.find(p => p.id === body.pageId);
+      const page = pages.find((p) => p.id === body.pageId);
 
       if (!page) {
         throw new HttpException(
@@ -207,13 +212,12 @@ export class FacebookOAuthController {
   async getConnections(@Request() req) {
     const workspaceId = req.user.workspaceId || req.user.id;
 
-    const connections = await this.facebookOAuthService.getConnectedPages(
-      workspaceId,
-    );
+    const connections =
+      await this.facebookOAuthService.getConnectedPages(workspaceId);
 
     return {
       success: true,
-      connections: connections.map(conn => ({
+      connections: connections.map((conn) => ({
         id: conn.id,
         name: conn.name,
         type: conn.type,
@@ -250,7 +254,10 @@ export class FacebookOAuthController {
   ) {
     const workspaceId = req.user.workspaceId || req.user.id;
 
-    const connection = await this.channelsService.findOne(connectionId, workspaceId);
+    const connection = await this.channelsService.findOne(
+      connectionId,
+      workspaceId,
+    );
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
     }
@@ -260,7 +267,7 @@ export class FacebookOAuthController {
     if ('setCredentials' in provider) {
       (provider as any).setCredentials(
         connection.accessToken,
-        connection.credential?.clientSecret || ''
+        connection.credential?.clientSecret || '',
       );
     }
 
@@ -289,7 +296,8 @@ export class FacebookOAuthController {
   @ApiOperation({ summary: 'Setup Facebook App credentials' })
   async setupApp(
     @Request() req,
-    @Body() body: {
+    @Body()
+    body: {
       appId: string;
       appSecret: string;
       verifyToken?: string;
@@ -323,7 +331,8 @@ export class FacebookOAuthController {
   async getSetup(@Request() req) {
     const workspaceId = req.user.workspaceId || req.user.id;
 
-    const credential = await this.facebookOAuthService.getCredential(workspaceId);
+    const credential =
+      await this.facebookOAuthService.getCredential(workspaceId);
 
     if (!credential) {
       return {
@@ -360,7 +369,10 @@ export class FacebookOAuthController {
     const workspaceId = req.user.workspaceId || req.user.id;
 
     // Get connection
-    const connection = await this.channelsService.findOne(connectionId, workspaceId);
+    const connection = await this.channelsService.findOne(
+      connectionId,
+      workspaceId,
+    );
     if (!connection) {
       throw new HttpException('Connection not found', HttpStatus.NOT_FOUND);
     }
@@ -422,21 +434,23 @@ export class FacebookOAuthController {
   async syncConversationsToDatabase(
     @Request() req,
     @Param('id') connectionId: string,
-    @Body() body?: {
+    @Body()
+    body?: {
       conversationLimit?: number;
       messageLimit?: number;
     },
   ) {
     const workspaceId = req.user.workspaceId || req.user.id;
 
-    const result = await this.facebookConversationSyncService.syncConversationsForChannel(
-      connectionId,
-      workspaceId,
-      {
-        conversationLimit: body?.conversationLimit || 25,
-        messageLimit: body?.messageLimit || 50,
-      },
-    );
+    const result =
+      await this.facebookConversationSyncService.syncConversationsForChannel(
+        connectionId,
+        workspaceId,
+        {
+          conversationLimit: body?.conversationLimit || 25,
+          messageLimit: body?.messageLimit || 50,
+        },
+      );
 
     return {
       success: true,
@@ -445,3 +459,4 @@ export class FacebookOAuthController {
     };
   }
 }
+

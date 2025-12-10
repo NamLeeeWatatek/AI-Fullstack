@@ -1,8 +1,8 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+﻿import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { User } from '../../users/domain/user';
 
 /**
- * Workspace domain entity - theo schema mới
+ * Workspace domain entity - theo schema má»›i
  * Table: workspaces
  * Fields: id, name, slug, avatar_url, plan, owner_id, deleted_at, created_at, updated_at
  */
@@ -43,7 +43,7 @@ export class Workspace {
 }
 
 /**
- * WorkspaceMember domain entity - theo schema mới
+ * WorkspaceMember domain entity - theo schema má»›i
  * Table: workspace_members
  * Fields: workspace_id, user_id, role, joined_at
  */
@@ -70,3 +70,4 @@ export class WorkspaceMember {
   @ApiProperty({ description: 'When user joined the workspace' })
   joinedAt: Date;
 }
+

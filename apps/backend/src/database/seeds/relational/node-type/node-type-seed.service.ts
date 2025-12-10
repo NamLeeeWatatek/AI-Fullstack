@@ -1,28 +1,47 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { NodeTypeEntity } from '../../../../node-types/infrastructure/persistence/relational/entities/node-type.entity';
-import {
-  CHAT_MODEL_OPTIONS,
-  IMAGE_MODEL_OPTIONS,
-} from '../../../../constants/ai-models';
+
+const ICONS = {
+  Webhook: 'FiWebhook',
+  Clock: 'FiClock',
+  Play: 'FiPlay',
+  MessageSquare: 'FiMessageSquare',
+  Inbox: 'FiInbox',
+  Bot: 'FiBot',
+  Image: 'FiImage',
+  Globe: 'FiGlobe',
+  Database: 'FiDatabase',
+  GitBranch: 'FiGitBranch',
+  Repeat: 'FiRepeat',
+  Timer: 'FiTimer',
+  Code: 'FiCode',
+  FileJson: 'FiFileJson',
+  Facebook: 'SiFacebook',
+  Instagram: 'SiInstagram',
+  Music: 'FiMusic',
+  Share2: 'FiShare2'
+} as const;
 
 @Injectable()
 export class NodeTypeSeedService {
   constructor(
     @InjectRepository(NodeTypeEntity)
     private repository: Repository<NodeTypeEntity>,
-  ) {}
+  ) { }
 
   async run() {
     const nodeTypes = [
+      // Triggers
       {
         id: 'webhook',
         label: 'Webhook',
         category: 'trigger',
-        icon: 'Webhook',
+        icon: ICONS.Webhook,
         color: '#4CAF50',
         description: 'Trigger workflow from HTTP webhook',
+        isTrigger: true,
         sortOrder: 1,
         properties: [
           {
@@ -30,15 +49,20 @@ export class NodeTypeSeedService {
             label: 'HTTP Method',
             type: 'select',
             required: true,
-            options: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+            options: [
+              { value: 'GET', label: 'GET' },
+              { value: 'POST', label: 'POST' },
+              { value: 'PUT', label: 'PUT' },
+              { value: 'DELETE', label: 'DELETE' },
+              { value: 'PATCH', label: 'PATCH' },
+            ],
             default: 'POST',
           },
           {
             name: 'path',
             label: 'Webhook Path',
-            type: 'text',
+            type: 'string',
             required: true,
-            placeholder: '/webhook/my-flow',
           },
         ],
       },
@@ -46,9 +70,10 @@ export class NodeTypeSeedService {
         id: 'schedule',
         label: 'Schedule',
         category: 'trigger',
-        icon: 'Clock',
+        icon: ICONS.Clock,
         color: '#FF9800',
         description: 'Trigger workflow on schedule',
+        isTrigger: true,
         sortOrder: 2,
         properties: [
           {
@@ -56,15 +81,26 @@ export class NodeTypeSeedService {
             label: 'Interval Type',
             type: 'select',
             required: true,
-            options: ['cron', 'interval', 'once'],
+            options: [
+              { value: 'cron', label: 'Cron Expression' },
+              { value: 'interval', label: 'Time Interval' },
+              { value: 'once', label: 'One Time' },
+            ],
             default: 'interval',
           },
           {
             name: 'cronExpression',
             label: 'Cron Expression',
-            type: 'text',
-            placeholder: '0 0 * * *',
+            type: 'string',
             showWhen: { interval: 'cron' },
+          },
+          {
+            name: 'intervalValue',
+            label: 'Interval (minutes)',
+            type: 'number',
+            default: 60,
+            min: 1,
+            showWhen: { interval: 'interval' },
           },
         ],
       },
@@ -72,18 +108,42 @@ export class NodeTypeSeedService {
         id: 'manual',
         label: 'Manual Trigger',
         category: 'trigger',
-        icon: 'Play',
+        icon: ICONS.Play,
         color: '#2196F3',
         description: 'Manually trigger workflow',
+        isTrigger: true,
         sortOrder: 3,
         properties: [],
       },
 
+      // File/Image Upload Nodes
+      {
+        id: 'image-upload',
+        label: 'Image Upload',
+        category: 'action',
+        icon: ICONS.Image,
+        color: '#4CAF50',
+        description: 'Upload image files',
+        sortOrder: 9,
+        properties: [
+          {
+            name: 'images',
+            label: 'Select Images',
+            type: 'files',
+            required: true,
+            accept: 'image/*',
+            multiple: true,
+            maxFiles: 5,
+          },
+        ],
+      },
+
+      // Actions
       {
         id: 'send-message',
         label: 'Send Message',
-        category: 'messaging',
-        icon: 'MessageSquare',
+        category: 'action',
+        icon: ICONS.MessageSquare,
         color: '#9C27B0',
         description: 'Send message to channel',
         sortOrder: 10,
@@ -91,50 +151,30 @@ export class NodeTypeSeedService {
           {
             name: 'channel',
             label: 'Channel',
-            type: 'select',
+            type: 'multi-select',
             required: true,
             options: 'dynamic:channels',
           },
           {
             name: 'to',
             label: 'Recipient',
-            type: 'text',
+            type: 'string',
             required: true,
-            placeholder: 'User ID or phone number',
+            pattern: '^.*$',
           },
           {
             name: 'message',
             label: 'Message',
-            type: 'textarea',
+            type: 'text',
             required: true,
-            placeholder: 'Enter your message...',
           },
         ],
       },
-      {
-        id: 'receive-message',
-        label: 'Receive Message',
-        category: 'messaging',
-        icon: 'Inbox',
-        color: '#E91E63',
-        description: 'Receive message from channel',
-        sortOrder: 11,
-        properties: [
-          {
-            name: 'channelId',
-            label: 'Channel',
-            type: 'select',
-            required: true,
-            options: [],
-          },
-        ],
-      },
-
       {
         id: 'ai-chat',
         label: 'AI Chat',
-        category: 'ai',
-        icon: 'Bot',
+        category: 'action',
+        icon: ICONS.Bot,
         color: '#00BCD4',
         description: 'Chat with AI model',
         sortOrder: 20,
@@ -145,7 +185,7 @@ export class NodeTypeSeedService {
             label: 'AI Model',
             type: 'select',
             required: true,
-            options: CHAT_MODEL_OPTIONS,
+            options: 'dynamic:ai-models:chat',
             default: 'gemini-2.5-flash',
           },
           {
@@ -160,14 +200,17 @@ export class NodeTypeSeedService {
             label: 'Temperature',
             type: 'number',
             default: 0.7,
+            min: 0,
+            max: 2,
+            step: 0.1,
           },
         ],
       },
       {
         id: 'ai-image',
         label: 'AI Image Generation',
-        category: 'ai',
-        icon: 'Image',
+        category: 'action',
+        icon: ICONS.Image,
         color: '#FF5722',
         description: 'Generate images with AI',
         sortOrder: 21,
@@ -177,7 +220,8 @@ export class NodeTypeSeedService {
             name: 'model',
             label: 'Model',
             type: 'select',
-            options: IMAGE_MODEL_OPTIONS,
+            required: true,
+            options: 'dynamic:ai-models:image',
             default: 'dall-e-3',
           },
           {
@@ -185,15 +229,15 @@ export class NodeTypeSeedService {
             label: 'Prompt',
             type: 'textarea',
             required: true,
+            placeholder: 'Describe the image you want to generate...',
           },
         ],
       },
-
       {
         id: 'http-request',
         label: 'HTTP Request',
-        category: 'data',
-        icon: 'Globe',
+        category: 'action',
+        icon: ICONS.Globe,
         color: '#607D8B',
         description: 'Make HTTP request',
         sortOrder: 30,
@@ -203,7 +247,13 @@ export class NodeTypeSeedService {
             label: 'Method',
             type: 'select',
             required: true,
-            options: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+            options: [
+              { value: 'GET', label: 'GET' },
+              { value: 'POST', label: 'POST' },
+              { value: 'PUT', label: 'PUT' },
+              { value: 'DELETE', label: 'DELETE' },
+              { value: 'PATCH', label: 'PATCH' },
+            ],
             default: 'GET',
           },
           {
@@ -218,23 +268,28 @@ export class NodeTypeSeedService {
             label: 'Headers',
             type: 'key-value',
           },
+          {
+            name: 'body',
+            label: 'Request Body',
+            type: 'json',
+            showWhen: { method: ['POST', 'PUT', 'PATCH'] },
+          },
         ],
       },
       {
         id: 'database-query',
         label: 'Database Query',
-        category: 'data',
-        icon: 'Database',
+        category: 'action',
+        icon: ICONS.Database,
         color: '#795548',
         description: 'Query database',
         sortOrder: 31,
         properties: [
           {
             name: 'connection',
-            label: 'Connection',
-            type: 'select',
+            label: 'Connection String',
+            type: 'text',
             required: true,
-            options: [],
           },
           {
             name: 'query',
@@ -246,11 +301,12 @@ export class NodeTypeSeedService {
         ],
       },
 
+      // Logic
       {
         id: 'condition',
         label: 'Condition',
         category: 'logic',
-        icon: 'GitBranch',
+        icon: ICONS.GitBranch,
         color: '#FFC107',
         description: 'Branch based on condition',
         sortOrder: 40,
@@ -267,7 +323,7 @@ export class NodeTypeSeedService {
         id: 'loop',
         label: 'Loop',
         category: 'logic',
-        icon: 'Repeat',
+        icon: ICONS.Repeat,
         color: '#CDDC39',
         description: 'Loop over items',
         sortOrder: 41,
@@ -277,6 +333,7 @@ export class NodeTypeSeedService {
             label: 'Items',
             type: 'json',
             required: true,
+            placeholder: 'Array of items to iterate over',
           },
         ],
       },
@@ -284,7 +341,7 @@ export class NodeTypeSeedService {
         id: 'delay',
         label: 'Delay',
         category: 'logic',
-        icon: 'Timer',
+        icon: ICONS.Timer,
         color: '#009688',
         description: 'Wait for specified time',
         sortOrder: 42,
@@ -295,15 +352,18 @@ export class NodeTypeSeedService {
             type: 'number',
             required: true,
             default: 5,
+            min: 1,
+            max: 3600,
           },
         ],
       },
 
+      // Transform
       {
         id: 'code',
         label: 'Code',
         category: 'transform',
-        icon: 'Code',
+        icon: ICONS.Code,
         color: '#3F51B5',
         description: 'Execute custom JavaScript code',
         sortOrder: 50,
@@ -313,6 +373,7 @@ export class NodeTypeSeedService {
             label: 'JavaScript Code',
             type: 'textarea',
             required: true,
+            rows: 8,
             placeholder: 'return { result: input.value * 2 }',
           },
         ],
@@ -321,7 +382,7 @@ export class NodeTypeSeedService {
         id: 'json-transform',
         label: 'JSON Transform',
         category: 'transform',
-        icon: 'FileJson',
+        icon: ICONS.FileJson,
         color: '#673AB7',
         description: 'Transform JSON data',
         sortOrder: 51,
@@ -331,6 +392,154 @@ export class NodeTypeSeedService {
             label: 'Field Mapping',
             type: 'key-value',
             required: true,
+            placeholder: { key: 'sourceField', value: 'targetField' },
+          },
+        ],
+      },
+
+      // Messaging
+      {
+        id: 'receive-message',
+        label: 'Receive Message',
+        category: 'messaging',
+        icon: ICONS.Inbox,
+        color: '#E91E63',
+        description: 'Receive message from channel',
+        isTrigger: true,
+        sortOrder: 60,
+        properties: [
+          {
+            name: 'channelId',
+            label: 'Channel',
+            type: 'multi-select',
+            required: true,
+            options: 'dynamic:channels',
+          },
+        ],
+      },
+
+      // Multi-Channel Social Posting - Better UX than separate nodes
+      {
+        id: 'multi-social-post',
+        label: 'Multi-Platform Social Post',
+        category: 'action',
+        icon: ICONS.Share2,
+        color: '#7C3AED',
+        description: 'Post content to multiple social media platforms at once',
+        sortOrder: 25,
+        properties: [
+          {
+            name: 'content',
+            label: 'Post Content',
+            type: 'text',
+            required: true,
+            description: 'Content to post across all selected platforms',
+          },
+          {
+            name: 'channels',
+            label: 'Select Platforms',
+            type: 'multi-select',
+            required: true,
+            options: 'dynamic:channels',
+            description: 'Choose which social media platforms to post to',
+          },
+          {
+            name: 'images',
+            label: 'Images',
+            type: 'files',
+            description: 'Upload images to attach to your post',
+          },
+          {
+            name: 'schedule',
+            label: 'Schedule Post',
+            type: 'boolean',
+            default: false,
+            description: 'Schedule this post for later',
+          },
+          {
+            name: 'scheduleTime',
+            label: 'Schedule Time',
+            type: 'string',
+            showWhen: { schedule: true },
+            description: 'When to post this content (ISO datetime string)',
+          },
+        ],
+      },
+
+      // Social Media (action category)
+      {
+        id: 'social-facebook-post',
+        label: 'Post to Facebook',
+        category: 'action',
+        icon: ICONS.Facebook,
+        color: '#1877F2',
+        description: 'Post content to Facebook',
+        sortOrder: 70,
+        properties: [
+          {
+            name: 'content',
+            label: 'Post Content',
+            type: 'textarea',
+            required: true,
+            placeholder: 'Enter your post content...',
+          },
+          {
+            name: 'images',
+            label: 'Images',
+            type: 'files',
+            accept: 'image/*',
+            multiple: true,
+          },
+        ],
+      },
+      {
+        id: 'social-instagram-post',
+        label: 'Post to Instagram',
+        category: 'action',
+        icon: ICONS.Instagram,
+        color: '#E4405F',
+        description: 'Post content to Instagram',
+        sortOrder: 71,
+        properties: [
+          {
+            name: 'caption',
+            label: 'Caption',
+            type: 'textarea',
+            required: true,
+            placeholder: 'Enter your caption...',
+          },
+          {
+            name: 'images',
+            label: 'Images',
+            type: 'files',
+            required: true,
+            accept: 'image/*',
+            multiple: true,
+          },
+        ],
+      },
+      {
+        id: 'social-tiktok-post',
+        label: 'Post to TikTok',
+        category: 'action',
+        icon: ICONS.Music,
+        color: '#000000',
+        description: 'Post content to TikTok',
+        sortOrder: 72,
+        properties: [
+          {
+            name: 'caption',
+            label: 'Caption',
+            type: 'textarea',
+            required: true,
+            placeholder: 'Enter your caption...',
+          },
+          {
+            name: 'video',
+            label: 'Video',
+            type: 'file',
+            required: true,
+            accept: 'video/*',
           },
         ],
       },
@@ -342,11 +551,9 @@ export class NodeTypeSeedService {
       });
 
       if (!exists) {
-        await this.repository.save(
-          this.repository.create(nodeType as any),
-        );
+        await this.repository.save(this.repository.create(nodeType as any));
       }
     }
-
   }
 }
+
