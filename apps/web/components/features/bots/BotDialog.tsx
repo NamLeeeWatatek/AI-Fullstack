@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/Form'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const botFormSchema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -70,7 +71,8 @@ export function BotDialog({ open, onOpenChange, bot, workspaceId, onSubmit }: Bo
             await onSubmit(values)
             form.reset()
             onOpenChange(false)
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     }
 
@@ -82,6 +84,12 @@ export function BotDialog({ open, onOpenChange, bot, workspaceId, onSubmit }: Bo
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        {form.formState.errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {form.formState.errors.root.message}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="name"
@@ -102,10 +110,10 @@ export function BotDialog({ open, onOpenChange, bot, workspaceId, onSubmit }: Bo
                                 <FormItem>
                                     <FormLabel>Description</FormLabel>
                                     <FormControl>
-                                        <Textarea 
-                                            placeholder="Handles customer inquiries..." 
+                                        <Textarea
+                                            placeholder="Handles customer inquiries..."
                                             rows={3}
-                                            {...field} 
+                                            {...field}
                                         />
                                     </FormControl>
                                     <FormMessage />

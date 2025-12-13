@@ -350,9 +350,7 @@ export function AIConfigSection({ data, onChange }: AIConfigSectionProps) {
                                     })
                                 }
                             />
-                            <p className="text-xs text-muted-foreground">
-                                Maximum number of tokens in the response (1 token â‰ˆ 4 characters)
-                            </p>
+
                         </div>
                     </div>
                 </div>

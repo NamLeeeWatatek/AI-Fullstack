@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/Select';
 import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiEye, FiEyeOff, FiKey, FiZap, FiActivity, FiAlertCircle } from 'react-icons/fi';
+import { useSession } from 'next-auth/react';
 // Import React Icons for AI providers
 import { AiOutlineOpenAI } from 'react-icons/ai';
 import { SiClaude, SiOllama } from 'react-icons/si';
@@ -120,7 +121,102 @@ export default function AIModelsPage() {
   const [scopeType, setScopeType] = useState<'user' | 'workspace'>('user');
   const [selectedWorkspace, setSelectedWorkspace] = useState<string>('');
 
-    const [formData, setFormData] = useState<{
+  // Password confirmation for API key reveal
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [configToReveal, setConfigToReveal] = useState<string | null>(null);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [verifyingPassword, setVerifyingPassword] = useState(false);
+  const [revealedKeys, setRevealedKeys] = useState<{ [key: string]: string }>({});
+  const [keyRevealTimeouts, setKeyRevealTimeouts] = useState<{ [key: string]: NodeJS.Timeout }>({});
+
+  const { data: session } = useSession();
+
+  // Password confirmation functions
+  const handlePasswordConfirmDialogOpen = (configId: string) => {
+    setConfigToReveal(configId);
+    setConfirmPassword('');
+    setVerifyingPassword(false);
+    setPasswordDialogOpen(true);
+  };
+
+  const handlePasswordConfirmDialogClose = () => {
+    setPasswordDialogOpen(false);
+    setConfigToReveal(null);
+    setConfirmPassword('');
+    setVerifyingPassword(false);
+  };
+
+  const handleConfirmPassword = async () => {
+    if (!confirmPassword.trim() || !configToReveal || !session?.user?.email) {
+      return;
+    }
+
+    setVerifyingPassword(true);
+
+    try {
+      // Use the login endpoint to verify password
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+      await fetch(`${apiUrl}/auth/email/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: session.user.email,
+          password: confirmPassword,
+        }),
+      });
+
+      // If successful, fetch and reveal the API key
+      const configResponse = await axiosClient.get(`/ai-providers/user/configs/${configToReveal}`);
+      const apiKey = configResponse.config?.apiKey || configResponse.config?.baseUrl || '';
+
+      if (apiKey) {
+        setRevealedKeys(prev => ({
+          ...prev,
+          [configToReveal]: apiKey
+        }));
+
+        // Set a timeout to hide the key after 30 seconds
+        const timeoutId = setTimeout(() => {
+          setRevealedKeys(prev => {
+            const newRevealed = { ...prev };
+            delete newRevealed[configToReveal];
+            return newRevealed;
+          });
+          // Clean up the timeout reference
+          setKeyRevealTimeouts(prev => {
+            const newTimeouts = { ...prev };
+            delete newTimeouts[configToReveal];
+            return newTimeouts;
+          });
+        }, 30000);
+
+        setKeyRevealTimeouts(prev => ({
+          ...prev,
+          [configToReveal]: timeoutId
+        }));
+
+        toast.success('API key revealed. It will be hidden in 30 seconds.');
+      }
+
+      handlePasswordConfirmDialogClose();
+
+    } catch (error: any) {
+      toast.error('Password verification failed. Please check your password and try again.');
+    } finally {
+      setVerifyingPassword(false);
+    }
+  };
+
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(keyRevealTimeouts).forEach(timeout => clearTimeout(timeout));
+    };
+  }, [keyRevealTimeouts]);
+
+  const [formData, setFormData] = useState<{
     providerId: string;
     providerKey: string;
     displayName: string;
@@ -855,9 +951,28 @@ export default function AIModelsPage() {
               {editingConfig && !isChangingApiKey ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-                  <div className="flex-1 font-mono text-sm text-muted-foreground">
-                    {editingConfig && 'apiKeyMasked' in editingConfig ? (editingConfig as ProviderDisplayData).apiKeyMasked : '••••••••••••'}
-                  </div>
+                    <div className="flex-1 flex items-center justify-between">
+                      <div className="font-mono text-sm text-muted-foreground flex-1">
+                        {(() => {
+                          const isRevealed = revealedKeys[editingConfig.id];
+                          if (isRevealed) {
+                            return isRevealed;
+                          }
+                          const maskedText = editingConfig && 'apiKeyMasked' in editingConfig ? (editingConfig as ProviderDisplayData).apiKeyMasked : '••••••••••••';
+                          return maskedText;
+                        })()}
+                      </div>
+                      {!revealedKeys[editingConfig.id] && (
+                        <button
+                          type="button"
+                          onClick={() => handlePasswordConfirmDialogOpen(editingConfig.id)}
+                          className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded hover:bg-muted"
+                          title={`Reveal ${formData.providerKey === 'ollama' || formData.providerKey === 'custom' ? 'endpoint URL' : 'API key'}`}
+                        >
+                          <FiEye className="size-4" />
+                        </button>
+                      )}
+                    </div>
                     <Button
                       type="button"
                       variant="outline"
@@ -872,6 +987,12 @@ export default function AIModelsPage() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
+                    {!revealedKeys[editingConfig.id] && (
+                      <span>
+                        Click the eye icon to reveal your {formData.providerKey === 'ollama' || formData.providerKey === 'custom' ? 'endpoint URL' : 'API key'}.
+                        {' '}
+                      </span>
+                    )}
                     {formData.providerKey === 'ollama' || formData.providerKey === 'custom'
                       ? 'Your endpoint URL is encrypted and stored securely'
                       : 'Your API key is encrypted and stored securely'
@@ -1153,6 +1274,45 @@ export default function AIModelsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Password Confirmation Dialog for API Key Reveal */}
+      <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Password</DialogTitle>
+            <DialogDescription>
+              Enter your password to reveal the API key
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            handleConfirmPassword();
+          }} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Enter your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={handlePasswordConfirmDialogClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={verifyingPassword || !confirmPassword.trim()}>
+                {verifyingPassword && <Spinner className="w-4 h-4 mr-2" />}
+                Confirm
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

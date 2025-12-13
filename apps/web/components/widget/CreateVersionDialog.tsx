@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
 import { Textarea } from '@/components/ui/Textarea';
 import { useWidgetVersionActions } from '@/lib/hooks/use-widget-versions';
+import { handleFormError } from '@/lib/utils/form-errors';
 
 interface Props {
     botId: string;
@@ -61,7 +62,9 @@ const DEFAULT_CONFIG = {
 };
 
 export function CreateVersionDialog({ botId, open, onOpenChange, onSuccess }: Props) {
-    const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>();
+    const form = useForm<FormData>();
+    const { register, handleSubmit, formState, reset } = form;
+    const { errors } = formState;
     const { createVersion, isSubmitting } = useWidgetVersionActions(botId);
 
     const onSubmit = async (data: FormData) => {
@@ -73,7 +76,8 @@ export function CreateVersionDialog({ botId, open, onOpenChange, onSuccess }: Pr
             });
             reset();
             onSuccess();
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     };
 
@@ -89,6 +93,12 @@ export function CreateVersionDialog({ botId, open, onOpenChange, onSuccess }: Pr
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
+                        {errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {errors.root.message}
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <Label htmlFor="version">
                                 Version <span className="text-destructive">*</span>

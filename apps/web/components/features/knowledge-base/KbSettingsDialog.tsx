@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/Textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
 import { axiosClient } from '@/lib/axios-client'
 import type { KnowledgeBase } from '@/lib/types/knowledge-base'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const settingsFormSchema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -135,7 +136,8 @@ export function KBSettingsDialog({ open, onOpenChange, knowledgeBase, onSave }: 
                 description: values.description || '',
             })
             onOpenChange(false)
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     }
 
@@ -147,6 +149,12 @@ export function KBSettingsDialog({ open, onOpenChange, knowledgeBase, onSave }: 
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        {form.formState.errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {form.formState.errors.root.message}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="name"
@@ -330,8 +338,8 @@ export function KBSettingsDialog({ open, onOpenChange, knowledgeBase, onSave }: 
                                     <FormItem>
                                         <FormLabel>Chunk Size</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                type="number" 
+                                            <Input
+                                                type="number"
                                                 {...field}
                                                 onChange={(e) => field.onChange(parseInt(e.target.value) || 1000)}
                                             />
@@ -347,8 +355,8 @@ export function KBSettingsDialog({ open, onOpenChange, knowledgeBase, onSave }: 
                                     <FormItem>
                                         <FormLabel>Chunk Overlap</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                type="number" 
+                                            <Input
+                                                type="number"
                                                 {...field}
                                                 onChange={(e) => field.onChange(parseInt(e.target.value) || 200)}
                                             />
@@ -359,9 +367,9 @@ export function KBSettingsDialog({ open, onOpenChange, knowledgeBase, onSave }: 
                             />
                         </div>
                         <DialogFooter>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
+                            <Button
+                                type="button"
+                                variant="outline"
                                 onClick={() => onOpenChange(false)}
                             >
                                 Cancel

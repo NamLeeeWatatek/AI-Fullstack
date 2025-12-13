@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/Form'
 import { Input } from '@/components/ui/Input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const linkKBSchema = z.object({
     knowledgeBaseId: z.string().min(1, 'Please select a knowledge base'),
@@ -28,11 +29,11 @@ interface BotKBLinkDialogProps {
     onSubmit: (data: z.infer<typeof linkKBSchema>) => Promise<void>
 }
 
-export function BotKBLinkDialog({ 
-    open, 
-    onOpenChange, 
+export function BotKBLinkDialog({
+    open,
+    onOpenChange,
     knowledgeBases,
-    onSubmit 
+    onSubmit
 }: BotKBLinkDialogProps) {
     const form = useForm<z.infer<typeof linkKBSchema>>({
         resolver: zodResolver(linkKBSchema),
@@ -42,12 +43,15 @@ export function BotKBLinkDialog({
         },
     })
 
+    // ...
+
     const handleSubmit = async (values: z.infer<typeof linkKBSchema>) => {
         try {
             await onSubmit(values)
             form.reset()
             onOpenChange(false)
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     }
 
@@ -59,6 +63,12 @@ export function BotKBLinkDialog({
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        {form.formState.errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {form.formState.errors.root.message}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="knowledgeBaseId"
@@ -90,8 +100,8 @@ export function BotKBLinkDialog({
                                 <FormItem>
                                     <FormLabel>Priority</FormLabel>
                                     <FormControl>
-                                        <Input 
-                                            type="number" 
+                                        <Input
+                                            type="number"
                                             min={1}
                                             max={100}
                                             {...field}

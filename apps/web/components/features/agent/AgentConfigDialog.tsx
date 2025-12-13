@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/Form'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const agentConfigSchema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -33,11 +34,11 @@ interface AgentConfigDialogProps {
     onSubmit: (data: z.infer<typeof agentConfigSchema>) => Promise<void>
 }
 
-export function AgentConfigDialog({ 
-    open, 
-    onOpenChange, 
+export function AgentConfigDialog({
+    open,
+    onOpenChange,
     config,
-    onSubmit 
+    onSubmit
 }: AgentConfigDialogProps) {
     const form = useForm<z.infer<typeof agentConfigSchema>>({
         resolver: zodResolver(agentConfigSchema),
@@ -68,7 +69,8 @@ export function AgentConfigDialog({
         try {
             await onSubmit(values)
             onOpenChange(false)
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     }
 
@@ -80,6 +82,12 @@ export function AgentConfigDialog({
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        {form.formState.errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {form.formState.errors.root.message}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="name"
@@ -100,10 +108,10 @@ export function AgentConfigDialog({
                                 <FormItem>
                                     <FormLabel>Description</FormLabel>
                                     <FormControl>
-                                        <Textarea 
-                                            placeholder="Agent description..." 
+                                        <Textarea
+                                            placeholder="Agent description..."
                                             rows={2}
-                                            {...field} 
+                                            {...field}
                                         />
                                     </FormControl>
                                     <FormMessage />
@@ -117,10 +125,10 @@ export function AgentConfigDialog({
                                 <FormItem>
                                     <FormLabel>System Prompt</FormLabel>
                                     <FormControl>
-                                        <Textarea 
-                                            placeholder="You are a helpful AI assistant..." 
+                                        <Textarea
+                                            placeholder="You are a helpful AI assistant..."
                                             rows={4}
-                                            {...field} 
+                                            {...field}
                                         />
                                     </FormControl>
                                     <FormDescription>
@@ -138,8 +146,8 @@ export function AgentConfigDialog({
                                     <FormItem>
                                         <FormLabel>Temperature</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                type="number" 
+                                            <Input
+                                                type="number"
                                                 step="0.1"
                                                 min={0}
                                                 max={2}
@@ -159,8 +167,8 @@ export function AgentConfigDialog({
                                     <FormItem>
                                         <FormLabel>Max Tokens</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                type="number" 
+                                            <Input
+                                                type="number"
                                                 {...field}
                                                 onChange={(e) => field.onChange(parseInt(e.target.value) || 2000)}
                                             />

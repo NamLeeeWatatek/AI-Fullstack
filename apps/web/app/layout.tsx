@@ -9,6 +9,7 @@ import { QueryProvider } from '@/components/providers/QueryProvider'
 import { TokenRefreshProvider } from '@/components/providers/TokenRefreshProvider'
 import { SessionProvider } from 'next-auth/react'
 import { ThemeProvider } from 'next-themes'
+import { GlobalLoadingOverlay } from '@/components/providers/GlobalLoadingOverlay'
 
 const inter = Inter({
     subsets: ['latin'],
@@ -42,6 +43,7 @@ export default function RootLayout({
                                 <WorkspaceProvider>
                                     <ReduxProvider>
                                         {children}
+                                        <GlobalLoadingOverlay />
                                         <Toaster />
                                     </ReduxProvider>
                                 </WorkspaceProvider>
@@ -53,4 +55,3 @@ export default function RootLayout({
         </html>
     )
 }
-

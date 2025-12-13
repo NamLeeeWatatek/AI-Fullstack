@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/Switch'
 import { FiGlobe, FiFileText, FiAlertCircle } from 'react-icons/fi'
 import { toast } from 'sonner'
 import { axiosClient } from '@/lib/axios-client'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const websiteFormSchema = z.object({
     url: z.string().url('Please enter a valid URL'),
@@ -40,14 +41,14 @@ interface CrawlerDialogProps {
     onSuccess?: () => void
 }
 
-export function KBCrawlerDialog({ 
-    open, 
-    onOpenChange, 
+export function KBCrawlerDialog({
+    open,
+    onOpenChange,
     knowledgeBaseId,
-    onSuccess 
+    onSuccess
 }: CrawlerDialogProps) {
     const [loading, setLoading] = useState(false)
-    
+
     const websiteForm = useForm<z.infer<typeof websiteFormSchema>>({
         resolver: zodResolver(websiteFormSchema),
         defaultValues: {
@@ -75,7 +76,7 @@ export function KBCrawlerDialog({
             })
 
             toast.success(`Crawled ${result.documentsCreated} pages successfully!`)
-            
+
             if (result.errors?.length > 0) {
                 toast.warning(`${result.errors.length} pages failed to crawl`)
             }
@@ -84,7 +85,7 @@ export function KBCrawlerDialog({
             onSuccess?.()
             onOpenChange(false)
         } catch (error: any) {
-            toast.error(error.message || 'Failed to crawl website')
+            handleFormError(error, websiteForm)
         } finally {
             setLoading(false)
         }
@@ -99,7 +100,7 @@ export function KBCrawlerDialog({
             })
 
             toast.success(`Crawled ${result.documentsCreated} pages from sitemap!`)
-            
+
             if (result.errors?.length > 0) {
                 toast.warning(`${result.errors.length} pages failed to crawl`)
             }
@@ -108,7 +109,7 @@ export function KBCrawlerDialog({
             onSuccess?.()
             onOpenChange(false)
         } catch (error: any) {
-            toast.error(error.message || 'Failed to crawl sitemap')
+            handleFormError(error, sitemapForm)
         } finally {
             setLoading(false)
         }
@@ -136,6 +137,12 @@ export function KBCrawlerDialog({
                     <TabsContent value="website" className="space-y-4">
                         <Form {...websiteForm}>
                             <form onSubmit={websiteForm.handleSubmit(handleCrawlWebsite)} className="space-y-4">
+                                {websiteForm.formState.errors.root && (
+                                    <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                        <span className="font-medium">Error:</span>
+                                        {websiteForm.formState.errors.root.message}
+                                    </div>
+                                )}
                                 <FormField
                                     control={websiteForm.control}
                                     name="url"
@@ -158,8 +165,8 @@ export function KBCrawlerDialog({
                                             <FormItem>
                                                 <FormLabel>Max Pages</FormLabel>
                                                 <FormControl>
-                                                    <Input 
-                                                        type="number" 
+                                                    <Input
+                                                        type="number"
                                                         {...field}
                                                         onChange={(e) => field.onChange(Number(e.target.value))}
                                                     />
@@ -175,8 +182,8 @@ export function KBCrawlerDialog({
                                             <FormItem>
                                                 <FormLabel>Max Depth</FormLabel>
                                                 <FormControl>
-                                                    <Input 
-                                                        type="number" 
+                                                    <Input
+                                                        type="number"
                                                         {...field}
                                                         onChange={(e) => field.onChange(Number(e.target.value))}
                                                     />
@@ -233,6 +240,12 @@ export function KBCrawlerDialog({
                     <TabsContent value="sitemap" className="space-y-4">
                         <Form {...sitemapForm}>
                             <form onSubmit={sitemapForm.handleSubmit(handleCrawlSitemap)} className="space-y-4">
+                                {sitemapForm.formState.errors.root && (
+                                    <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                        <span className="font-medium">Error:</span>
+                                        {sitemapForm.formState.errors.root.message}
+                                    </div>
+                                )}
                                 <FormField
                                     control={sitemapForm.control}
                                     name="sitemapUrl"
@@ -254,8 +267,8 @@ export function KBCrawlerDialog({
                                         <FormItem>
                                             <FormLabel>Max Pages</FormLabel>
                                             <FormControl>
-                                                <Input 
-                                                    type="number" 
+                                                <Input
+                                                    type="number"
                                                     {...field}
                                                     onChange={(e) => field.onChange(Number(e.target.value))}
                                                 />

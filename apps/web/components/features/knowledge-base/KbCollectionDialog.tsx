@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import type { KnowledgeBase } from '@/lib/types/knowledge-base'
 import { aiProvidersApi } from '@/lib/api/ai-providers'
 import type { UserAiProvider } from '@/lib/api/ai-providers'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const collectionFormSchema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -118,7 +119,8 @@ export function KBCollectionDialog({
             })
             form.reset()
             onOpenChange(false)
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     }
 
@@ -132,6 +134,12 @@ export function KBCollectionDialog({
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        {form.formState.errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {form.formState.errors.root.message}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="name"
@@ -298,9 +306,9 @@ export function KBCollectionDialog({
                             />
                         </div>
                         <DialogFooter>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
+                            <Button
+                                type="button"
+                                variant="outline"
                                 onClick={() => onOpenChange(false)}
                             >
                                 Cancel

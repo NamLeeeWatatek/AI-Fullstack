@@ -17,6 +17,7 @@ import {
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const templateFormSchema = z.object({
     name: z.string().min(1, 'Name is required'),
@@ -33,12 +34,12 @@ interface TemplateDialogProps {
     onSubmit: (data: any) => Promise<void>
 }
 
-export function TemplateDialog({ 
-    open, 
-    onOpenChange, 
+export function TemplateDialog({
+    open,
+    onOpenChange,
     template,
     categories,
-    onSubmit 
+    onSubmit
 }: TemplateDialogProps) {
     const form = useForm<z.infer<typeof templateFormSchema>>({
         resolver: zodResolver(templateFormSchema),
@@ -63,6 +64,8 @@ export function TemplateDialog({
         }
     }, [template, open, form])
 
+    // ...
+
     const handleSubmit = async (values: z.infer<typeof templateFormSchema>) => {
         try {
             const data = {
@@ -72,7 +75,8 @@ export function TemplateDialog({
             await onSubmit(data)
             form.reset()
             onOpenChange(false)
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     }
 
@@ -84,6 +88,12 @@ export function TemplateDialog({
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        {form.formState.errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {form.formState.errors.root.message}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="name"
@@ -104,10 +114,10 @@ export function TemplateDialog({
                                 <FormItem>
                                     <FormLabel>Description</FormLabel>
                                     <FormControl>
-                                        <Textarea 
-                                            placeholder="A template for handling customer support..." 
+                                        <Textarea
+                                            placeholder="A template for handling customer support..."
                                             rows={3}
-                                            {...field} 
+                                            {...field}
                                         />
                                     </FormControl>
                                     <FormMessage />

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/Form'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const folderFormSchema = z.object({
     name: z.string().min(1, 'Folder name is required'),
@@ -43,7 +44,8 @@ export function KBFolderDialog({ open, onOpenChange, onSubmit }: KBFolderDialogP
             })
             form.reset()
             onOpenChange(false)
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     }
 
@@ -55,6 +57,12 @@ export function KBFolderDialog({ open, onOpenChange, onSubmit }: KBFolderDialogP
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        {form.formState.errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {form.formState.errors.root.message}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="name"
@@ -75,10 +83,10 @@ export function KBFolderDialog({ open, onOpenChange, onSubmit }: KBFolderDialogP
                                 <FormItem>
                                     <FormLabel>Description</FormLabel>
                                     <FormControl>
-                                        <Textarea 
-                                            placeholder="Optional description" 
+                                        <Textarea
+                                            placeholder="Optional description"
                                             rows={3}
-                                            {...field} 
+                                            {...field}
                                         />
                                     </FormControl>
                                     <FormMessage />
@@ -86,9 +94,9 @@ export function KBFolderDialog({ open, onOpenChange, onSubmit }: KBFolderDialogP
                             )}
                         />
                         <DialogFooter>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
+                            <Button
+                                type="button"
+                                variant="outline"
                                 onClick={() => onOpenChange(false)}
                             >
                                 Cancel

@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/Form'
 import { Input } from '@/components/ui/Input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/Select'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const channelConfigSchema = z.object({
     provider: z.string().min(1, 'Provider is required'),
@@ -36,12 +37,12 @@ interface ChannelConfigDialogProps {
     onSubmit: (data: z.infer<typeof channelConfigSchema>) => Promise<void>
 }
 
-export function ChannelConfigDialog({ 
-    open, 
-    onOpenChange, 
+export function ChannelConfigDialog({
+    open,
+    onOpenChange,
     channel,
     providers,
-    onSubmit 
+    onSubmit
 }: ChannelConfigDialogProps) {
     const form = useForm<z.infer<typeof channelConfigSchema>>({
         resolver: zodResolver(channelConfigSchema),
@@ -77,7 +78,8 @@ export function ChannelConfigDialog({
             await onSubmit(values)
             form.reset()
             onOpenChange(false)
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     }
 
@@ -89,6 +91,12 @@ export function ChannelConfigDialog({
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        {form.formState.errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {form.formState.errors.root.message}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="provider"

@@ -9,8 +9,9 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/Select'
+import { cn } from '@/lib/utils'
+import { FiPlus } from 'react-icons/fi'
 
 interface Workspace {
   id: string
@@ -97,73 +98,108 @@ export function WorkspaceSwitcher() {
 
   const handleWorkspaceChange = (workspaceId: string) => {
     setCurrentWorkspaceId(workspaceId)
-    // Optionally reload the page to refresh data
-    // window.location.reload()
   }
 
   // Get workspace name from session or workspaces
-  const getWorkspaceName = () => {
+  const getCurrentWorkspace = () => {
     if (workspaces.length > 0) {
-      const current = workspaces.find(w => w.id === currentWorkspaceId) || workspaces[0]
-      return current.name
+      return workspaces.find(w => w.id === currentWorkspaceId) || workspaces[0]
     }
-    if (session?.workspace?.name) {
-      return session.workspace.name
+    if (session?.workspace) {
+      return session.workspace
     }
-    return 'My Workspace'
+    return { name: 'My Workspace', plan: 'Free', id: 'default', slug: 'default' }
   }
 
-  const getWorkspacePlan = () => {
-    if (workspaces.length > 0) {
-      const current = workspaces.find(w => w.id === currentWorkspaceId) || workspaces[0]
-      return current.plan || 'Free'
-    }
-    if (session?.workspace?.plan) {
-      return session.workspace.plan
-    }
-    return 'Free'
+  const currentWorkspace = getCurrentWorkspace()
+
+  // Helper to get initials
+  const getInitials = (name: string) => {
+    return name?.substring(0, 1).toUpperCase() || 'W'
   }
 
   if (loading) {
     return (
-      <div className="w-full px-3 py-2 rounded-lg bg-accent/50">
-        <div className="h-4 w-24 animate-pulse rounded bg-muted mb-1" />
-        <div className="h-3 w-16 animate-pulse rounded bg-muted" />
+      <div className="flex w-full items-center gap-2 rounded-xl border border-border/50 bg-muted/50 p-2">
+        <div className="h-8 w-8 animate-pulse rounded-lg bg-muted-foreground/20" />
+        <div className="space-y-1">
+          <div className="h-3 w-20 animate-pulse rounded bg-muted-foreground/20" />
+          <div className="h-2 w-12 animate-pulse rounded bg-muted-foreground/20" />
+        </div>
       </div>
     )
   }
 
-  // Always show workspace info, even if no workspaces loaded yet
-  if (workspaces.length === 0) {
-    return (
-      <div className="w-full px-3 py-2 rounded-lg bg-accent/50">
-        <p className="text-sm font-medium">{getWorkspaceName()}</p>
-        <p className="text-xs text-muted-foreground">{getWorkspacePlan()} Plan</p>
+  // Common render for the workspace card content
+  const renderWorkspaceDisplay = (ws: Partial<Workspace>, isTrigger = false) => (
+    <div className="flex items-center gap-3 text-left">
+      <div className={cn(
+        "flex aspect-square items-center justify-center rounded-lg border border-white/10 shadow-inner",
+        isTrigger ? "size-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500" : "size-8 border bg-background"
+      )}>
+        <span className={cn("font-bold", isTrigger ? "text-white" : "text-foreground")}>
+          {getInitials(ws.name || '')}
+        </span>
       </div>
-    )
-  }
+      <div className="grid flex-1 gap-0.5 leading-none">
+        <span className="truncate font-semibold tracking-tight">
+          {ws.name}
+        </span>
+        <span className="truncate text-xs font-medium text-muted-foreground/80">
+          {ws.plan || 'Free'} Plan
+        </span>
+      </div>
+    </div>
+  )
 
   // Show current workspace name if user only has one workspace
   if (workspaces.length === 1) {
     return (
-      <div className="w-full px-3 py-2 rounded-lg bg-accent/50">
-        <p className="text-sm font-medium">{workspaces[0].name}</p>
-        <p className="text-xs text-muted-foreground">{workspaces[0].plan || 'Free'} Plan</p>
+      <div className="w-full rounded-xl border border-border/40 bg-card/50 p-2 shadow-sm backdrop-blur-sm transition-all hover:bg-card/80 hover:shadow-md">
+        {renderWorkspaceDisplay(workspaces[0], true)}
       </div>
     )
   }
 
   return (
     <Select value={currentWorkspaceId || undefined} onValueChange={handleWorkspaceChange}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder="Select workspace" />
+      <SelectTrigger
+        className={cn(
+          "h-14 w-full rounded-xl border-border/40 bg-card/50 p-2 shadow-sm backdrop-blur-sm hover:bg-card/80 hover:shadow-md focus:ring-0 data-[state=open]:bg-card"
+        )}
+      >
+        {renderWorkspaceDisplay(currentWorkspace, true)}
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent
+        className="w-[--radix-select-trigger-width] min-w-56 rounded-xl border-border/50 bg-popover/95 p-1 backdrop-blur-xl"
+        align="start"
+      >
+        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+          Select Workspace
+        </div>
         {workspaces.map((ws) => (
-          <SelectItem key={ws.id} value={ws.id}>
-            {ws.name} ({ws.plan})
+          <SelectItem
+            key={ws.id}
+            value={ws.id}
+            className="rounded-lg p-2 focus:bg-accent focus:text-accent-foreground data-[state=checked]:bg-accent/50"
+          >
+            {renderWorkspaceDisplay(ws, false)}
           </SelectItem>
         ))}
+
+        {/* Optional: Add New Workspace Action */}
+        <div className="mt-1 border-t border-border/50 pt-1">
+          <button
+            className="flex w-full cursor-not-allowed items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground opacity-50 hover:bg-accent hover:text-foreground"
+            disabled
+          >
+            <div className="flex size-8 items-center justify-center rounded-lg border border-dashed border-muted-foreground/30 bg-background">
+              <FiPlus className="size-4" />
+            </div>
+            <span className="font-medium">Create Workspace</span>
+            <span className="ml-auto text-[10px] uppercase tracking-widest text-muted-foreground/50">Soon</span>
+          </button>
+        </div>
       </SelectContent>
     </Select>
   )

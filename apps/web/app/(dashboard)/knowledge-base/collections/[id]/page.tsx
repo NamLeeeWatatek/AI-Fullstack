@@ -155,11 +155,6 @@ export default function KnowledgeBaseDetailPageRedux() {
     }
 
     const handleCreateFolder = async (data: { name: string; description: string }) => {
-        if (!data.name.trim()) {
-            toast.error('Folder name is required')
-            return
-        }
-
         await dispatch(createFolder({
             knowledgeBaseId: kbId,
             name: data.name,
@@ -168,16 +163,10 @@ export default function KnowledgeBaseDetailPageRedux() {
         })).unwrap()
 
         toast.success('Folder created')
-        setFolderDialogOpen(false)
         dispatch(refreshData({ kbId, folderId: currentFolderId }))
     }
 
     const handleCreateDocument = async (data: { name: string; content: string }) => {
-        if (!data.name.trim() || !data.content.trim()) {
-            toast.error('Name and content are required')
-            return
-        }
-
         await dispatch(createDocument({
             knowledgeBaseId: kbId,
             name: data.name,
@@ -186,7 +175,6 @@ export default function KnowledgeBaseDetailPageRedux() {
         })).unwrap()
 
         toast.success('Document created and processing started')
-        setDocumentDialogOpen(false)
         dispatch(refreshData({ kbId, folderId: currentFolderId }))
     }
 

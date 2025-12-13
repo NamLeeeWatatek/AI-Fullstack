@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/Form'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
+import { handleFormError } from '@/lib/utils/form-errors'
 
 const documentFormSchema = z.object({
     name: z.string().min(1, 'Document name is required'),
@@ -41,7 +42,8 @@ export function KBDocumentDialog({ open, onOpenChange, onSubmit }: KBDocumentDia
             await onSubmit(values)
             form.reset()
             onOpenChange(false)
-        } catch {
+        } catch (error: any) {
+            handleFormError(error, form)
         }
     }
 
@@ -53,6 +55,12 @@ export function KBDocumentDialog({ open, onOpenChange, onSubmit }: KBDocumentDia
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                        {form.formState.errors.root && (
+                            <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-2 text-sm text-destructive">
+                                <span className="font-medium">Error:</span>
+                                {form.formState.errors.root.message}
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="name"
@@ -73,10 +81,10 @@ export function KBDocumentDialog({ open, onOpenChange, onSubmit }: KBDocumentDia
                                 <FormItem>
                                     <FormLabel>Content</FormLabel>
                                     <FormControl>
-                                        <Textarea 
-                                            placeholder="Paste your document content here..." 
+                                        <Textarea
+                                            placeholder="Paste your document content here..."
                                             rows={12}
-                                            {...field} 
+                                            {...field}
                                         />
                                     </FormControl>
                                     <FormDescription>
@@ -87,9 +95,9 @@ export function KBDocumentDialog({ open, onOpenChange, onSubmit }: KBDocumentDia
                             )}
                         />
                         <DialogFooter>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
+                            <Button
+                                type="button"
+                                variant="outline"
                                 onClick={() => onOpenChange(false)}
                             >
                                 Cancel
